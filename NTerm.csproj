@@ -1,0 +1,33 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <Nullable>enable</Nullable>
+    <UseWindowsForms>true</UseWindowsForms>
+    <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Remove="Test\**" />
+    <Compile Remove="_Server\**" />
+    <Compile Remove="_WinFormsApp1\**" />
+    <EmbeddedResource Remove="Test\**" />
+    <EmbeddedResource Remove="_Server\**" />
+    <EmbeddedResource Remove="_WinFormsApp1\**" />
+    <None Remove="Test\**" />
+    <None Remove="_Server\**" />
+    <None Remove="_WinFormsApp1\**" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\Libs\NBagOfUis\NBagOfUis.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Reference Include="Ephemera.NBagOfTricks">
+      <HintPath>lib\Ephemera.NBagOfTricks.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+
+</Project>
