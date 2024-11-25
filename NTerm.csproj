@@ -10,18 +10,11 @@
 
   <ItemGroup>
     <Compile Remove="Test\**" />
-    <Compile Remove="_Server\**" />
-    <Compile Remove="_WinFormsApp1\**" />
     <EmbeddedResource Remove="Test\**" />
-    <EmbeddedResource Remove="_Server\**" />
-    <EmbeddedResource Remove="_WinFormsApp1\**" />
     <None Remove="Test\**" />
-    <None Remove="_Server\**" />
-    <None Remove="_WinFormsApp1\**" />
   </ItemGroup>
 
   <ItemGroup>
-    <None Remove=".gitignore" />
     <None Remove="notes.ntr" />
     <None Remove="nterm.sublime-project" />
     <None Remove="nterm.sublime-workspace" />
