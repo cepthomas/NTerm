@@ -8,44 +8,22 @@ using System.Text;
 
 namespace NTerm
 {
-    // https://learn.microsoft.com/en-us/dotnet/fundamentals/networking/sockets/socket-services
-
-    // https://learn.microsoft.com/en-us/dotnet/api/system.net.sockets.tcpclient?view=net-8.0
-
-    // https://learn.microsoft.com/en-us/dotnet/api/system.net.sockets.socket?view=net-8.0
-
-
-
-
-
     internal class TcpProtocol : IProtocol
     {
+        // IProtocol implementation
+        public int ResponseTime { get; set; } = 500;
+
+        public int BufferSize { get; set; } = 4096;
+
+        public string Response { get; private set; } = "";
+
         #region Fields
-        TcpClient? _client = null;
+        //TcpProtocol? _client = null;
+        readonly Logger _logger = LogManager.CreateLogger("Protocol");
 
         string _host = "???";
         int _port = 0;
         IPEndPoint _ipEndPoint;
-
-        // Server must connect or reply to commands in msec.
-        const int SERVER_RESPONSE_TIME = 500;
-
-        const int BUFFER_SIZE = 4096;
-
-        // bool _run = true;
-
-        // string _rcvBuffer = "";
-
-        // readonly Stopwatch _watch = new();
-
-        // long _sendts = 0;
-
-        readonly Logger _logger = LogManager.CreateLogger("TcpProtocol");
-
-        // readonly ConcurrentQueue<string?> _sendQ = new();
-
-        // readonly ConcurrentQueue<string?> _rcvQ = new();
-
         #endregion
 
         public TcpProtocol(string host, int port)
@@ -57,57 +35,37 @@ namespace NTerm
 
         public void Dispose()
         {
-            throw new NotImplementedException();
         }
 
         // IProtocol implementation
-        public string? Send(string request)
+        public OpStatus Send(string request)
         {
-            string? res = SendAsync(request).Result;
+            OpStatus res = SendAsync(request).Result;
             return res;
         }
 
-        public async Task<string?> SendAsync(string request)
+        public async Task<OpStatus> SendAsync(string request)
         {
-            string? res = null;
+            OpStatus res = OpStatus.Success;
+            Response = "";
 
             try
             {
-                //// connect
-                //using var tcpClient = new TcpClient();
-                //await tcpClient.ConnectAsync(_host, _port);
-                //// send
-                //using var networkStream = tcpClient.GetStream();
-                //string ClientRequestString = "Some HTTP request here";
-                //byte[] ClientRequestBytes = Encoding.UTF8.GetBytes(ClientRequestString);
-                //await networkStream.WriteAsync(ClientRequestBytes, 0, ClientRequestBytes.Length);
-                //// receive
-                //var bufferX = new byte[4096];
-                //var byteCountX = await networkStream.ReadAsync(bufferX, 0, bufferX.Length);
-                //var response = Encoding.UTF8.GetString(bufferX, 0, byteCountX);
-                //return response;
-
-
                 /////// Connect ////////
-                using var client = new TcpClient();
+                using var client = new TcpClient(_host, _port);
 
-                // Set some properties. TODO from config or settings?
-                client.SendTimeout = SERVER_RESPONSE_TIME;
-                client.ReceiveTimeout = SERVER_RESPONSE_TIME;
-                client.SendBufferSize = BUFFER_SIZE;
-                client.ReceiveBufferSize = BUFFER_SIZE;
-
+                // Set some properties.
+                client.SendTimeout = ResponseTime;
+                client.ReceiveTimeout = ResponseTime;
+                client.SendBufferSize = BufferSize;
+                client.ReceiveBufferSize = BufferSize;
 
                 _logger.Debug("[Client] Try connecting to server");
-
-                var cts = new CancellationTokenSource(TimeSpan.FromMilliseconds(1));// SERVER_RESPONSE_TIME);
+                var cts = new CancellationTokenSource(TimeSpan.FromMilliseconds(ResponseTime));
+                // Throws OperationCanceledException if timeout or several other failure types.
                 await client.ConnectAsync(_host, _port, cts.Token);
-                // This method stores in the task it returns all non-usage exceptions that the method's synchronous
-                // counterpart can throw. If an exception is stored into the returned task, that exception will be
-                // thrown when the task is awaited. Usage exceptions, such as ArgumentException, are still thrown synchronously.
 
                 _logger.Debug("[Client] Connected to server");
-
 
                 /////// Send ////////
                 using var stream = client.GetStream();
@@ -119,12 +77,12 @@ namespace NTerm
                 int ind = 0;
                 while (!sendDone)
                 {
-                    //do a chunk of SendBufferSize
+                    // Do a chunk.
                     int tosend = num - ind >= client.SendBufferSize ? client.SendBufferSize : num - ind;
 
                     _logger.Debug($"[Client] Sending [{tosend}]");
 
-                    // If the send time-out expires, TcpClient throws SocketException.
+                    // If the send time-out expires, WriteAsync() throws SocketException.
                     await stream.WriteAsync(bytes, ind, tosend);
 
                     ind += tosend;
@@ -132,22 +90,21 @@ namespace NTerm
                 }
 
                 /////// Receive ////////
-
+                List<string> parts = [];
                 bool rcvDone = false;
-                List<string> response = [];
 
                 while (!rcvDone)
                 {
                     // Get response.
                     var buffer = new byte[client.ReceiveBufferSize];
 
-                    // If the read time-out expires, TcpClient throws IOException.
+                    // If the read time-out expires, ReadAsync() throws IOException.
                     var byteCount = await stream.ReadAsync(buffer, 0, buffer.Length);
 
                     if (byteCount > 0)
                     {
                         var s = Encoding.UTF8.GetString(buffer, 0, byteCount);
-                        response.Add(s);
+                        parts.Add(s);
                     }
                     else
                     {
@@ -155,46 +112,47 @@ namespace NTerm
                     }
                 }
 
-                res = string.Join("", response);
+                Response = string.Join("", parts);
 
-                _logger.Debug($"[Client] Server response was [{res}]");
-
+                _logger.Debug($"[Client] Server response was [{Response}]");
             }
             catch (OperationCanceledException e)
             {
-                // Usually connect timeout.
+                Response = "Usually connect timeout.";
+                res = OpStatus.Timeout;
                 _logger.Debug($"{e.Message}: {e}");
-                res = null;
             }
             catch (SocketException e)
             {
-                // Usually send timeout.
                 _logger.Debug($"{e.Message}: {e.NativeErrorCode}");
-                // https://learn.microsoft.com/en-us/windows/win32/winsock/windows-sockets-error-codes-2
-                // Some are expected and recoverable:
-                // WSAECONNABORTED 10053
-                // WSAECONNRESET 10054
-                // WSAETIMEDOUT 10060
-                // WSAECONNREFUSED 10061
-                // WSAEHOSTDOWN 10064
-                // Ignore and retry later.
-                //Reset();
-                res = null;
+                // Some are expected and recoverable. https://learn.microsoft.com/en-us/windows/win32/winsock/windows-sockets-error-codes-2
+                int[] valid = [10053, 10054, 10060, 10061, 10064];
+                if (valid.Contains(e.NativeErrorCode))
+                {
+                    // Ignore and retry later.
+                    Response = "Usually send timeout.";
+                    res = OpStatus.Timeout;
+                }
+                else
+                {
+                    Response = $"Hard socket error: {e.Message}";
+                    res = OpStatus.Error;
+                }
             }
             catch (IOException e)
             {
                 // Usually receive timeout.
-                // Tell client to retry later.
+                // Ignore and retry later.
                 _logger.Debug($"{e.Message}: {e}");
-                res = null;
+                Response = "Usually receive timeout.";
+                res = OpStatus.Timeout;
             }
             catch (Exception e)
             {
                 // Other errors are considered fatal.
                 _logger.Error($"Fatal error:{e}");
-                //Reset();
-                //run = false;
-                res = null;
+                Response = $"Fatal error: {e.Message}";
+                res = OpStatus.Error;
             }
 
             return res;

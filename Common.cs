@@ -6,137 +6,110 @@ using System.Threading.Tasks;
 
 namespace NTerm
 {
-    // Interface to tcp/socket, stream, pipe
+    public enum OpStatus { Success, Timeout, Error }
+
+    /// <summary>Interface to tcp/socket, stream, pipe, serial, ...</summary>
     public interface IProtocol : IDisposable
     {
-        //bool KeyAvailable { get; }
-        //bool CursorVisible { get; set; }
-        //string Title { get; set; }
-        //int BufferWidth { get; set; }
-        //void Write(string text);
+        /// <summary>Server must connect or reply to commands in msec.</summary>
+        int ResponseTime { get; set; }
 
-        string? Send(string cmd);
+        /// <summary>Optional R/W buffer size.</summary>
+        int BufferSize { get; set; }
 
-        //string? ReadLine();
-        
-        //ConsoleKeyInfo ReadKey(bool intercept);
-        //(int left, int top) GetCursorPosition();
-        //void SetCursorPosition(int left, int top);
-    }
-    // The Transport Layer (Layer 4)
-    // Layer 4 of the OSI model is named the transport layer and is responsible for message segmentation,
-    // acknowledgement, traffic control, and session multiplexing. The transport layer also has the ability
-    // to perform error detection and correction (resends), message reordering to ensure message sequence,
-    // and reliable message channel depending on the specific transport layer protocol used. The most common
-    // of the used transport layer protocols include the Transport Control Protocol (TCP) and
-    // User Datagram Protocol (UDP).
+        /// <summary>The text if Success otherwise error message.</summary>
+        string Response { get; }
 
-    // The Session Layer (Layer 5)
-    // Layer 5 of the OSI model is named the session layer and is responsible for session establishment,
-    // maintenance and termination (the ability to have multiple devices use a single application from
-    // multiple locations). Common examples of session layer protocols are Named Pipes and NetBIOS.
-
-
-    // Console abstraction to support testing
-    public interface IConsole
-    {
-        bool KeyAvailable { get; }
-        bool CursorVisible { get; set; }
-        string Title { get; set; }
-        int BufferWidth { get; set; }
-        void Write(string text);
-        void WriteLine(string text);
-        string? ReadLine();
-        ConsoleKeyInfo ReadKey(bool intercept);
-        (int left, int top) GetCursorPosition();
-        void SetCursorPosition(int left, int top);
+        /// <summary>
+        /// Send a message to the server.
+        /// </summary>
+        /// <param name="cmd">What to send.</param>
+        /// <returns>Operation status.</returns>
+        OpStatus Send(string cmd);
     }
 
-
-
-    internal class NewStuff
+    internal class Utils
     {
-        public Color FromAnsi(string ansi)
+        public Color FromAnsi(string ansi) // TODO
         {
             Color ret = Color.White;
 
-//            int[] _ansiColorMap = new[256];
 
 
-// 30-39 40-49  90-97 100-107
-// ESC[1m  ESC[22m set bold mode.
-// ESC[2m  ESC[22m set dim/faint mode.
-// ESC[3m  ESC[23m set italic mode.
-// ESC[4m  ESC[24m set underline mode.
-// ESC[5m  ESC[25m set blinking mode
-// ESC[7m  ESC[27m set inverse/reverse mode
-// ESC[8m  ESC[28m set hidden/invisible mode
-// ESC[9m  ESC[29m set strikethrough mode.
+            //            int[] _ansiColorMap = new[256];
 
-// 8-16 Colors
-// Color Name  Foreground Color Code   Background Color Code
-// Black   30  40
-// Red 31  41
-// Green   32  42
-// Yellow  33  43
-// Blue    34  44
-// Magenta 35  45
-// Cyan    36  46
-// White   37  47
-// Default 39  49
-// Bright Black    90  100
-// Bright Red  91  101
-// Bright Green    92  102
-// Bright Yellow   93  103
-// Bright Blue 94  104
-// Bright Magenta  95  105
-// Bright Cyan 96  106
-// Bright White    97  107
+            /*
+            All the codes: https://gist.github.com/fnky/458719343aabd01cfb17a3a4f7296797
+            "C:\Users\cepth\OneDrive\OneDriveDocuments\tech\ansi-terminal.lua"
 
-/*
--- All the codes: https://gist.github.com/fnky/458719343aabd01cfb17a3a4f7296797
+            ESC = \033 or \X1B
 
-io.write("16 Colors\n")
-
-for i = 0, 108 do
-    r = i / 10
-    c = i % 10
-
-    -- s = string.format("\033[%dm %3d\033[m", i, i)
-    s = string.format("[%dm %3d[m", i, i)
-
-    io.write(s)
-    if c == 9 then io.write("\n") end
-
-end
-io.write("\n\n")
+            cat:
+            ESC[1;31m  # Set style to bold, red foreground.
 
 
-io.write("256 Colors\n")
+            Modes- probably not
+            -----------
+            set     reset
+            ESC[1m  ESC[22m bold mode.
+            ESC[2m  ESC[22m dim / faint mode.
+            ESC[3m  ESC[23m italic mode.
+            ESC[4m  ESC[24m underline mode.
+            ESC[5m  ESC[25m blinking mode
+            ESC[7m  ESC[27m inverse / reverse mode
+            ESC[8m  ESC[28m hidden / invisible mode
+            ESC[9m  ESC[29m strikethrough mode.
 
--- 256 Colors
--- The table starts with the original 16 colors (0-15).
--- The proceeding 216 colors (16-231) or formed by a 3bpc RGB value offset by 16, packed into a single value.
--- The final 24 colors (232-255) are grayscale starting from a shade slighly lighter than black,
--- ranging up to shade slightly darker than white.
+            8/16 Colors "ESC[94NNm"
+            -----------
+            Color          FG  BG 
+            Black          30  40
+            Red            31  41
+            Green          32  42
+            Yellow         33  43
+            Blue           34  44
+            Magenta        35  45
+            Cyan           36  46
+            White          37  47
+            Default        39  49
+            Bright Black   90  100
+            Bright Red     91  101
+            Bright Green   92  102
+            Bright Yellow  93  103
+            Bright Blue    94  104
+            Bright Magenta 95  105
+            Bright Cyan    96  106
+            Bright White   97  107
 
--- The following escape codes tells the terminal to use the given color ID:
--- ESC Code Sequence   Description
--- ESC[38;5;{ID}m  Set foreground color.
--- ESC[48;5;{ID}m  Set background color.
+            256 Colors
+            -----------
+            Set FG: ESC[38;5;INDEXm
+            Set BG: ESC[48;5;INDEXm
 
-for i = 0, 255 do
-    r = i / 10
-    c = i % 10
+            The table starts with the original 16 colors (0-15).
+            The next 216 colors (16-231) or formed by a 3bpc RGB value offset by 16, packed into a single value.
+            The final 24 colors (232-255) are grayscale starting from a shade slighly lighter than black,
+            ranging up to shade slightly darker than white.
 
-    s = string.format("[38;5;%dm %3d[m", i, i)
+            Apart from colors, and background-colors, Ansi escape codes also allow decorations on the text:
 
-    io.write(s)
-    if c == 9 then io.write("\n") end
+            Bold: ESC[1m
+            Underline: ESC[4m
+            Reversed: ESC[7m
+            Which can be used individually:
 
-end
-io.write("\n")
-*/
+            "ESC[1m BOLD ESC[0mESC[4m Underline ESC[0mESC[7m Reversed ESC[0m"
+
+            ----
+            The majority of ANSI escape codes for 256 colors are 216 entries that are directly mapped onto a
+            (6×6×6) RGB colorspace cube. These colors can usually be enabled by their decimal number as terminal
+            ASCII escape code. (For example, see lolcat.)
+
+            \x1b[38;5;…m, \033[38;5;…m – foreground
+            \x1b[48;5;…m, \033[48;5;…m – background
+            \x1b[0m, \033[0m – clear
+
+            */
 
             return ret;
         }

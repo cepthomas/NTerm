@@ -21,6 +21,13 @@
   </ItemGroup>
 
   <ItemGroup>
+    <None Remove=".gitignore" />
+    <None Remove="notes.ntr" />
+    <None Remove="nterm.sublime-project" />
+    <None Remove="nterm.sublime-workspace" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\..\Libs\NBagOfUis\NBagOfUis.csproj" />
   </ItemGroup>
 

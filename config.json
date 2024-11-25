@@ -1,0 +1,7 @@
+{
+    "Protocol": "tcp",
+    "Host": "127.0.0.1",
+    "Port": 59120,
+    "ShowStatus": true,
+    "Hotkeys": " ?"
+}

@@ -14,17 +14,21 @@ namespace NTerm
     public partial class MainForm : Form
     {
         #region Fields
-        UserSettings _settings;
+        /// <summary>Settings</summary>
+        readonly UserSettings _settings;
 
-        Config _config;
+        /// <summary>Current config</summary>
+        Config? _config;
 
-        IProtocol _prot;
+        /// <summary>Client flavor.</summary>
+        IProtocol? _client;
 
-        readonly Logger _logger = LogManager.CreateLogger("Form1");
+        /// <summary>My logger</summary>
+        readonly Logger _logger = LogManager.CreateLogger("MainForm");
         #endregion
 
         /// <summary>
-        /// 
+        /// Create the main form.
         /// </summary>
         public MainForm()
         {
@@ -42,7 +46,6 @@ namespace NTerm
             LogManager.MinLevelFile = LogLevel.Trace;
             LogManager.MinLevelNotif = LogLevel.Trace;
             LogManager.Run(logFileName, 50000);
-
             LogManager.LogMessage += (object? sender, LogMessageEventArgs e) => cliOut.AppendLine(e.Message);
 
             cliIn.InputEvent += CliIn_InputEvent;
@@ -57,7 +60,14 @@ namespace NTerm
         protected override void OnLoad(EventArgs e)
         {
             // Open config.
-            var fn = @"C:\Dev\repos\Apps\NTerm\config.json";
+            var args = Environment.GetCommandLineArgs();
+            if (args.Length != 2)
+            {
+                cliOut.AppendLine("Invalid args. Restart please.");
+                //Environment.Exit(1);
+            }
+
+            var fn = args[1];
 
             try
             {
@@ -68,7 +78,7 @@ namespace NTerm
                 switch (_config.Protocol.ToLower())
                 {
                     case "tcp":
-                        _prot = new TcpProtocol(_config.Host, _config.Port);
+                        _client = new TcpProtocol(_config.Host, _config.Port);
                         break;
 
                     default:
@@ -92,9 +102,24 @@ namespace NTerm
         protected override void OnFormClosing(FormClosingEventArgs e)
         {
             _settings.FormGeometry = new Rectangle(Location.X, Location.Y, Size.Width, Size.Height);
-
             _settings.Save();
+
             base.OnFormClosing(e);
+        }
+
+        /// <summary>
+        ///  Clean up any resources being used.
+        /// </summary>
+        /// <param name="disposing">true if managed resources should be disposed; otherwise, false.</param>
+        protected override void Dispose(bool disposing)
+        {
+            if (disposing && (components != null))
+            {
+                _client?.Dispose();
+                components.Dispose();
+            }
+
+            base.Dispose(disposing);
         }
 
         /// <summary>
@@ -110,9 +135,8 @@ namespace NTerm
                 //AsyncUsingTcpClient();
 
                 //StartServer(_config.Port);
-                var res = _prot.Send("djkdjsdfksdf;s");
-                cliOut.AppendLine(res);
-
+                var res = _client.Send("djkdjsdfksdf;s");
+                cliOut.AppendLine($"{res}: {_client.Response}");
             }
             catch (Exception ex)
             {
@@ -127,12 +151,12 @@ namespace NTerm
         /// <param name="e"></param>
         void CliIn_InputEvent(object? sender, TermInputEventArgs e)
         {
-            string? res = null;
+            OpStatus res = OpStatus.Success;
 
             if (e.Line is not null)
             {
                 _logger.Trace($"SND:{e.Line}");
-                res = _prot.Send(e.Line);
+                res = _client.Send(e.Line);
                 e.Handled = true;
             }
             else if (e.HotKey is not null)  // single key
@@ -142,7 +166,7 @@ namespace NTerm
                 if (_config.HotKeys.Contains(hk))
                 {
                     _logger.Trace($"SND:{hk}");
-                    res = _prot.Send(hk.ToString());
+                    res = _client.Send(hk.ToString());
                     e.Handled = true;
                 }
                 else
@@ -151,25 +175,9 @@ namespace NTerm
                 }
             }
 
-            //var s = res ?? "NULL";
+            cliOut.AppendLine($"{res}: {_client.Response}");
 
-            _logger.Trace($"RCV:{res ?? "NULL"}");
+            _logger.Trace($"RCV:{res}: {_client.Response}");
         }
-
-        /// <summary>
-        ///  Clean up any resources being used.
-        /// </summary>
-        /// <param name="disposing">true if managed resources should be disposed; otherwise, false.</param>
-        protected override void Dispose(bool disposing)
-        {
-            if (disposing && (components != null))
-            {
-                _prot?.Dispose();
-                components.Dispose();
-            }
-            base.Dispose(disposing);
-        }
-
-
     }
 }
