@@ -1,9 +1,12 @@
 using System;
 using System.Collections.Concurrent;
+using System.Drawing;
+using System.IO;
 using System.Net;
 using System.Net.Sockets;
 using System.Text;
 using System.Text.Json;
+using System.Windows.Forms;
 using Ephemera.NBagOfTricks;
 using Ephemera.NBagOfTricks.Slog;
 using Ephemera.NBagOfUis;
@@ -18,10 +21,10 @@ namespace NTerm
         readonly UserSettings _settings;
 
         /// <summary>Current config</summary>
-        Config? _config;
+        Config _config;
 
         /// <summary>Client flavor.</summary>
-        IProtocol? _client;
+        IProtocol _client;
 
         /// <summary>My logger</summary>
         readonly Logger _logger = LogManager.CreateLogger("MainForm");

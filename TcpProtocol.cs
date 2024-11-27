@@ -1,26 +1,34 @@
 
 using Ephemera.NBagOfTricks.Slog;
+using System;
 using System.Collections.Concurrent;
+using System.Collections.Generic;
 using System.Diagnostics;
+using System.IO;
+using System.Linq;
 using System.Net;
 using System.Net.Sockets;
 using System.Text;
+using System.Threading;
+using System.Threading.Tasks;
+
 
 namespace NTerm
 {
     internal class TcpProtocol : IProtocol
     {
-        // IProtocol implementation
+        #region IProtocol implementation
         public int ResponseTime { get; set; } = 500;
 
         public int BufferSize { get; set; } = 4096;
 
         public string Response { get; private set; } = "";
 
-        #region Fields
-        //TcpProtocol? _client = null;
-        readonly Logger _logger = LogManager.CreateLogger("Protocol");
+        public OpStatus Send(string request) { return SendAsync(request).Result; }
+        #endregion
 
+        #region Fields
+        readonly Logger _logger = LogManager.CreateLogger("Protocol");
         string _host = "???";
         int _port = 0;
         IPEndPoint _ipEndPoint;
@@ -37,12 +45,6 @@ namespace NTerm
         {
         }
 
-        // IProtocol implementation
-        public OpStatus Send(string request)
-        {
-            OpStatus res = SendAsync(request).Result;
-            return res;
-        }
 
         public async Task<OpStatus> SendAsync(string request)
         {

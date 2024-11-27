@@ -1,4 +1,7 @@
-﻿namespace NTerm
+﻿using System.Drawing;
+using System.Windows.Forms;
+
+namespace NTerm
 {
     partial class MainForm
     {
