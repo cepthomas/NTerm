@@ -1,13 +1,5 @@
-using System;
-using System.Collections.Concurrent;
-using System.Drawing;
-using System.IO;
-using System.Net;
-using System.Net.Sockets;
-using System.Text;
 using System.Text.Json;
-using System.Windows.Forms;
-using Ephemera.NBagOfTricks;
+using Ephemera.NBagOfTricks; // TODO update this.
 using Ephemera.NBagOfTricks.Slog;
 using Ephemera.NBagOfUis;
 
@@ -30,6 +22,7 @@ namespace NTerm
         readonly Logger _logger = LogManager.CreateLogger("MainForm");
         #endregion
 
+        #region Lifecycle
         /// <summary>
         /// Create the main form.
         /// </summary>
@@ -70,11 +63,9 @@ namespace NTerm
                 //Environment.Exit(1);
             }
 
-            var fn = args[1];
-
             try
             {
-                string json = File.ReadAllText(fn);
+                string json = File.ReadAllText(args[1]);
                 object? set = JsonSerializer.Deserialize(json, typeof(Config));
                 _config = (Config)set!;
 
@@ -92,7 +83,7 @@ namespace NTerm
             catch (Exception ex)
             {
                 // Errors are considered fatal.
-                _logger.Debug($"Invalid config {fn}:{ex}");
+                _logger.Error($"Invalid config {args[1]}:{ex}");
             }
 
             base.OnLoad(e);
@@ -124,9 +115,10 @@ namespace NTerm
 
             base.Dispose(disposing);
         }
+        #endregion
 
         /// <summary>
-        /// 
+        /// Do test stuff.
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
@@ -178,8 +170,8 @@ namespace NTerm
                 }
             }
 
+            // Show results. TODO extract/convert ansi codes. Use regex.
             cliOut.AppendLine($"{res}: {_client.Response}");
-
             _logger.Trace($"RCV:{res}: {_client.Response}");
         }
     }

@@ -1,16 +1,7 @@
-
-using Ephemera.NBagOfTricks.Slog;
-using System;
-using System.Collections.Concurrent;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.IO;
-using System.Linq;
 using System.Net;
 using System.Net.Sockets;
 using System.Text;
-using System.Threading;
-using System.Threading.Tasks;
+using Ephemera.NBagOfTricks.Slog;
 
 
 namespace NTerm
@@ -34,6 +25,11 @@ namespace NTerm
         IPEndPoint _ipEndPoint;
         #endregion
 
+        /// <summary>
+        /// Build me one.
+        /// </summary>
+        /// <param name="host"></param>
+        /// <param name="port"></param>
         public TcpProtocol(string host, int port)
         {
             _host = host;
@@ -41,11 +37,18 @@ namespace NTerm
             _ipEndPoint = new(IPAddress.Parse(host), port);
         }
 
+        /// <summary>
+        /// Clean up.
+        /// </summary>
         public void Dispose()
         {
         }
 
-
+        /// <summary>
+        /// Does actual work of sending/receiving using async.
+        /// </summary>
+        /// <param name="request"></param>
+        /// <returns>OpStatus and Response populated.</returns>
         public async Task<OpStatus> SendAsync(string request)
         {
             OpStatus res = OpStatus.Success;

@@ -5,7 +5,7 @@
     <TargetFramework>net8.0-windows</TargetFramework>
     <Nullable>enable</Nullable>
     <UseWindowsForms>true</UseWindowsForms>
-    <ImplicitUsings>disable</ImplicitUsings>
+    <ImplicitUsings>enable</ImplicitUsings>
   </PropertyGroup>
 
   <ItemGroup>
@@ -15,9 +15,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <None Remove="notes.ntr" />
-    <None Remove="nterm.sublime-project" />
-    <None Remove="nterm.sublime-workspace" />
+    <None Remove=".gitignore" />
   </ItemGroup>
 
   <ItemGroup>

@@ -1,17 +1,13 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using Ephemera.NBagOfTricks;
 using System.Drawing;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using Ephemera.NBagOfTricks;
 
 
 namespace NTerm
 {
+    /// <summary>How did we do?</summary>
     public enum OpStatus { Success, Timeout, Error }
 
-    /// <summary>Interface to tcp/socket, stream, pipe, serial, ...</summary>
+    /// <summary>Comm type: tcp/socket, stream, pipe, serial, ...</summary>
     public interface IProtocol : IDisposable
     {
         /// <summary>Server must connect or reply to commands in msec.</summary>
@@ -23,19 +19,36 @@ namespace NTerm
         /// <summary>The text if Success otherwise error message.</summary>
         string Response { get; }
 
-        /// <summary>
-        /// Send a message to the server.
-        /// </summary>
+        /// <summary>Send a message to the server.</summary>
         /// <param name="cmd">What to send.</param>
         /// <returns>Operation status.</returns>
         OpStatus Send(string cmd);
     }
 
+    /// <summary>What are we doing today?</summary>
+    [Serializable]
+    public class Config
+    {
+        /// <summary>Talk like this.</summary>
+        public string Protocol { get; set; } = "???";
+
+        /// <summary>TCP host.</summary>
+        public string Host { get; set; } ="???";
+
+        /// <summary>TCP port.</summary>
+        public int Port { get; set; } = 0;
+
+        /// <summary>UI function TODO.</summary>
+        public bool ShowStatus { get; set; } = false;
+
+        /// <summary>Hot key defs.</summary>
+        public string HotKeys { get; set; } = "";
+    }
+
     public class Utils
     {
         /// <summary>
-        /// Client searches for strings starting with "ESC[" and ending with "m".
-        /// One of: ESC[IDm  ESC[38;5;IDm  ESC[48;5;IDm  ESC[38;2;R;G;Bm  ESC[48;2;R;G;Bm
+        /// Convert ansi specs like: ESC[IDm  ESC[38;5;IDm ESC[38;2;R;G;Bm to Color. TODO find better home.
         /// </summary>
         /// <param name="ansi">Ansi string</param>
         /// <returns>Color and whether it's fg or bg. Color is Empty if invalid ansi string.</returns>
@@ -117,9 +130,6 @@ namespace NTerm
 
             static Color MakeStdColor(int id)
             {
-                // map6 = {0, 95, 135, 175, 215, 255}
-
-                // 0, 64, 128, 192, 255
                 (int r, int g, int b)[] std_colors = [
                     (0, 0, 0), (127, 0, 0), (0, 127, 0), (127, 127, 0), (0, 0, 127), (127, 0, 127), (0, 127, 127), (191, 191, 191),
                     (127, 127, 127), (0, 0, 0), (0, 255, 0), (255, 255, 0), (0, 0, 255), (255, 0, 255), (0, 255, 255), (255, 255, 255)];
