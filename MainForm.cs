@@ -130,8 +130,21 @@ namespace NTerm
                 //AsyncUsingTcpClient();
 
                 //StartServer(_config.Port);
-                var res = _client.Send("djkdjsdfksdf;s");
-                cliOut.AppendLine($"{res}: {_client.Response}");
+
+                //var res = _client.Send("djkdjsdfksdf;s");
+                //cliOut.AppendLine($"{res}: {_client.Response}");
+
+
+                var ser = new Serial();
+
+                var ports = ser.GetSerialPorts();
+
+
+
+                //        public List<ComPort> GetSerialPorts()
+                //        void Output(string message, bool force = false, bool newline = true, bool flush = false)
+
+
             }
             catch (Exception ex)
             {
