@@ -1,14 +1,20 @@
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
 using System.Net;
 using System.Net.Sockets;
 using System.Text;
+using System.Threading;
+using System.Threading.Tasks;
 using Ephemera.NBagOfTricks.Slog;
 
 
 namespace NTerm
 {
-    internal class TcpProtocol : IProtocol
+    internal class TcpComm : IComm
     {
-        #region IProtocol implementation
+        #region IComm implementation
         public int ResponseTime { get; set; } = 500;
 
         public int BufferSize { get; set; } = 4096;
@@ -19,7 +25,7 @@ namespace NTerm
         #endregion
 
         #region Fields
-        readonly Logger _logger = LogManager.CreateLogger("Protocol");
+        readonly Logger _logger = LogManager.CreateLogger("TcpComm");
         string _host = "???";
         int _port = 0;
         IPEndPoint _ipEndPoint;
@@ -30,7 +36,7 @@ namespace NTerm
         /// </summary>
         /// <param name="host"></param>
         /// <param name="port"></param>
-        public TcpProtocol(string host, int port)
+        public TcpComm(string host, int port)
         {
             _host = host;
             _port = port;
@@ -88,7 +94,7 @@ namespace NTerm
                     _logger.Debug($"[Client] Sending [{tosend}]");
 
                     // If the send time-out expires, WriteAsync() throws SocketException.
-                    await stream.WriteAsync(bytes, ind, tosend);
+                        await stream.WriteAsync(bytes, ind, tosend);
 
                     ind += tosend;
                     sendDone = ind >= num;

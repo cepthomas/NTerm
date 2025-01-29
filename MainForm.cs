@@ -16,7 +16,7 @@ namespace NTerm
         Config _config;
 
         /// <summary>Client flavor.</summary>
-        IProtocol _client;
+        IComm _client;
 
         /// <summary>My logger</summary>
         readonly Logger _logger = LogManager.CreateLogger("MainForm");

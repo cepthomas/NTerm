@@ -137,7 +137,7 @@ namespace NTerm
                                 throw new();
                             }
 
-                            // check for keys that require special processing (cursor keys, etc.)
+                            // check for keys that require specia           l processing (cursor keys, etc.)
                             else if (_specialKeys.ContainsKey(keyInfo.Key))
                                 _serialPort.Write(_specialKeys[keyInfo.Key]);
 

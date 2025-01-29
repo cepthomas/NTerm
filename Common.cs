@@ -1,14 +1,23 @@
 ﻿using Ephemera.NBagOfTricks;
+using System;
 using System.Drawing;
+using System.Linq;
 
 
 namespace NTerm
 {
+    public static class Defs
+    {
+       // public static readonly IntPtr INVALID_HANDLE_VALUE = new IntPtr(-1);
+        // or
+        public const nint INVALID_HANDLE_VALUE = -1; // since C# 9
+    }
+
     /// <summary>How did we do?</summary>
     public enum OpStatus { Success, Timeout, Error }
 
     /// <summary>Comm type: tcp/socket, stream, pipe, serial, ...</summary>
-    public interface IProtocol : IDisposable
+    public interface IComm : IDisposable
     {
         /// <summary>Server must connect or reply to commands in msec.</summary>
         int ResponseTime { get; set; }
@@ -26,21 +35,21 @@ namespace NTerm
     }
 
 
-    #region Console abstraction to support testing
-    public interface IConsole
-    {
-        bool KeyAvailable { get; }
-        bool CursorVisible { get; set; }
-        string Title { get; set; }
-        int BufferWidth { get; set; }
-        void Write(string text);
-        void WriteLine(string text);
-        string? ReadLine();
-        ConsoleKeyInfo ReadKey(bool intercept);
-        (int left, int top) GetCursorPosition();
-        void SetCursorPosition(int left, int top);
-    }
-    #endregion
+    // #region Console abstraction to support testing
+    // public interface IConsole
+    // {
+    //     bool KeyAvailable { get; }
+    //     bool CursorVisible { get; set; }
+    //     string Title { get; set; }
+    //     int BufferWidth { get; set; }
+    //     void Write(string text);
+    //     void WriteLine(string text);
+    //     string? ReadLine();
+    //     ConsoleKeyInfo ReadKey(bool intercept);
+    //     (int left, int top) GetCursorPosition();
+    //     void SetCursorPosition(int left, int top);
+    // }
+    // #endregion
 
 
     /// <summary>What are we doing today?</summary>
