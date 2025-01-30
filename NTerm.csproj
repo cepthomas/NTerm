@@ -5,12 +5,15 @@
     <OutputType>Exe</OutputType>
     <TargetFramework>net8.0-windows</TargetFramework>
     <Nullable>enable</Nullable>
-    <!-- <UseWindowsForms>true</UseWindowsForms> -->
+    <UseWindowsForms>true</UseWindowsForms>
     <ImplicitUsings>disable</ImplicitUsings>
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Remove="ConsoleEx.cs" />
+    <Compile Remove="Commander.cs" />
+    <Compile Remove="_ConsoleEx.cs" />
+    <Compile Remove="_stuff.cs" />
+    <Compile Remove="_SerialComm_1.cs" />
     <Compile Remove="MainForm.cs" />
     <Compile Remove="MainForm.Designer.cs" />
   </ItemGroup>

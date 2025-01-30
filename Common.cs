@@ -1,17 +1,20 @@
-﻿using Ephemera.NBagOfTricks;
-using System;
+﻿using System;
+using System.Collections.Generic;
+using System.ComponentModel;
 using System.Drawing;
 using System.Linq;
+using System.Text;
+using System.Text.Json;
+using System.Text.Json.Serialization;
+using System.Windows.Forms;
+using Ephemera.NBagOfTricks;
+using Ephemera.NBagOfTricks.Slog;
 
 
 namespace NTerm
 {
-    public static class Defs
-    {
-       // public static readonly IntPtr INVALID_HANDLE_VALUE = new IntPtr(-1);
-        // or
-        public const nint INVALID_HANDLE_VALUE = -1; // since C# 9
-    }
+    /// <summary>Flavor.</summary>
+    public enum CommType { None, Tcp, Serial }
 
     /// <summary>How did we do?</summary>
     public enum OpStatus { Success, Timeout, Error }
@@ -29,9 +32,21 @@ namespace NTerm
         string Response { get; }
 
         /// <summary>Send a message to the server.</summary>
-        /// <param name="cmd">What to send.</param>
+        /// <param name="msg">What to send.</param>
         /// <returns>Operation status.</returns>
-        OpStatus Send(string cmd);
+        OpStatus Send(string msg);
+    }
+
+
+    public class NullComm : IComm
+    {
+        #region IComm implementation
+        public int ResponseTime { get; set; } = 500;
+        public int BufferSize { get; set; } = 4096;
+        public string Response { get; private set; } = "";
+        public void Dispose() { }
+        public OpStatus Send(string msg) { return OpStatus.Success; }
+        #endregion
     }
 
 
@@ -52,30 +67,103 @@ namespace NTerm
     // #endregion
 
 
+
+
     /// <summary>What are we doing today?</summary>
     [Serializable]
     public class Config
     {
-        /// <summary>Talk like this.</summary>
-        public string Protocol { get; set; } = "???";
+        [DisplayName("Name")]
+        [Description("Name")]
+        [Browsable(true)]
+        public string Name { get; set; } ="???";
 
-        /// <summary>TCP host.</summary>
-        public string Host { get; set; } ="???";
+        [DisplayName("Communication Type")]
+        [Description("Talk like this.")]
+        [JsonConverter(typeof(JsonStringEnumConverter))]
+        [Browsable(true)]
+        public CommType CommType { get; set; } = CommType.None;
 
-        /// <summary>TCP port.</summary>
-        public int Port { get; set; } = 0;
+        [DisplayName("Communication Arguments")] // TODO could get fancier later.
+        [Description("Type specific args.\n\"127.0.0.1 59120\"\n\"COM1 115200 EON 678 011.5\"")]
+        [Browsable(true)]
+        public string Args { get; set; } ="???";
 
-        /// <summary>UI function TODO.</summary>
-        public bool ShowStatus { get; set; } = false;
+        [DisplayName("Encoding")]
+        [Description("Encoding.")]
+        [JsonConverter(typeof(JsonStringEnumConverter))]
+        [Browsable(true)]
+        public Encoding Encoding { get; set; } = Encoding.UTF8;
 
-        /// <summary>Hot key defs.</summary>
+        // /// <summary>TCP host.</summary>
+        // public string Host { get; set; } ="???";
+
+        // /// <summary>TCP port.</summary>
+        // public int Port { get; set; } = 0;
+
+        // /// <summary>UI function TODO.</summary>
+        // public bool ShowStatus { get; set; } = false;
+
+        [DisplayName("Hot Keys")]
+        [Description("Hot key definitions.\n\"key command\"")] // like ctrl-k  alt+shift+o
+        [Browsable(true)]
         public string HotKeys { get; set; } = "";
+    }
+
+    [Serializable]
+    public sealed class UserSettings : SettingsCore
+    {
+        #region Properties - persisted editable
+        [DisplayName("Configurations")]
+        [Description("Your favorites.")]
+        [Browsable(true)]
+        public List<Config> Configs { get; set; } = new();
+
+        [DisplayName("Open Last Config")]
+        [Description("Open last config on start.")]
+        [Browsable(true)]
+        public bool OpenLastConfig { get; set; } = true;
+
+        [DisplayName("Prompt")]
+        [Description("CLI prompt.")]
+        [Browsable(true)]
+        public string Prompt { get; set; } = ">";
+
+        [DisplayName("File Log Level")]
+        [Description("Log level for file write.")]
+        [Browsable(true)]
+        [JsonConverter(typeof(JsonStringEnumConverter))]
+        public LogLevel FileLogLevel { get; set; } = LogLevel.Trace;
+
+        [DisplayName("Notification Log Level")]
+        [Description("Log level for UI notification.")]
+        [Browsable(true)]
+        [JsonConverter(typeof(JsonStringEnumConverter))]
+        public LogLevel NotifLogLevel { get; set; } = LogLevel.Debug;
+
+        // [DisplayName("Background Color")]
+        // [Description("The color used for overall background.")]
+        // [Browsable(true)]
+        // [JsonConverter(typeof(JsonColorConverter))]
+        // public Color BackColor { get; set; } = Color.LightYellow;
+        #endregion
+
+        // #region Properties - internal
+        // [Browsable(false)]
+        // public bool WordWrap { get; set; } = false;
+
+        // [Browsable(false)]
+        // public bool MonitorRcv { get; set; } = false;
+
+        // [Browsable(false)]
+        // public bool MonitorSnd { get; set; } = false;
+        // #endregion
     }
 
     public class Utils
     {
         /// <summary>
-        /// Convert ansi specs like: ESC[IDm  ESC[38;5;IDm ESC[38;2;R;G;Bm to Color. TODO find better home.
+        /// Convert ansi specs like: ESC[IDm  ESC[38;5;IDm ESC[38;2;R;G;Bm to Color. TODO find better home. AnsiFromColor?
         /// </summary>
         /// <param name="ansi">Ansi string</param>
         /// <returns>Color and whether it's fg or bg. Color is Empty if invalid ansi string.</returns>
@@ -147,7 +235,7 @@ namespace NTerm
                         break;
                 }
             }
-            catch (Exception e)
+            catch
             {
                 // Indicate failure.
                 color = Color.Empty;

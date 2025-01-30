@@ -21,9 +21,9 @@ namespace NTerm
                 case 1:
                     var scriptFn = args[0];
                     //RealConsole console = new();
-                    var cli = new App();//scriptFn, console);
-                    cli.Run();
-                    cli.Dispose();
+                    var app = new App();//scriptFn, console);
+                    app.Run();
+                    app.Dispose();
                     break;
 
                 default:

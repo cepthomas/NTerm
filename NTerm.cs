@@ -1,32 +1,37 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Text.Json;
-using Ephemera.NBagOfTricks; // TODO update this.
+using System.Threading;
+using System.Windows.Forms;
+using Ephemera.NBagOfTricks;
 using Ephemera.NBagOfTricks.Slog;
-//using Ephemera.NBagOfUis;
 
 
 namespace NTerm
 {
-    public class App
+    public class App : IDisposable
     {
         #region Fields
+        /// <summary>My logger</summary>
+        readonly Logger _logger = LogManager.CreateLogger("NTerm");
+
         /// <summary>Settings</summary>
         readonly UserSettings _settings;
 
         /// <summary>Current config</summary>
-        Config _config;
+        Config _config = new();
 
         /// <summary>Client flavor.</summary>
-        IComm _client;
+        IComm _comm = new NullComm();
 
-        /// <summary>My logger</summary>
-        readonly Logger _logger = LogManager.CreateLogger("NTerm");
         #endregion
 
 
+#if FUNNY_STUFF
+        // NativeMethods.
         private const int STD_OUTPUT_HANDLE = -11;
         private const uint ENABLE_VIRTUAL_TERMINAL_PROCESSING = 0x0004;
 
@@ -41,239 +46,120 @@ namespace NTerm
 
         [DllImport("kernel32.dll")]
         public static extern uint GetLastError();
+        // bool _convertToPrintable = false;
 
-        bool _forceNewline = false;
-        Encoding _encoding = Encoding.UTF8;
-        bool _convertToPrintable = false;
-        bool _clearScreen = true;
-        bool _noStatus = false;
-
-        /// <summary>CLI prompt.</summary>
-        readonly string _prompt = ">";
-
-
-        // // dictionary of "special" keys with the corresponding string to send out when they are pressed
-        // Dictionary<ConsoleKey, string> _specialKeys = new Dictionary<ConsoleKey, string>
-        // {
-        //     { ConsoleKey.UpArrow, "\x1B[A" },
-        //     { ConsoleKey.DownArrow, "\x1B[B" },
-        //     { ConsoleKey.RightArrow, "\x1B[C" },
-        //     { ConsoleKey.LeftArrow, "\x1B[D" },
-        //     { ConsoleKey.Home, "\x1B[H" },
-        //     { ConsoleKey.End, "\x1B[F" },
-        //     { ConsoleKey.Insert, "\x1B[2~" },
-        //     { ConsoleKey.Delete, "\x1B[3~" },
-        //     { ConsoleKey.PageUp, "\x1B[5~" },
-        //     { ConsoleKey.PageDown, "\x1B[6~" },
-        //     { ConsoleKey.F1, "\x1B[11~" },
-        //     { ConsoleKey.F2, "\x1B[12~" },
-        //     { ConsoleKey.F3, "\x1B[13~" },
-        //     { ConsoleKey.F4, "\x1B[14~" },
-        //     { ConsoleKey.F5, "\x1B[15~" },
-        //     { ConsoleKey.F6, "\x1B[17~" },
-        //     { ConsoleKey.F7, "\x1B[18~" },
-        //     { ConsoleKey.F8, "\x1B[19~" },
-        //     { ConsoleKey.F9, "\x1B[20~" },
-        //     { ConsoleKey.F10, "\x1B[21~" },
-        //     { ConsoleKey.F11, "\x1B[23~" },
-        //     { ConsoleKey.F12, "\x1B[24~" }
-        // };
+         dictionary of "special" keys with the corresponding string to send out when they are pressed
+         https://en.wikipedia.org/wiki/ANSI_escape_code
+         Dictionary<ConsoleKey, string> _specialKeys = new Dictionary<ConsoleKey, string>
+         {
+             { ConsoleKey.UpArrow, "\x1B[A" },
+             { ConsoleKey.DownArrow, "\x1B[B" },
+             { ConsoleKey.RightArrow, "\x1B[C" },
+             { ConsoleKey.LeftArrow, "\x1B[D" },
+             { ConsoleKey.Home, "\x1B[H" },
+             { ConsoleKey.End, "\x1B[F" },
+             { ConsoleKey.Insert, "\x1B[2~" },
+             { ConsoleKey.Delete, "\x1B[3~" },
+             { ConsoleKey.PageUp, "\x1B[5~" },
+             { ConsoleKey.PageDown, "\x1B[6~" },
+             { ConsoleKey.F1, "\x1B[11~" },
+             { ConsoleKey.F2, "\x1B[12~" },
+             { ConsoleKey.F3, "\x1B[13~" },
+             { ConsoleKey.F4, "\x1B[14~" },
+             { ConsoleKey.F5, "\x1B[15~" },
+             { ConsoleKey.F6, "\x1B[17~" },
+             { ConsoleKey.F7, "\x1B[18~" },
+             { ConsoleKey.F8, "\x1B[19~" },
+             { ConsoleKey.F9, "\x1B[20~" },
+             { ConsoleKey.F10, "\x1B[21~" },
+             { ConsoleKey.F11, "\x1B[23~" },
+             { ConsoleKey.F12, "\x1B[24~" }
+         };
+#endif
 
 
 
-        /*
-        Console members
-
-        public static (int Left, int Top) GetCursorPosition()
-        public static bool CapsLock
-        public static bool CursorVisible
-        public static bool IsErrorRedirected
-        public static bool IsInputRedirected
-        public static bool IsOutputRedirected
-        public static bool KeyAvailable
-        public static bool NumberLock
-        public static bool TreatControlCAsInput
-        public static class Console
-        public static ConsoleColor BackgroundColor
-        public static ConsoleColor ForegroundColor
-        public static ConsoleKeyInfo ReadKey()
-        public static ConsoleKeyInfo ReadKey(bool intercept)
-        public static Encoding InputEncoding
-        public static Encoding OutputEncoding
-        public static event ConsoleCancelEventHandler? CancelKeyPress
-        public static int BufferHeight
-        public static int BufferWidth
-        public static int CursorLeft
-        public static int CursorSize
-        public static int CursorTop
-        public static int LargestWindowHeight
-        public static int LargestWindowWidth
-        public static int Read()
-        public static int WindowHeight
-        public static int WindowLeft
-        public static int WindowTop
-        public static int WindowWidth
-        public static Stream OpenStandardError()
-        public static Stream OpenStandardInput()
-        public static Stream OpenStandardOutput()
-        public static string Title
-        public static string? ReadLine()
-        public static TextReader In
-        public static TextWriter Error
-        public static TextWriter Out
-        public static void Beep(int frequency, int duration)
-        public static void Clear()
-        public static void MoveBufferArea(int sourceLeft, int sourceTop, int sourceWidth, int sourceHeight, int targetLeft, int targetTop)
-        public static void ResetColor()
-        public static void SetBufferSize(int width, int height)
-        public static void SetCursorPosition(int left, int top)
-        public static void SetError(TextWriter newError)
-        public static void SetIn(TextReader newIn)
-        public static void SetOut(TextWriter newOut)
-        public static void SetWindowPosition(int left, int top)
-        public static void SetWindowSize(int width, int height)
-        public static void Write(string? value)
-        public static void WriteLine(string? value)
-
-        */
-
-
-        #region Lifecycle
         /// <summary>
         /// Create the main form.
         /// </summary>
         public App()
         {
-            //string appDir = MiscUtils.GetAppDataDir("NTerm", "Ephemera");
-            //_settings = (UserSettings)SettingsCore.Load(appDir, typeof(UserSettings));
+            string appDir = MiscUtils.GetAppDataDir("NTerm", "Ephemera");
+            _settings = (UserSettings)SettingsCore.Load(appDir, typeof(UserSettings));
 
-
-            //StartPosition = FormStartPosition.Manual;
-            //Console.SetWindowPosition(_settings.FormGeometry.X, _settings.FormGeometry.Y);
-            //Console.SetWindowSize(_settings.FormGeometry.Width, _settings.FormGeometry.Height);
-            //Console. WindowHeight
-            //Console. WindowLeft
-            //Console. WindowTop
-            //Console. WindowWidth
-            //public static void SetWindowPosition(int left, int top)
-            //public static void SetWindowSize(int width, int height)
+            Console.SetWindowPosition(_settings.FormGeometry.X, _settings.FormGeometry.Y);
+            Console.SetWindowSize(_settings.FormGeometry.Width, _settings.FormGeometry.Height);
 
             // Set up log.
-            string logFileName = "log.txt";
-            //string logFileName = Path.Combine(appDir, "log.txt");
+            string logFileName = Path.Combine(appDir, "log.txt");
             LogManager.MinLevelFile = LogLevel.Trace;
             LogManager.MinLevelNotif = LogLevel.Trace;
             LogManager.Run(logFileName, 50000);
             LogManager.LogMessage += (object? sender, LogMessageEventArgs e) => Write(e.Message);
 
-            // cliIn.InputEvent += CliIn_InputEvent;
+#if FUNNY_STUFF
+             TODO??? attempt to enable virtual terminal escape sequence processing
+             https://learn.microsoft.com/en-us/windows/console/setconsolemodec
+             https://learn.microsoft.com/en-us/windows/console/console-virtual-terminal-sequences
+             if (!_convertToPrintable)
+             {
+                 var hnd = GetStdHandle(STD_OUTPUT_HANDLE);
+
+                 if (hnd == Defs.INVALID_HANDLE_VALUE)
+                 {
+                     // If the function fails, the return value is INVALID_HANDLE_VALUE.
+                     // To get extended error information, call GetLastError.
+                     var err = GetLastError();
+                     throw new("TODO");
+                 }
+
+                 if (hnd == 0)
+                 {
+                     //If an application does not have associated standard handles, such as a service running on an
+                     //interactive desktop, and has not redirected them, the return value is NULL.
+                     throw new("TODO");
+                 }
 
 
+                 GetConsoleMode(hnd, out uint mode);
+                 mode |= ENABLE_VIRTUAL_TERMINAL_PROCESSING;
+                 SetConsoleMode(hnd, mode);
 
-            // Open config.
-            var args = Environment.GetCommandLineArgs();
-            if (args.Length != 2)
-            {
-                Write("Invalid args. Restart please.");
-                //Environment.Exit(1);
-            }
+                 // if the above fails, it doesn't really matter - it just means escape sequences won't process nicely
+             }
 
-            try
-            {
-                string json = File.ReadAllText(args[1]);
-                object? set = JsonSerializer.Deserialize(json, typeof(Config));
-                _config = (Config)set!;
-
-                switch (_config.Protocol.ToLower())
-                {
-                    case "tcp":
-                        _client = new TcpComm(_config.Host, _config.Port);
-                        break;
-
-                    default:
-                        _logger.Error($"Invalid protocol: {_config.Protocol}");
-                        break;
-                }
-            }
-            catch (Exception ex)
-            {
-                // Errors are considered fatal.
-                _logger.Error($"Invalid config {args[1]}:{ex}");
-            }
-
-
-            // attempt to enable virtual terminal escape sequence processing
-            if (!_convertToPrintable)
-            {
-                try
-                {
-                    var iStdOut = GetStdHandle(STD_OUTPUT_HANDLE);
-
-                    if (iStdOut == Defs.INVALID_HANDLE_VALUE)
-                    {
-                        // If the function fails, the return value is INVALID_HANDLE_VALUE.
-                        // To get extended error information, call GetLastError.
-                        var err = GetLastError();
-                        throw new("TODO");
-                    }
-
-                    if (iStdOut == 0)
-                    {
-                        //If an application does not have associated standard handles, such as a service running on an
-                        //interactive desktop, and has not redirected them, the return value is NULL.
-                        throw new("TODO");
-                    }
-
-
-                    GetConsoleMode(iStdOut, out uint outConsoleMode);
-                    outConsoleMode |= ENABLE_VIRTUAL_TERMINAL_PROCESSING;
-                    SetConsoleMode(iStdOut, outConsoleMode);
-                }
-                catch
-                {
-                    // if the above fails, it doesn't really matter - it just means escape sequences won't process nicely
-                }
-            }
-
-            Console.OutputEncoding = _encoding;
 
             // set up keyboard input for program control
             ConsoleKeyInfo keyInfo = new ConsoleKeyInfo();
-            Console.TreatControlCAsInput = true; // we need to use CTRL-C to activate the REPL in CircuitPython, so it can't be used to exit the application
-
-            // // this is where data read from the serial port will be temporarily stored
-            // string received = string.Empty;
-
+            Console.TreatControlCAsInput = true; // TODO we need to use CTRL-C to activate the REPL in CircuitPython,
+                                                 // so it can't be used to exit the application
+#endif
         }
 
-
         /// <summary>
-        ///  Clean up any resources being used.
+        /// 
         /// </summary>
-        internal void Dispose()
+        public void SaveSettings()
         {
-            throw new NotImplementedException();
+            // Save user settings.
+            _settings.FormGeometry = new()
+            {
+                X = Console.WindowLeft,
+                Y = Console.WindowTop,
+                Width = Console.WindowWidth,
+                Height = Console.WindowHeight
+            };
+
+            _settings.Save();
         }
 
         /// <summary>
         ///  Clean up any resources being used.
         /// </summary>
-        /// <param name="disposing">true if managed resources should be disposed; otherwise, false.</param>
-        //protected override void Dispose(bool disposing)
-        //{
-        //    _settings.FormGeometry = new Rectangle(Location.X, Location.Y, Size.Width, Size.Height);
-        //    _settings.Save();
-
-
-        //    if (disposing && (components != null))
-        //    {
-        //        _client?.Dispose();
-        //        components.Dispose();
-        //    }
-
-        //    base.Dispose(disposing);
-        //}
-        #endregion
+        public void Dispose()
+        {
+            SaveSettings();
+        }
 
         /// <summary>
         /// 
@@ -286,23 +172,14 @@ namespace NTerm
             {
                 // Works:
                 //AsyncUsingTcpClient();
-
                 //StartServer(_config.Port);
-
-                //var res = _client.Send("djkdjsdfksdf;s");
-                //Write($"{res}: {_client.Response}");
-
-
+                //var res = _comm.Send("djkdjsdfksdf;s");
+                //Write($"{res}: {_comm.Response}");
                 //var ser = new Serial();
-
                 //var ports = ser.GetSerialPorts();
-
-
 
                 //        public List<ComPort> GetSerialPorts()
                 //        void Output(string message, bool force = false, bool newline = true, bool flush = false)
-
-
             }
             catch (Exception ex)
             {
@@ -311,100 +188,86 @@ namespace NTerm
         }
 
 
+
+        void OpenConfig(string which) // TODO
+        {
+            //Console.OutputEncoding = _encoding;
+
+            // try
+            // {
+            //     string json = File.ReadAllText(args[1]);
+            //     object? set = JsonSerializer.Deserialize(json, typeof(Config));
+            //     _config = (Config)set!;
+
+            //     switch (_config.Protocol.ToLower())
+            //     {
+            //         case "tcp":
+            //             _comm = new TcpComm(_config.Host, _config.Port);
+            //             break;
+
+            //         default:
+            //             _logger.Error($"Invalid protocol: {_config.Protocol}");
+            //             break;
+            //     }
+            // }
+            // catch (Exception ex)
+            // {
+            //     // Errors are considered fatal.
+            //     _logger.Error($"Invalid config {args[1]}:{ex}");
+            // }
+        }
+
+        /// <summary>
+        /// Run loop forever.
+        /// </summary>
+        /// <returns></returns>
         public bool Run()
         {
-            bool ret = true;
-            string? ucmd;
+            bool ok = true;
+            string? ucmd = null;
+            OpStatus res = OpStatus.Success;
 
-            // Check for something to do.
-            if (Console.KeyAvailable)
+            while (ok)
             {
-                // Console.ReadKey blocks and consumes the buffer immediately.
-                var key = Console.ReadKey(false);
-
-                if (key.KeyChar == ' ')
+                // Check for something to do.
+                if (Console.KeyAvailable)
                 {
-                    // Toggle run.
-                    ucmd = "r";
-                    Console.WriteLine("");
+                    // Console.ReadKey blocks and consumes the buffer immediately.
+                    var key = Console.ReadKey(false);
+
+                    if (_config.HotKeys.Contains(key.KeyChar))
+                    {
+                        // TODO something.
+                        // help, exit, settings, custom, ...
+                        // if (clearScreen) { Console.Clear(); }
+                    }
+                    else
+                    {
+                        // Get the rest of the line. Blocks.
+                        var s = Console.ReadLine();
+                        ucmd = s is null ? key.KeyChar.ToString() : key.KeyChar + s;
+                    }
+
+                    if (ucmd is not null)
+                    {
+                        _logger.Trace($"SND:{ucmd}");
+                        res = _comm.Send(ucmd);
+
+                        // Show results. TODO extract/convert ansi codes. Use regex.
+                        Write($"{res}: {_comm.Response}");
+                        _logger.Trace($"RCV:{res}: {_comm.Response}");
+                    }
+                    else
+                    {
+                    }
                 }
                 else
                 {
-                    // Get the rest.
-                    var res = Console.ReadLine();
-                    ucmd = res is null ? key.KeyChar.ToString() : key.KeyChar + res;
+                    Thread.Sleep(1);
                 }
-
-                if (ucmd is not null)
-                {
-                    // // Process the line. Chop up the raw command line into args.
-                    // List<string> args = StringUtils.SplitByToken(ucmd, " ");
-
-                    // // Process the command and its options.
-                    // bool valid = false;
-                    // if (args.Count > 0)
-                    // {
-                    //     foreach (var cmd in _commands!)
-                    //     {
-                    //         if (args[0] == cmd.LongName || (args[0].Length == 1 && args[0][0] == cmd.ShortName))
-                    //         {
-                    //             // Execute the command. They handle any errors internally.
-                    //             valid = true;
-
-                    //             ret = cmd.Handler(cmd, args);
-                    //             break;
-                    //         }
-                    //     }
-
-                    //     if (!valid)
-                    //     {
-                    //         Write("Invalid command");
-                    //     }
-                    // }
-                }
-                else
-                {
-                    // Assume finished.
-//                    State.Instance.ExecState = ExecState.Exit;
-                }
-
-
-                //void CliIn_InputEvent(object? sender, TermInputEventArgs e)
-                //{
-                //    OpStatus res = OpStatus.Success;
-
-                //    if (e.Line is not null)
-                //    {
-                //        _logger.Trace($"SND:{e.Line}");
-                //        res = _client.Send(e.Line);
-                //        e.Handled = true;
-                //    }
-                //    else if (e.HotKey is not null)  // single key
-                //    {
-                //        // If it's in the hotkeys send it now
-                //        var hk = (char)e.HotKey;
-                //        if (_config.HotKeys.Contains(hk))
-                //        {
-                //            _logger.Trace($"SND:{hk}");
-                //            res = _client.Send(hk.ToString());
-                //            e.Handled = true;
-                //        }
-                //        else
-                //        {
-                //            e.Handled = false;
-                //        }
-                //    }
-
-                //    // Show results. TODO extract/convert ansi codes. Use regex.
-                //    Write($"{res}: {_client.Response}");
-                //    _logger.Trace($"RCV:{res}: {_client.Response}");
-                //}
-
-
-
             }
 
-            return ret;
+            return ok;
         }
 
         /// <summary>
@@ -414,135 +277,196 @@ namespace NTerm
         void Write(string s)
         {
             Console.WriteLine(s);
-            Console.Write(_prompt);
+            Console.Write(_settings.Prompt);
         }
 
 
-
-        // void Run()
-        // {
-        //     // this is where data read from the serial port will be temporarily stored
-        //     string received = string.Empty;
-
-        //     //main loop - keep this up until user presses CTRL-X or an exception takes us down
-        //     do
-        //     {
-        //         // first things first, check for (and respect) a request to exit the program via CTRL-X
-        //         if (Console.KeyAvailable)
-        //         {
-        //             keyInfo = Console.ReadKey(intercept: true);
-
-        //             if ((keyInfo.Key == ConsoleKey.H) && (keyInfo.Modifiers == ConsoleModifiers.Control))
-        //             {
-        //                 ShowHelp();
-        //             }
-
-        //             if ((keyInfo.Key == ConsoleKey.X) && (keyInfo.Modifiers == ConsoleModifiers.Control))
-        //             {
-        //                 Output("\n<<< SimplySerial session terminated via CTRL-X >>>");
-        //                 ExitProgram(silent: true);
-        //             }
-
-        //         }
-
-        //         // this is the core functionality - loop while the serial port is open
-        //         while (_serialPort.IsOpen)
-        //         {
-        //             try
-        //             {
-        //                 // process keypresses for transmission through the serial port
-        //                 if (Console.KeyAvailable)
-        //                 {
-        //                     // determine what key is pressed (including modifiers)
-        //                     keyInfo = Console.ReadKey(intercept: true);
-
-        //                     // exit the program if CTRL-X was pressed
-        //                     if ((keyInfo.Key == ConsoleKey.X) && (keyInfo.Modifiers == ConsoleModifiers.Control))
-        //                     {
-        //                         Output("\n<<< SimplySerial session terminated via CTRL-X >>>");
-        //                         throw new();
-        //                     }
-
-        //                     // check for keys that require special processing (cursor keys, etc.)
-        //                     else if (_specialKeys.ContainsKey(keyInfo.Key))
-        //                         _serialPort.Write(_specialKeys[keyInfo.Key]);
-
-        //                     // everything else just gets sent right on through
-        //                     else
-        //                         _serialPort.Write(Convert.ToString(keyInfo.KeyChar));
-        //                 }
-
-        //                 // process data coming in from the serial port
-        //                 received = _serialPort.ReadExisting();
-
-        //                 // if anything was received, process it
-        //                 if (received.Length > 0)
-        //                 {
-        //                     // if we're trying to filter out title/status updates in received data, try to ensure we've got the whole string
-        //                     if (_noStatus && received.Contains("\x1b"))
-        //                     {
-        //                         Thread.Sleep(100);
-        //                         received += _serialPort.ReadExisting();
-        //                     }
-
-        //                     if (_forceNewline)
-        //                         received = received.Replace("\r", "\n");
-
-        //                     // write what was received to console
-        //                     Output(received, force: true, newline: false);
-        //                     start = DateTime.Now;
-        //                 }
-        //                 else
-        //                 {
-        //                     Thread.Sleep(1);
-        //                 }
-        //             }
-        //             catch (Exception e)
-        //             {
-
-        //             }
-        //         }
-        //     } while (_autoConnect > AutoConnect.NONE);
-
-        //     // if we get to this point, we should be exiting gracefully
-        //     throw new("<<< SimplySerial session terminated >>>");
-        // }
-
-
         /// <summary>
-        /// Writes messages using Console.WriteLine() as long as the 'Quiet' option hasn't been enabled
+        /// Edit the common options in a property grid.
         /// </summary>
-        /// <param name="message">Message to output (assuming 'Quiet' is false)</param>
-        // void Output(string message, bool force = false, bool newline = true, bool flush = false)
-        // {
-        //     if (!_quiet || force)
-        //     {
-        //         if (newline)
-        //             message += "\n";
+        void Settings_Click(object? sender, EventArgs e)
+        {
+            //var changes = SettingsEditor.Edit(_settings, "User Settings", 500);
 
-        //         if (message.Length > 0)
-        //         {
-        //             if (_noStatus)
-        //             {
-        //                 Regex r = new Regex(@"\x1b\][02];.*\x1b\\");
-        //                 message = r.Replace(message, string.Empty);
-        //             }
 
-        //             if (_convertToPrintable)
-        //             {
-        //                 string newMessage = "";
-        //                 foreach (byte c in message)
-        //                 {
-        //                     if ((c > 31 && c < 128) || (c == 8) || (c == 9) || (c == 10) || (c == 13))
-        //                         newMessage += (char)c;
-        //                     else
-        //                         newMessage += $"[{c:X2}]";
-        //                 }
-        //                 message = newMessage;
-        //             }
-        //             Console.Write(message);
-        //         }
-        //     }
-        // }
+
+        //public static List<(string name, string cat)> Edit(object settings, string title, int height, bool expand = false)
+        //{
+            //// Make a copy for possible restoration.
+            //Type t = settings.GetType();
+            //JsonSerializerOptions opts = new();
+            //string original = JsonSerializer.Serialize(settings, t, opts);
+
+            PropertyGrid pg = new()
+            {
+                Dock = DockStyle.Fill,
+                PropertySort = PropertySort.Categorized,
+                SelectedObject = _settings
+            };
+
+            //if (settings is SettingsCore)
+            //{
+            //    pg.AddButton("Clear recent", null, "Clear recent file list", (_, __) => (settings as SettingsCore)!.RecentFiles.Clear());
+            //}
+
+            using Form f = new()
+            {
+                Text = "User Settings",
+                AutoScaleMode = AutoScaleMode.None,
+                Location = Cursor.Position,
+                StartPosition = FormStartPosition.Manual,
+                FormBorderStyle = FormBorderStyle.SizableToolWindow,
+                ShowIcon = false,
+                ShowInTaskbar = false
+            };
+            f.ClientSize = new(450, 500); // do after construction
+
+            // Detect changes of interest.
+            bool restart = false;
+            pg.PropertyValueChanged += (sdr, args) =>
+            {
+                var name = args.ChangedItem!.PropertyDescriptor!.Name;
+                var cat = args.ChangedItem!.PropertyDescriptor!.Category;
+                restart = true;
+            };
+
+            pg.ExpandAllGridItems();
+            f.Controls.Add(pg);
+            f.ShowDialog();
+
+            if (restart)
+            {
+                MessageBox.Show("Restart required for device changes to take effect");
+            }
+        }
+
+
+#if FUNNY_STUFF
+         void Run()
+         {
+             // this is where data read from the serial port will be temporarily stored
+             string received = string.Empty;
+
+             //main loop - keep this up until user presses CTRL-X or an exception takes us down
+             do
+             {
+                 // first things first, check for (and respect) a request to exit the program via CTRL-X
+                 if (Console.KeyAvailable)
+                 {
+                     keyInfo = Console.ReadKey(intercept: true);
+
+                     if ((keyInfo.Key == ConsoleKey.H) && (keyInfo.Modifiers == ConsoleModifiers.Control))
+                     {
+                         ShowHelp();
+                     }
+
+                     if ((keyInfo.Key == ConsoleKey.X) && (keyInfo.Modifiers == ConsoleModifiers.Control))
+                     {
+                         Output("\n<<< SimplySerial session terminated via CTRL-X >>>");
+                         ExitProgram(silent: true);
+                     }
+
+                 }
+
+                 // this is the core functionality - loop while the serial port is open
+                 while (_serialPort.IsOpen)
+                 {
+                     try
+                     {
+                         // process keypresses for transmission through the serial port
+                         if (Console.KeyAvailable)
+                         {
+                             // determine what key is pressed (including modifiers)
+                             keyInfo = Console.ReadKey(intercept: true);
+
+                             // exit the program if CTRL-X was pressed
+                             if ((keyInfo.Key == ConsoleKey.X) && (keyInfo.Modifiers == ConsoleModifiers.Control))
+                             {
+                                 Output("\n<<< SimplySerial session terminated via CTRL-X >>>");
+                                 throw new();
+                             }
+
+                             // check for keys that require special processing (cursor keys, etc.)
+                             else if (_specialKeys.ContainsKey(keyInfo.Key))
+                                 _serialPort.Write(_specialKeys[keyInfo.Key]);
+
+                             // everything else just gets sent right on through
+                             else
+                                 _serialPort.Write(Convert.ToString(keyInfo.KeyChar));
+                         }
+
+                         // process data coming in from the serial port
+                         received = _serialPort.ReadExisting();
+
+                         // if anything was received, process it
+                         if (received.Length > 0)
+                         {
+                             // if we're trying to filter out title/status updates in received data, try to ensure we've got the whole string
+                             if (_noStatus && received.Contains("\x1b"))
+                             {
+                                 Thread.Sleep(100);
+                                 received += _serialPort.ReadExisting();
+                             }
+
+                             if (_forceNewline)
+                                 received = received.Replace("\r", "\n");
+
+                             // write what was received to console
+                             Output(received, force: true, newline: false);
+                             start = DateTime.Now;
+                         }
+                         else
+                         {
+                             Thread.Sleep(1);
+                         }
+                     }
+                     catch (Exception e)
+                     {
+
+                     }
+                 }
+             } while (_autoConnect > AutoConnect.NONE);
+
+             // if we get to this point, we should be exiting gracefully
+             throw new("<<< SimplySerial session terminated >>>");
+         }
+
+
+        / <summary>
+        / Writes messages using Console.WriteLine() as long as the 'Quiet' option hasn't been enabled
+        / </summary>
+        / <param name="message">Message to output (assuming 'Quiet' is false)</param>
+         void Output(string message, bool force = false, bool newline = true, bool flush = false)
+         {
+             if (!_quiet || force)
+             {
+                 if (newline)
+                     message += "\n";
+
+                 if (message.Length > 0)
+                 {
+                     if (_noStatus)
+                     {
+                         Regex r = new Regex(@"\x1b\][02];.*\x1b\\");
+                         message = r.Replace(message, string.Empty);
+                     }
+
+                     if (_convertToPrintable)
+                     {
+                         string newMessage = "";
+                         foreach (byte c in message)
+                         {
+                             if ((c > 31 && c < 128) || (c == 8) || (c == 9) || (c == 10) || (c == 13))
+                                 newMessage += (char)c;
+                             else
+                                 newMessage += $"[{c:X2}]";
+                         }
+                         message = newMessage;
+                     }
+                     Console.Write(message);
+                 }
+             }
+         }
+#endif
     }
 }

@@ -8,7 +8,7 @@ namespace NTermTest
 {
     internal class Program
     {
-        static void Main(string[] args)
+        static void Main_TODO(string[] args)
         {
             bool ok = false;
 

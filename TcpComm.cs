@@ -21,7 +21,7 @@ namespace NTerm
 
         public string Response { get; private set; } = "";
 
-        public OpStatus Send(string request) { return SendAsync(request).Result; }
+        public OpStatus Send(string msg) { return SendAsync(msg).Result; }
         #endregion
 
         #region Fields
@@ -86,6 +86,7 @@ namespace NTerm
                 bool sendDone = false;
                 int num = bytes.Length;
                 int ind = 0;
+                
                 while (!sendDone)
                 {
                     // Do a chunk.
