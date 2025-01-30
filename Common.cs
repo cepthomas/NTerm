@@ -85,7 +85,7 @@ namespace NTerm
         public CommType CommType { get; set; } = CommType.None;
 
         [DisplayName("Communication Arguments")] // TODO could get fancier later.
-        [Description("Type specific args.\n\"127.0.0.1 59120\"\n\"COM1 115200 EON 678 011.5\"")]
+        [Description("Type specific args.\n\"127.0.0.1 59120\"\n\"COM1 115200 E-O-N 6-7-8 0-1-1.5\"")]
         [Browsable(true)]
         public string Args { get; set; } ="???";
 

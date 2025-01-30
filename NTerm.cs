@@ -22,11 +22,10 @@ namespace NTerm
         readonly UserSettings _settings;
 
         /// <summary>Current config</summary>
-        Config _config = new();
+        readonly Config _config = new();
 
         /// <summary>Client flavor.</summary>
-        IComm _comm = new NullComm();
-
+        readonly IComm _comm = new NullComm();
         #endregion
 
 
@@ -84,14 +83,14 @@ namespace NTerm
         /// </summary>
         public App()
         {
-            string appDir = MiscUtils.GetAppDataDir("NTerm", "Ephemera");
+            var appDir = MiscUtils.GetAppDataDir("NTerm", "Ephemera");
             _settings = (UserSettings)SettingsCore.Load(appDir, typeof(UserSettings));
 
             Console.SetWindowPosition(_settings.FormGeometry.X, _settings.FormGeometry.Y);
             Console.SetWindowSize(_settings.FormGeometry.Width, _settings.FormGeometry.Height);
 
             // Set up log.
-            string logFileName = Path.Combine(appDir, "log.txt");
+            var logFileName = Path.Combine(appDir, "log.txt");
             LogManager.MinLevelFile = LogLevel.Trace;
             LogManager.MinLevelNotif = LogLevel.Trace;
             LogManager.Run(logFileName, 50000);
@@ -235,30 +234,77 @@ namespace NTerm
                     // Console.ReadKey blocks and consumes the buffer immediately.
                     var key = Console.ReadKey(false);
 
-                    if (_config.HotKeys.Contains(key.KeyChar))
-                    {
-                        // TODO something.
-                        // help, exit, settings, custom, ...
-                        // if (clearScreen) { Console.Clear(); }
-                    }
-                    else
-                    {
-                        // Get the rest of the line. Blocks.
-                        var s = Console.ReadLine();
-                        ucmd = s is null ? key.KeyChar.ToString() : key.KeyChar + s;
-                    }
 
-                    if (ucmd is not null)
-                    {
-                        _logger.Trace($"SND:{ucmd}");
-                        res = _comm.Send(ucmd);
+                    // public char KeyChar
+                    // 
+                    // public ConsoleKey Key
+                    // None = 0,
+                    // Backspace = 8,
+                    // Tab = 9,
+                    // Clear = 12,
+                    // Enter = 13,
+                    // Escape = 27,
+                    // Spacebar = 32,
+                    // PageUp = 33,
+                    // Home = 36,
+                    // LeftArrow = 37,
+                    // The 1 key.
+                    // D1 = 49,
+                    // A = 65,
+                    // 
+                    // public ConsoleModifiers Modifiers
+                    // Alt = 1,
+                    // Shift = 2,
+                    // Control = 4
+                    var lkey = key.KeyChar.ToString().ToLower();
 
-                        // Show results. TODO extract/convert ansi codes. Use regex.
-                        Write($"{res}: {_comm.Response}");
-                        _logger.Trace($"RCV:{res}: {_comm.Response}");
-                    }
-                    else
+                    switch (key.Modifiers, lkey)
                     {
+                        case (ConsoleModifiers.None, _):
+                            // Get the rest of the line. Blocks.
+                            var s = Console.ReadLine();
+                            ucmd = s is null ? key.KeyChar.ToString() : key.KeyChar + s;
+                            _logger.Trace($"SND:{ucmd}");
+                            res = _comm.Send(ucmd);
+                            // Show results.
+                            Write($"{res}: {_comm.Response}");
+                            _logger.Trace($"RCV:{res}: {_comm.Response}");
+                            break;
+
+                        // Commands.
+                        case (ConsoleModifiers.Control, "q"):
+                            // Quit
+                            Environment.Exit(0);
+                            break;
+
+                        case (ConsoleModifiers.Control, "s"):
+                            // Settings
+                            EditSettings();
+                            break;
+
+                        case (ConsoleModifiers.Control, "c"):
+                            // Settings
+                            EditSettings();
+                            break;
+
+                        case (ConsoleModifiers.Control, "?"):
+                            // Help TODO
+                            break;
+
+                        // ctrl: ?=help, q=exit/quit, s=edit/settings, list configs, select config
+
+                        case (ConsoleModifiers.Alt, _):
+                            // Hotkeys.
+                            if (_config.HotKeys.Contains(lkey))
+                            {
+                                // TODO something.
+                                //   custom, alt-z="ababab" ...
+                            }
+                            break;
+
+                        default:
+                            //Write("Invalid command");
+                            break;
                     }
                 }
                 else
@@ -280,23 +326,11 @@ namespace NTerm
             Console.Write(_settings.Prompt);
         }
 
-
         /// <summary>
         /// Edit the common options in a property grid.
         /// </summary>
-        void Settings_Click(object? sender, EventArgs e)
+        void EditSettings()
         {
-            //var changes = SettingsEditor.Edit(_settings, "User Settings", 500);
-
-
-
-        //public static List<(string name, string cat)> Edit(object settings, string title, int height, bool expand = false)
-        //{
-            //// Make a copy for possible restoration.
-            //Type t = settings.GetType();
-            //JsonSerializerOptions opts = new();
-            //string original = JsonSerializer.Serialize(settings, t, opts);
-
             PropertyGrid pg = new()
             {
                 Dock = DockStyle.Fill,
@@ -336,6 +370,7 @@ namespace NTerm
 
             if (restart)
             {
+                SaveSettings();
                 MessageBox.Show("Restart required for device changes to take effect");
             }
         }
