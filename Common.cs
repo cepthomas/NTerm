@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Drawing;
+using System.Drawing.Design;
 using System.Linq;
 using System.Text;
 using System.Text.Json;
@@ -37,37 +38,17 @@ namespace NTerm
         OpStatus Send(string msg);
     }
 
-
+    /// <summary>Default comm.</summary>
     public class NullComm : IComm
     {
         #region IComm implementation
         public int ResponseTime { get; set; } = 500;
         public int BufferSize { get; set; } = 4096;
-        public string Response { get; private set; } = "";
+        public string Response { get; private set; } = "Nothing to see here";
         public void Dispose() { }
-        public OpStatus Send(string msg) { return OpStatus.Success; }
+        public OpStatus Send(string msg) { Response = $"<<<{DateTime.Now}" ; return OpStatus.Success; }
         #endregion
     }
-
-
-    // #region Console abstraction to support testing
-    // public interface IConsole
-    // {
-    //     bool KeyAvailable { get; }
-    //     bool CursorVisible { get; set; }
-    //     string Title { get; set; }
-    //     int BufferWidth { get; set; }
-    //     void Write(string text);
-    //     void WriteLine(string text);
-    //     string? ReadLine();
-    //     ConsoleKeyInfo ReadKey(bool intercept);
-    //     (int left, int top) GetCursorPosition();
-    //     void SetCursorPosition(int left, int top);
-    // }
-    // #endregion
-
-
-
 
     /// <summary>What are we doing today?</summary>
     [Serializable]
@@ -105,24 +86,50 @@ namespace NTerm
         // public bool ShowStatus { get; set; } = false;
 
         [DisplayName("Hot Keys")]
-        [Description("Hot key definitions.\n\"key command\"")] // like ctrl-k  alt+shift+o
+        [Description("Hot key definitions.\n\"key=command\"")] // like "ctrl-k=do something"  "alt+shift+o=send me"
         [Browsable(true)]
-        public string HotKeys { get; set; } = "";
+        public List<string> HotKeys { get; set; } = new();
+
+        //        public ConsoleKeyInfo(char keyChar, ConsoleKey key, bool shift, bool alt, bool control)
+        //public readonly struct ConsoleKeyInfo : IEquatable<ConsoleKeyInfo>
+        //{
+        //    private readonly char _keyChar;
+        //    private readonly ConsoleKey _key;
+        //    private readonly ConsoleModifiers _mods;
+        public Dictionary<string, string> GetHotKeys()
+        {
+            return new();
+        }
     }
 
     [Serializable]
     public sealed class UserSettings : SettingsCore
     {
         #region Properties - persisted editable
-        [DisplayName("Configurations")]
-        [Description("Your favorites.")]
-        [Browsable(true)]
-        public List<Config> Configs { get; set; } = new();
-
         [DisplayName("Open Last Config")]
         [Description("Open last config on start.")]
         [Browsable(true)]
         public bool OpenLastConfig { get; set; } = true;
+
+
+        #region Non-persisted Properties
+        //[Browsable(false)]
+        //public bool Valid { get; set; } = false;
+        #endregion
+
+        [DisplayName("Current Configuration")]
+        [Description("Playing now.")]
+        [Browsable(true)]
+        [JsonIgnore]
+        [Editor(typeof(ConfigSelector), typeof(UITypeEditor))]
+        public string CurrentConfig { get; set; } = "";
+        //public int CurrentConfig { get; set; } = -1;
+        //public List<string> CurrentConfig { get; set; } = new();
+
+        [DisplayName("Configurations")]
+        [Description("All your favorites.")]
+        [Browsable(true)]
+        public List<Config> Configs { get; set; } = new();
 
         [DisplayName("Prompt")]
         [Description("CLI prompt.")]
@@ -148,16 +155,10 @@ namespace NTerm
         // public Color BackColor { get; set; } = Color.LightYellow;
         #endregion
 
-        // #region Properties - internal
-        // [Browsable(false)]
-        // public bool WordWrap { get; set; } = false;
-
-        // [Browsable(false)]
-        // public bool MonitorRcv { get; set; } = false;
-
-        // [Browsable(false)]
-        // public bool MonitorSnd { get; set; } = false;
-        // #endregion
+        #region Properties - internal
+        [Browsable(false)]
+        public int LastConfig { get; set; } = -1;
+        #endregion
     }
 
     public class Utils

@@ -14,12 +14,7 @@
     <Compile Remove="_ConsoleEx.cs" />
     <Compile Remove="_stuff.cs" />
     <Compile Remove="_SerialComm_1.cs" />
-    <Compile Remove="MainForm.cs" />
-    <Compile Remove="MainForm.Designer.cs" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <EmbeddedResource Remove="MainForm.resx" />
+    <Compile Remove="_vkey.cs" />
   </ItemGroup>
 
   <ItemGroup>

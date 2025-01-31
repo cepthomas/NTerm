@@ -1,50 +1,46 @@
+using System;
+using System.Collections.Generic;
+using System.ComponentModel;
+using System.Drawing;
+using System.Drawing.Design;
+using System.Linq;
 using System.Text.Json;
+using System.Windows.Forms;
+using System.Windows.Forms.Design;
 using Ephemera.NBagOfTricks; // TODO update this.
 using Ephemera.NBagOfTricks.Slog;
-using Ephemera.NBagOfUis;
 
 
 namespace NTerm
 {
     public partial class MainForm : Form
     {
+        /// <summary>Edited flag.</summary>
+        public bool Dirty { get; private set; } = false;
+
+
         #region Fields
         /// <summary>Settings</summary>
-        readonly UserSettings _settings;
-
-        /// <summary>Current config</summary>
-        Config _config;
-
-        /// <summary>Client flavor.</summary>
-        IComm _client;
+        UserSettings _settings;
 
         /// <summary>My logger</summary>
-        readonly Logger _logger = LogManager.CreateLogger("MainForm");
+        //readonly Logger _logger = LogManager.CreateLogger("MainForm");
         #endregion
+
+
 
         #region Lifecycle
         /// <summary>
         /// Create the main form.
         /// </summary>
-        public MainForm()
+        public MainForm(UserSettings settings)
         {
             InitializeComponent();
 
-            string appDir = MiscUtils.GetAppDataDir("NTerm", "Ephemera");
-            _settings = (UserSettings)SettingsCore.Load(appDir, typeof(UserSettings));
+            _settings = settings;
 
-            StartPosition = FormStartPosition.Manual;
-            Location = new Point(_settings.FormGeometry.X, _settings.FormGeometry.Y);
-            Size = new Size(_settings.FormGeometry.Width, _settings.FormGeometry.Height);
-
-            // Set up log.
-            string logFileName = Path.Combine(appDir, "log.txt");
-            LogManager.MinLevelFile = LogLevel.Trace;
-            LogManager.MinLevelNotif = LogLevel.Trace;
-            LogManager.Run(logFileName, 50000);
-            LogManager.LogMessage += (object? sender, LogMessageEventArgs e) => cliOut.AppendLine(e.Message);
-
-            cliIn.InputEvent += CliIn_InputEvent;
+            ShowIcon = false;
+            ShowInTaskbar = false;
 
             btnGo.Click += BtnGo_Click;
         }
@@ -55,36 +51,17 @@ namespace NTerm
         /// <param name="e"></param>
         protected override void OnLoad(EventArgs e)
         {
-            // Open config.
-            var args = Environment.GetCommandLineArgs();
-            if (args.Length != 2)
-            {
-                cliOut.AppendLine("Invalid args. Restart please.");
-                //Environment.Exit(1);
-            }
+            pgSettings.PropertySort = PropertySort.Categorized;
+            pgSettings.SelectedObject = _settings;
+            pgSettings.ExpandAllGridItems();
 
-            try
+            // Detect changes of interest.
+            pgSettings.PropertyValueChanged += (sdr, args) =>
             {
-                string json = File.ReadAllText(args[1]);
-                object? set = JsonSerializer.Deserialize(json, typeof(Config));
-                _config = (Config)set!;
-
-                switch (_config.Protocol.ToLower())
-                {
-                    case "tcp":
-                        _client = new TcpProtocol(_config.Host, _config.Port);
-                        break;
-
-                    default:
-                        _logger.Error($"Invalid protocol: {_config.Protocol}");
-                        break;
-                }
-            }
-            catch (Exception ex)
-            {
-                // Errors are considered fatal.
-                _logger.Error($"Invalid config {args[1]}:{ex}");
-            }
+                var name = args.ChangedItem!.PropertyDescriptor!.Name;
+                var cat = args.ChangedItem!.PropertyDescriptor!.Category;
+                Dirty = true;
+            };
 
             base.OnLoad(e);
         }
@@ -95,8 +72,6 @@ namespace NTerm
         /// <param name="e"></param>
         protected override void OnFormClosing(FormClosingEventArgs e)
         {
-            _settings.FormGeometry = new Rectangle(Location.X, Location.Y, Size.Width, Size.Height);
-            _settings.Save();
 
             base.OnFormClosing(e);
         }
@@ -109,7 +84,6 @@ namespace NTerm
         {
             if (disposing && (components != null))
             {
-                _client?.Dispose();
                 components.Dispose();
             }
 
@@ -135,57 +109,14 @@ namespace NTerm
                 //cliOut.AppendLine($"{res}: {_client.Response}");
 
 
-                var ser = new Serial();
-
-                var ports = ser.GetSerialPorts();
-
-
-
-                //        public List<ComPort> GetSerialPorts()
-                //        void Output(string message, bool force = false, bool newline = true, bool flush = false)
-
+                //var ser = new Serial();
+                //var ports = ser.GetSerialPorts();
 
             }
             catch (Exception ex)
             {
-                _logger.Error($"Fatal error: {ex.Message}");
+                //_logger.Error($"Fatal error: {ex.Message}");
             }
-        }
-
-        /// <summary>
-        /// 
-        /// </summary>
-        /// <param name="sender"></param>
-        /// <param name="e"></param>
-        void CliIn_InputEvent(object? sender, TermInputEventArgs e)
-        {
-            OpStatus res = OpStatus.Success;
-
-            if (e.Line is not null)
-            {
-                _logger.Trace($"SND:{e.Line}");
-                res = _client.Send(e.Line);
-                e.Handled = true;
-            }
-            else if (e.HotKey is not null)  // single key
-            {
-                // If it's in the hotkeys send it now
-                var hk = (char)e.HotKey;
-                if (_config.HotKeys.Contains(hk))
-                {
-                    _logger.Trace($"SND:{hk}");
-                    res = _client.Send(hk.ToString());
-                    e.Handled = true;
-                }
-                else
-                {
-                    e.Handled = false;
-                }
-            }
-
-            // Show results. TODO extract/convert ansi codes. Use regex.
-            cliOut.AppendLine($"{res}: {_client.Response}");
-            _logger.Trace($"RCV:{res}: {_client.Response}");
         }
     }
 }
