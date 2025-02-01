@@ -17,6 +17,11 @@ namespace NTerm
 {
     public class SerialComm : IComm
     {
+        #region Fields
+        readonly Logger _logger = LogManager.CreateLogger("SerialComm");
+        SerialPort? _serialPort = null;
+        #endregion
+
         #region IComm implementation
         public int ResponseTime { get; set; } = 500;
 
@@ -25,65 +30,53 @@ namespace NTerm
         public string Response { get; private set; } = "";
 
         public OpStatus Send(string msg) { return SendAsync(msg).Result; }
-        #endregion
 
-        #region Fields
-        readonly Logger _logger = LogManager.CreateLogger("SerialComm");
-        SerialPort _serialPort = new();
-        #endregion
-        
-        /// <summary>
-        /// 
-        /// </summary>
-        /// <param name="name"></param>
-        /// <param name="baud"></param>
-        /// <param name="parity"></param>
-        /// <param name="dataBits"></param>
-        /// <param name="stopBits"></param>
-        public SerialComm(string name, int baud, Parity parity = Parity.None, int dataBits = 8, StopBits stopBits = StopBits.One) //string[] args)
+        public OpStatus Init(string args)//TODO
         {
-            try
-            {
-                Console.WriteLine("Available Ports:");
-                foreach (string s in SerialPort.GetPortNames())
-                {
-                    Console.WriteLine("   {0}", s);
-                }
+            OpStatus stat = OpStatus.Success;
 
-                _serialPort = new()
-                {
-                    PortName = name,
-                    BaudRate = baud,
-                    Parity = parity,
-                    DataBits = dataBits,
-                    StopBits = stopBits,
-                    //_serialPort.Handshake = 
-                    ReadBufferSize = BufferSize,
-                    WriteBufferSize = BufferSize,
-                    ReadTimeout = ResponseTime,
-                    WriteTimeout = ResponseTime
-                };
+            //try
+            //{
+            //    Console.WriteLine("Available Ports:");
+            //    foreach (string s in SerialPort.GetPortNames())
+            //    {
+            //        Console.WriteLine("   {0}", s);
+            //    }
 
-                _serialPort.Open();
-            }
-            catch (Exception e)
-            {
-                // Fatal.
-                _logger.Error($"Fatal error:{e}");
-                Response = $"Fatal error: {e.Message}";
-                //res = OpStatus.Error;
-            }
+            //    _serialPort = new()
+            //    {
+            //        PortName = name,
+            //        BaudRate = baud,
+            //        Parity = parity,
+            //        DataBits = dataBits,
+            //        StopBits = stopBits,
+            //        //_serialPort.Handshake = 
+            //        ReadBufferSize = BufferSize,
+            //        WriteBufferSize = BufferSize,
+            //        ReadTimeout = ResponseTime,
+            //        WriteTimeout = ResponseTime
+            //    };
+
+            //    _serialPort.Open();
+            //}
+            //catch (Exception e)
+            //{
+            //    // Fatal.
+            //    _logger.Error($"Fatal error:{e}");
+            //    Response = $"Fatal error: {e.Message}";
+            //    //res = OpStatus.Error;
+            //}
+
+            return stat;
         }
 
-        /// <summary>
-        /// Clean up.
-        /// </summary>
         public void Dispose()
         {
             _serialPort?.Close();
             _serialPort?.Dispose();
             _serialPort = null;
         }
+        #endregion
 
         /// <summary>
         /// Does actual work of sending/receiving using async.

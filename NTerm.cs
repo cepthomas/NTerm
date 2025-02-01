@@ -20,13 +20,13 @@ namespace NTerm
         readonly Logger _logger = LogManager.CreateLogger("NTerm");
 
         /// <summary>Settings</summary>
-        readonly UserSettings _settings;
+        UserSettings _settings = new();
 
         /// <summary>Current config</summary>
-        readonly Config? _config = new();
+        Config? _config = null;
 
         /// <summary>Client flavor.</summary>
-        readonly IComm? _comm = null;
+        IComm? _comm = null;
         #endregion
 
         #region Lifecycle
@@ -35,15 +35,13 @@ namespace NTerm
         /// </summary>
         public App()
         {
-            var appDir = MiscUtils.GetAppDataDir("NTerm", "Ephemera");
-            _settings = (UserSettings)SettingsCore.Load(appDir, typeof(UserSettings));
+            LoadSettings();
 
-            _fake();
+            DoFake();
 
             // Set up log.
+            var appDir = MiscUtils.GetAppDataDir("NTerm", "Ephemera");
             var logFileName = Path.Combine(appDir, "log.txt");
-            LogManager.MinLevelFile = _settings.FileLogLevel;
-            LogManager.MinLevelNotif = _settings.NotifLogLevel;
             LogManager.Run(logFileName, 50000);
             LogManager.LogMessage += (object? sender, LogMessageEventArgs e) => Write(e.Message);
 
@@ -58,10 +56,11 @@ namespace NTerm
         public void Dispose()
         {
             SaveSettings();
+            _comm?.Dispose();
         }
         #endregion
 
-        void _fake()
+        void DoFake()
         {
             UserSettings ss = new();
             Random rnd = new();
@@ -89,10 +88,9 @@ namespace NTerm
             ss.CurrentConfig = "";
             var ed = new Editor() { Settings = ss };
             ed.ShowDialog();
-            if (ss.Dirty)
-            {
-            }
-
+            LoadSettings();
+            
+            
             // Works:
             //AsyncUsingTcpClient();
             //StartServer(_config.Port);
@@ -141,11 +139,7 @@ namespace NTerm
                         case (ConsoleModifiers.Control, "s"): // Controlkey?
                             var ed = new Editor() { Settings = _settings };
                             ed.ShowDialog();
-                            if (_settings.Dirty)
-                            {
-                                //SaveSettings();
-                                //MessageBox.Show("Restart required for device changes to take effect");
-                            }
+                            LoadSettings();
                             break;
 
                         case (ConsoleModifiers.Control, "?"):
@@ -183,57 +177,59 @@ namespace NTerm
             return ok;
         }
 
-
-
-
-
-        #region Config
-
-
-
-
-        void OpenConfig(uint which) // TODO
-        {
-            //if (which < 0)
-            //{
-            //    which = _settings
-            //}
-            //if (which < _settings.Configs.Count)
-
-            ///// <summary>Current config</summary>
-            //readonly Config _config = new();
-
-            ///// <summary>Client flavor.</summary>
-            //readonly IComm _comm = new NullComm();
-        }
-
-
+        #region Settings
         /// <summary>
         /// 
         /// </summary>
-        void SelectConfig()
+        /// <exception cref="ArgumentException"></exception>
+        void LoadSettings()
         {
-            // TODO
+            var appDir = MiscUtils.GetAppDataDir("NTerm", "Ephemera");
+            _settings = (UserSettings)SettingsCore.Load(appDir, typeof(UserSettings));
+            LogManager.MinLevelFile = _settings.FileLogLevel;
+            LogManager.MinLevelNotif = _settings.NotifLogLevel;
 
+            var lc = _settings.Configs.Select(x => x.Name).ToList();
+
+            if (lc.Count > 0)
+            {
+                _config = _settings.Configs[0];
+                OpStatus stat = OpStatus.Success;
+
+                _comm = _config.CommType switch
+                {
+                    CommType.Tcp => new TcpComm(),
+                    CommType.Serial => new SerialComm(),
+                    CommType.Null => new NullComm(),
+                   _ => throw new ArgumentException(_config.CommType.ToString()),
+                };
+
+                // Init and check stat.
+                stat = _comm.Init(_config.Args);
+
+                // TODO init hotkeys.
+            }
+            else
+            {
+                _config = null;
+                _comm = null;
+                throw new ArgumentException("TODO select a config");
+            }
         }
-
-        #endregion
-
-        #region Settings
 
         /// <summary>
         /// 
         /// </summary>
         public void SaveSettings()
         {
-            // Save user settings.
-            _settings.FormGeometry = new()
-            {
-                X = Console.WindowLeft,
-                Y = Console.WindowTop,
-                Width = Console.WindowWidth,
-                Height = Console.WindowHeight
-            };
+            //// Save user settings.
+            //_settingsX.FormGeometry = new()
+            //{
+            //    X = Console.WindowLeft,
+            //    Y = Console.WindowTop,
+            //    Width = Console.WindowWidth,
+            //    Height = Console.WindowHeight
+            //};
 
             _settings.Save();
         }

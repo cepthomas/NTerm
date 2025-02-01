@@ -9,21 +9,13 @@
     <ImplicitUsings>disable</ImplicitUsings>
   </PropertyGroup>
 
-  <ItemGroup>
-    <Compile Remove="_old\**" />
-    <EmbeddedResource Remove="_old\**" />
-    <None Remove="_old\**" />
-  </ItemGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
+    <NoWarn>1701;1702;CA1816</NoWarn>
+  </PropertyGroup>
 
-  <ItemGroup>
-    <Compile Remove="Commander.cs" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <None Remove="LICENSE" />
-    <None Remove="nterm.sublime-project" />
-    <None Remove="nterm.sublime-workspace" />
-  </ItemGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
+    <NoWarn>1701;1702;CA1816</NoWarn>
+  </PropertyGroup>
 
   <ItemGroup>
     <PackageReference Include="System.IO.Ports" Version="9.0.0" />

@@ -9,28 +9,6 @@ using System.Text.Json;
 using System.Windows.Forms;
 using System.Windows.Forms.Design;
 
-//    UserSettings
-//
-//        ?? valid, 
-//        public string CurrentConfig { get; set; } = "";
-//
-//        ?? current still valid - removed, 
-//        public List<Config> Configs { get; set; } = new();
-//
-//        restart:
-//        public string Prompt { get; set; } = ">";
-//        public LogLevel FileLogLevel { get; set; } = LogLevel.Trace;
-//        public LogLevel NotifLogLevel { get; set; } = LogLevel.Debug;
-//        dc:
-//        public bool OpenLastConfig { get; set; } = true;
-//
-//    Config
-//        all: reload this config if current
-//        public string Name { get; set; } = "???";
-//        public CommType CommType { get; set; } = CommType.None;
-//        public string Args { get; set; } = "???";
-//        public List<string> HotKeyDefs { get; set; } = new();
-
 
 namespace NTerm
 {
@@ -53,10 +31,6 @@ namespace NTerm
             ShowIcon = false;
             ShowInTaskbar = false;
         }
-
-
-
-
 
         /// <summary>
         /// Edit the common options in a property grid.
@@ -96,8 +70,6 @@ namespace NTerm
             f.ShowDialog();
         }
 
-
-
         /// <summary>
         /// 
         /// </summary>
@@ -131,15 +103,14 @@ namespace NTerm
         #endregion
     }
 
-
     /// <summary>Generic property editor for lists of strings.</summary>
     public class StringListEditor : UITypeEditor
     {
         IWindowsFormsEditorService? _service = null;
 
-        public override object EditValue(ITypeDescriptorContext context, IServiceProvider provider, object value)
+        public override object EditValue(ITypeDescriptorContext? context, IServiceProvider provider, object? value)
         {
-            List<string> ls = value is null ? new() : (List<string>)value;
+            List<string> ls = value is null ? [] : (List<string>)value;
 
             TextBox tb = new()
             {
@@ -159,15 +130,16 @@ namespace NTerm
             return ls;
         }
 
-        public override UITypeEditorEditStyle GetEditStyle(ITypeDescriptorContext context) { return UITypeEditorEditStyle.DropDown; }
+        public override UITypeEditorEditStyle GetEditStyle(ITypeDescriptorContext? context)
+        {
+            return UITypeEditorEditStyle.DropDown;
+        }
     }
 
     /// <summary>Select config.</summary>
     public class ConfigSelector : UITypeEditor
     {
         IWindowsFormsEditorService? _service = null;
-
-        public override UITypeEditorEditStyle GetEditStyle(ITypeDescriptorContext? context) { return UITypeEditorEditStyle.DropDown; }
 
         public override object? EditValue(ITypeDescriptorContext? context, IServiceProvider provider, object? value)
         {
@@ -191,18 +163,10 @@ namespace NTerm
             // Done.
             return value;
         }
-    }
 
-    public class XXXed : UITypeEditor
-    {
-        IWindowsFormsEditorService? _service = null;
-
-        public override UITypeEditorEditStyle GetEditStyle(ITypeDescriptorContext? context) { return UITypeEditorEditStyle.DropDown; }
-
-        public override object? EditValue(ITypeDescriptorContext? context, IServiceProvider provider, object? value)
+        public override UITypeEditorEditStyle GetEditStyle(ITypeDescriptorContext? context)
         {
-            Console.WriteLine($"+++ EditValue {value} {context.Instance.GetType()}");
-            return value;
+            return UITypeEditorEditStyle.DropDown;
         }
     }
 }

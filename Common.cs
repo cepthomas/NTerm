@@ -15,10 +15,10 @@ using Ephemera.NBagOfTricks.Slog;
 namespace NTerm
 {
     /// <summary>Supported flavors  .</summary>
-    public enum CommType { None, Tcp, Serial }
+    public enum CommType { Null, Tcp, Serial }
 
     /// <summary>How did we do?</summary>
-    public enum OpStatus { Success, Timeout, Error }
+    public enum OpStatus { Success, Timeout, Error, ConfigError }
 
     /// <summary>Comm type implementation.</summary>
     public interface IComm : IDisposable
@@ -35,9 +35,17 @@ namespace NTerm
         /// <summary>Send a message to the server.</summary>
         /// <param name="msg">What to send.</param>
         /// <returns>Operation status.</returns>
+        OpStatus Init(string args);
+
+        /// <summary>Send a message to the server.</summary>
+        /// <param name="msg">What to send.</param>
+        /// <returns>Operation status.</returns>
         OpStatus Send(string msg);
+
+        /// <summary>Clean up.</summary>
+        public new void Dispose();
     }
-/*
+
     /// <summary>Default comm.</summary>
     public class NullComm : IComm
     {
@@ -45,94 +53,12 @@ namespace NTerm
         public int ResponseTime { get; set; } = 500;
         public int BufferSize { get; set; } = 4096;
         public string Response { get; private set; } = "Nothing to see here";
+        public OpStatus Init(string args) { return OpStatus.Success; }
+        public OpStatus Send(string msg) { Response = $"<<<{DateTime.Now}"; return OpStatus.Success; }
         public void Dispose() { }
-        public OpStatus Send(string msg) { Response = $"<<<{DateTime.Now}" ; return OpStatus.Success; }
         #endregion
     }
 
-    /// <summary>What are we doing today?</summary>
-    [Serializable]
-    public class Config
-    {
-        [DisplayName("Name")]
-        [Description("Name")]
-        [Browsable(true)]
-        public string Name { get; set; } ="???";
-
-        [DisplayName("Communication Type")]
-        [Description("Talk like this.")]
-        [JsonConverter(typeof(JsonStringEnumConverter))]
-        [Browsable(true)]
-        public CommType CommType { get; set; } = CommType.None;
-
-        [DisplayName("Communication Arguments")] // TODO could get fancier later.
-        [Description("Type specific args.\n\"127.0.0.1 59120\"\n\"COM1 9600 E-O-N 6-7-8 0-1-1.5\"")]
-        [Browsable(true)]
-        public string Args { get; set; } ="???";
-
-        [DisplayName("Encoding")]
-        [Description("Encoding.")]
-        [JsonConverter(typeof(JsonStringEnumConverter))]
-        [Browsable(true)]
-        public Encoding Encoding { get; set; } = Encoding.UTF8;
-
-        [DisplayName("Hot Keys")]
-        [Description("Hot key definitions.\n\"key=command\"")] // like "ctrl-k=do something"  "alt+shift+o=send me"
-        [Browsable(true)]
-        public List<string> HotKeyDefs { get; set; } = new();
-
-        #region Properties - internal
-        [JsonIgnore]
-        [Browsable(false)]
-        public Dictionary<string, string> HotKeys { get { return _hotKeys; } }
-        Dictionary<string, string> _hotKeys = new();
-        #endregion
-    }
-
-    [Serializable]
-    public sealed class UserSettings : SettingsCore
-    {
-        [DisplayName("Open Last Config")]
-        [Description("Open last config on start.")]
-        [Browsable(true)]
-        public bool OpenLastConfig { get; set; } = true;
-
-        [DisplayName("Current Configuration")]
-        [Description("Playing now.")]
-        [Browsable(true)]
-        [JsonIgnore]
-        [Editor(typeof(ConfigSelector), typeof(UITypeEditor))]
-        public string CurrentConfig { get; set; } = "";
-
-        [DisplayName("Configurations")]
-        [Description("All your favorites.")]
-        [Browsable(true)]
-        public List<Config> Configs { get; set; } = new();
-
-        [DisplayName("Prompt")]
-        [Description("CLI prompt.")]
-        [Browsable(true)]
-        public string Prompt { get; set; } = ">";
-
-        [DisplayName("File Log Level")]
-        [Description("Log level for file write.")]
-        [Browsable(true)]
-        [JsonConverter(typeof(JsonStringEnumConverter))]
-        public LogLevel FileLogLevel { get; set; } = LogLevel.Trace;
-
-        [DisplayName("Notification Log Level")]
-        [Description("Log level for UI notification.")]
-        [Browsable(true)]
-        [JsonConverter(typeof(JsonStringEnumConverter))]
-        public LogLevel NotifLogLevel { get; set; } = LogLevel.Debug;
-
-        #region Properties - internal
-        [Browsable(false)]
-        public int LastConfig { get; set; } = -1;
-        #endregion
-    }
-*/
-    
     public class Utils
     {
         /// <summary>

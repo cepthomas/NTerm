@@ -14,6 +14,13 @@ namespace NTerm
 {
     internal class TcpComm : IComm
     {
+        #region Fields
+        readonly Logger _logger = LogManager.CreateLogger("TcpComm");
+        string _host = "???";
+        int _port = 0;
+        IPEndPoint _ipEndPoint;
+        #endregion
+
         #region IComm implementation
         public int ResponseTime { get; set; } = 500;
 
@@ -22,33 +29,22 @@ namespace NTerm
         public string Response { get; private set; } = "";
 
         public OpStatus Send(string msg) { return SendAsync(msg).Result; }
-        #endregion
 
-        #region Fields
-        readonly Logger _logger = LogManager.CreateLogger("TcpComm");
-        string _host = "???";
-        int _port = 0;
-        IPEndPoint _ipEndPoint;
-        #endregion
-
-        /// <summary>
-        /// Build me one.
-        /// </summary>
-        /// <param name="host"></param>
-        /// <param name="port"></param>
-        public TcpComm(string host, int port)
+        public OpStatus Init(string args)//TODO
         {
-            _host = host;
-            _port = port;
-            _ipEndPoint = new(IPAddress.Parse(host), port);
+            OpStatus stat = OpStatus.Success;
+
+            //_host = host;
+            //_port = port;
+            //_ipEndPoint = new(IPAddress.Parse(host), port);
+
+            return stat;
         }
 
-        /// <summary>
-        /// Clean up.
-        /// </summary>
         public void Dispose()
         {
         }
+        #endregion
 
         /// <summary>
         /// Does actual work of sending/receiving using async.
