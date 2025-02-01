@@ -14,19 +14,19 @@ using Ephemera.NBagOfTricks.Slog;
 
 namespace NTerm
 {
-    /// <summary>Flavor.</summary>
+    /// <summary>Supported flavors  .</summary>
     public enum CommType { None, Tcp, Serial }
 
     /// <summary>How did we do?</summary>
     public enum OpStatus { Success, Timeout, Error }
 
-    /// <summary>Comm type: tcp/socket, stream, pipe, serial, ...</summary>
+    /// <summary>Comm type implementation.</summary>
     public interface IComm : IDisposable
     {
         /// <summary>Server must connect or reply to commands in msec.</summary>
         int ResponseTime { get; set; }
 
-        /// <summary>Optional R/W buffer size.</summary>
+        /// <summary>R/W buffer size.</summary>
         int BufferSize { get; set; }
 
         /// <summary>The text if Success otherwise error message.</summary>
@@ -37,7 +37,7 @@ namespace NTerm
         /// <returns>Operation status.</returns>
         OpStatus Send(string msg);
     }
-
+/*
     /// <summary>Default comm.</summary>
     public class NullComm : IComm
     {
@@ -66,7 +66,7 @@ namespace NTerm
         public CommType CommType { get; set; } = CommType.None;
 
         [DisplayName("Communication Arguments")] // TODO could get fancier later.
-        [Description("Type specific args.\n\"127.0.0.1 59120\"\n\"COM1 115200 E-O-N 6-7-8 0-1-1.5\"")]
+        [Description("Type specific args.\n\"127.0.0.1 59120\"\n\"COM1 9600 E-O-N 6-7-8 0-1-1.5\"")]
         [Browsable(true)]
         public string Args { get; set; } ="???";
 
@@ -76,46 +76,26 @@ namespace NTerm
         [Browsable(true)]
         public Encoding Encoding { get; set; } = Encoding.UTF8;
 
-        // /// <summary>TCP host.</summary>
-        // public string Host { get; set; } ="???";
-
-        // /// <summary>TCP port.</summary>
-        // public int Port { get; set; } = 0;
-
-        // /// <summary>UI function TODO.</summary>
-        // public bool ShowStatus { get; set; } = false;
-
         [DisplayName("Hot Keys")]
         [Description("Hot key definitions.\n\"key=command\"")] // like "ctrl-k=do something"  "alt+shift+o=send me"
         [Browsable(true)]
-        public List<string> HotKeys { get; set; } = new();
+        public List<string> HotKeyDefs { get; set; } = new();
 
-        //        public ConsoleKeyInfo(char keyChar, ConsoleKey key, bool shift, bool alt, bool control)
-        //public readonly struct ConsoleKeyInfo : IEquatable<ConsoleKeyInfo>
-        //{
-        //    private readonly char _keyChar;
-        //    private readonly ConsoleKey _key;
-        //    private readonly ConsoleModifiers _mods;
-        public Dictionary<string, string> GetHotKeys()
-        {
-            return new();
-        }
+        #region Properties - internal
+        [JsonIgnore]
+        [Browsable(false)]
+        public Dictionary<string, string> HotKeys { get { return _hotKeys; } }
+        Dictionary<string, string> _hotKeys = new();
+        #endregion
     }
 
     [Serializable]
     public sealed class UserSettings : SettingsCore
     {
-        #region Properties - persisted editable
         [DisplayName("Open Last Config")]
         [Description("Open last config on start.")]
         [Browsable(true)]
         public bool OpenLastConfig { get; set; } = true;
-
-
-        #region Non-persisted Properties
-        //[Browsable(false)]
-        //public bool Valid { get; set; } = false;
-        #endregion
 
         [DisplayName("Current Configuration")]
         [Description("Playing now.")]
@@ -123,8 +103,6 @@ namespace NTerm
         [JsonIgnore]
         [Editor(typeof(ConfigSelector), typeof(UITypeEditor))]
         public string CurrentConfig { get; set; } = "";
-        //public int CurrentConfig { get; set; } = -1;
-        //public List<string> CurrentConfig { get; set; } = new();
 
         [DisplayName("Configurations")]
         [Description("All your favorites.")]
@@ -148,19 +126,13 @@ namespace NTerm
         [JsonConverter(typeof(JsonStringEnumConverter))]
         public LogLevel NotifLogLevel { get; set; } = LogLevel.Debug;
 
-        // [DisplayName("Background Color")]
-        // [Description("The color used for overall background.")]
-        // [Browsable(true)]
-        // [JsonConverter(typeof(JsonColorConverter))]
-        // public Color BackColor { get; set; } = Color.LightYellow;
-        #endregion
-
         #region Properties - internal
         [Browsable(false)]
         public int LastConfig { get; set; } = -1;
         #endregion
     }
-
+*/
+    
     public class Utils
     {
         /// <summary>

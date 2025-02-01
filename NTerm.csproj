@@ -10,11 +10,13 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Remove="_old\**" />
+    <EmbeddedResource Remove="_old\**" />
+    <None Remove="_old\**" />
+  </ItemGroup>
+
+  <ItemGroup>
     <Compile Remove="Commander.cs" />
-    <Compile Remove="_ConsoleEx.cs" />
-    <Compile Remove="_stuff.cs" />
-    <Compile Remove="_SerialComm_1.cs" />
-    <Compile Remove="_vkey.cs" />
   </ItemGroup>
 
   <ItemGroup>

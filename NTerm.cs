@@ -23,10 +23,10 @@ namespace NTerm
         readonly UserSettings _settings;
 
         /// <summary>Current config</summary>
-        readonly Config _config = new();
+        readonly Config? _config = new();
 
         /// <summary>Client flavor.</summary>
-        readonly IComm _comm = new NullComm();
+        readonly IComm? _comm = null;
         #endregion
 
         #region Lifecycle
@@ -39,22 +39,17 @@ namespace NTerm
             _settings = (UserSettings)SettingsCore.Load(appDir, typeof(UserSettings));
 
             _fake();
-            Environment.Exit(0);
-
-            //TODO? https://stackoverflow.com/questions/67008500/how-to-move-c-sharp-console-application-window-to-the-center-of-the-screen
-            //var v1 = Console.WindowLeft;
-            //var v2 = Console.WindowWidth;
-            //var v3 = Console.WindowTop;
-            //var v4 = Console.WindowHeight;
-            //Console.SetWindowPosition(_settings.FormGeometry.X, _settings.FormGeometry.Y);
-            //Console.SetWindowSize(_settings.FormGeometry.Width, _settings.FormGeometry.Height);
 
             // Set up log.
             var logFileName = Path.Combine(appDir, "log.txt");
-            LogManager.MinLevelFile = LogLevel.Trace;
-            LogManager.MinLevelNotif = LogLevel.Trace;
+            LogManager.MinLevelFile = _settings.FileLogLevel;
+            LogManager.MinLevelNotif = _settings.NotifLogLevel;
             LogManager.Run(logFileName, 50000);
             LogManager.LogMessage += (object? sender, LogMessageEventArgs e) => Write(e.Message);
+
+            //TODO Loc/size? https://stackoverflow.com/questions/67008500/how-to-move-c-sharp-console-application-window-to-the-center-of-the-screen
+            //not: Console.SetWindowPosition(_settings.FormGeometry.X, _settings.FormGeometry.Y);
+            //     Console.SetWindowSize(_settings.FormGeometry.Width, _settings.FormGeometry.Height);
         }
 
         /// <summary>
@@ -83,7 +78,8 @@ namespace NTerm
                 };
                 for (int j = 0; j < 3; j++)
                 {
-                    c.HotKeys.Add($"hk{j}=blabla");
+                    //c.HotKeyDefs = $"hk{j}=blabla";
+                    c.HotKeyDefs.Add($"hk{j}=blabla");
                 }
                 ss.Configs.Add(c);
 
@@ -91,18 +87,12 @@ namespace NTerm
             }
 
             ss.CurrentConfig = "";
-
-            SettingsEditor f = new() { Settings = ss };
-            f.ShowDialog();
-            if (f.Dirty)
+            var ed = new Editor() { Settings = ss };
+            ed.ShowDialog();
+            if (ss.Dirty)
             {
-
             }
-        }
 
-
-        void _test()
-        {
             // Works:
             //AsyncUsingTcpClient();
             //StartServer(_config.Port);
@@ -135,7 +125,7 @@ namespace NTerm
                 {
                     ok = true;
                     var key = Console.ReadKey(false);
-                    var lkey = key.KeyChar.ToString().ToLower();
+                    var lkey = key.Key.ToString().ToLower();
 
                     switch (key.Modifiers, lkey)
                     {
@@ -149,25 +139,21 @@ namespace NTerm
                             break;
 
                         case (ConsoleModifiers.Control, "s"): // Controlkey?
-                            SettingsEditor f = new() { Settings = _settings };
-                            f.ShowDialog();
-                            if (f.Dirty)
+                            var ed = new Editor() { Settings = _settings };
+                            ed.ShowDialog();
+                            if (_settings.Dirty)
                             {
-
+                                //SaveSettings();
+                                //MessageBox.Show("Restart required for device changes to take effect");
                             }
-                            //EditSettings();
                             break;
 
-                        // case (ConsoleModifiers.Control, "c"):
-                        //     SelectConfig();
-                        //     break;
-
-                        // case (ConsoleModifiers.Control, "?"):
-                        //     Usage();
-                        //     break;
+                        case (ConsoleModifiers.Control, "?"):
+                            Usage();
+                            break;
 
                         case (ConsoleModifiers.Alt, _): // Hotkey?
-                            ok = _config.GetHotKeys().TryGetValue(lkey, out ucmd);
+                            ok = _config.HotKeys.TryGetValue(lkey, out ucmd);
                             break;
 
                         default:
