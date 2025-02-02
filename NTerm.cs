@@ -29,6 +29,14 @@ namespace NTerm
         IComm? _comm = null;
         #endregion
 
+
+        Dictionary<string, string> _hotKeys = [];
+
+        const int PROMPT_COLOR = 94;
+
+        Dictionary<LogLevel, int> _logColors = new() { { LogLevel.Error, 91 }, { LogLevel.Warn, 93 }, { LogLevel.Info, 96 }, { LogLevel.Debug, 92 } };
+
+
         #region Lifecycle
         /// <summary>
         /// Create the console.
@@ -43,7 +51,7 @@ namespace NTerm
             var appDir = MiscUtils.GetAppDataDir("NTerm", "Ephemera");
             var logFileName = Path.Combine(appDir, "log.txt");
             LogManager.Run(logFileName, 50000);
-            LogManager.LogMessage += (object? sender, LogMessageEventArgs e) => Write(e.Message);
+            LogManager.LogMessage += LogMessage;
 
             //TODO Loc/size? https://stackoverflow.com/questions/67008500/how-to-move-c-sharp-console-application-window-to-the-center-of-the-screen
             //not: Console.SetWindowPosition(_settings.FormGeometry.X, _settings.FormGeometry.Y);
@@ -57,6 +65,7 @@ namespace NTerm
         {
             SaveSettings();
             _comm?.Dispose();
+            _comm = null;
         }
         #endregion
 
@@ -68,17 +77,17 @@ namespace NTerm
             ss.Prompt = "!!!";
             ss.FormGeometry = new(200, 200, 500, 500);
 
-            for (int i = 0; i < 3; i++)
+            for (int i = 0; i < 5; i++)
             {
                 var c = new Config()
                 {
                     Args = $"arg{i}",
                     Name = $"name{i}",
                 };
+
                 for (int j = 0; j < 3; j++)
                 {
-                    //c.HotKeyDefs = $"hk{j}=blabla";
-                    c.HotKeyDefs.Add($"hk{j}=blabla");
+                    c.HotKeys.Add($"hk{j}={i}bla bla{j}");
                 }
                 ss.Configs.Add(c);
 
@@ -147,7 +156,7 @@ namespace NTerm
                             break;
 
                         case (ConsoleModifiers.Alt, _): // Hotkey?
-                            ok = _config.HotKeys.TryGetValue(lkey, out ucmd);
+                            ok = _hotKeys.TryGetValue(lkey, out ucmd);
                             break;
 
                         default:
@@ -186,6 +195,7 @@ namespace NTerm
         {
             var appDir = MiscUtils.GetAppDataDir("NTerm", "Ephemera");
             _settings = (UserSettings)SettingsCore.Load(appDir, typeof(UserSettings));
+
             LogManager.MinLevelFile = _settings.FileLogLevel;
             LogManager.MinLevelNotif = _settings.NotifLogLevel;
 
@@ -201,19 +211,33 @@ namespace NTerm
                     CommType.Tcp => new TcpComm(),
                     CommType.Serial => new SerialComm(),
                     CommType.Null => new NullComm(),
-                   _ => throw new ArgumentException(_config.CommType.ToString()),
+                    //_ => _logger.Error($"Invalid comm type:{_config.CommType}")
                 };
 
                 // Init and check stat.
                 stat = _comm.Init(_config.Args);
 
-                // TODO init hotkeys.
+                // Init hotkeys.
+                _hotKeys.Clear();
+                _config.HotKeys.ForEach(hk =>
+                {
+                    var parts = hk.SplitByToken("=", false); // leave intentional spaces
+                    if (parts.Count == 2)
+                    {
+                        _hotKeys[parts[0]] = parts[1];
+                    }
+                    else
+                    {
+                        _logger.Warn($"Invalid hotkey:{hk}");
+                    }
+                });
+
             }
             else
             {
                 _config = null;
                 _comm = null;
-                throw new ArgumentException("TODO select a config");
+                _logger.Warn("TODO select a config!");
             }
         }
 
@@ -237,13 +261,39 @@ namespace NTerm
 
         #region Misc
         /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        void LogMessage(object? sender, LogMessageEventArgs e)
+        {
+            if (_settings.AnsiColor)
+            {
+                _logColors.TryGetValue(e.Level, out int color);
+                Write($"\033[{color}m{e.Message}\033[0m");
+            }
+            else
+            {
+                Write(e.Message);
+            }
+        }
+
+        /// <summary>
         /// Write to user. Takes care of prompt.
         /// </summary>
         /// <param name="s"></param>
         void Write(string s)
         {
             Console.WriteLine(s);
-            Console.Write(_settings.Prompt);
+
+            if (_settings.AnsiColor)
+            {
+                Console.Write($"\033[{PROMPT_COLOR}m{_settings.Prompt}\033[0m");
+            }
+            else
+            {
+                Console.Write(_settings.Prompt);
+            }
         }
 
         /// <summary>

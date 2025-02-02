@@ -169,4 +169,109 @@ namespace NTerm
             return UITypeEditorEditStyle.DropDown;
         }
     }
+
+
+
+
+    /// <summary>
+    /// Convert a list of strings into a readable property.
+    /// </summary>
+    public class StringListConverter : TypeConverter
+    {
+        /// <summary>Overrides the ConvertTo method of TypeConverter.</summary>
+        public override object ConvertTo(ITypeDescriptorContext context, System.Globalization.CultureInfo culture, object value, Type destinationType)
+        {
+            if (value != null && value is List<string> && destinationType == typeof(string))
+            {
+                List<string> v = value as List<string>;
+                string sret = string.Join("|||", v.ToArray());
+                return sret;
+            }
+            else
+            {
+                return base.ConvertTo(context, culture, value, destinationType);
+            }
+        }
+
+        /// <summary>Overrides the ConvertFrom method of TypeConverter.</summary>
+        public override object ConvertFrom(ITypeDescriptorContext context, System.Globalization.CultureInfo culture, object value)
+        {
+            if (value != null && value is string)
+            {
+                List<string> vals = value.ToString().SplitByToken("|||");
+                return vals;
+            }
+            else
+            {
+                return base.ConvertFrom(context, culture, value);
+            }
+        }
+    }
+
+    /// <summary>
+    /// Converter for selecting property value from defined/known string lists.
+    /// </summary>
+    public class SystemFixedListTypeConverter : TypeConverter
+    {
+        public override bool GetStandardValuesSupported(ITypeDescriptorContext? context)
+        {
+            return true;
+        }
+
+        public override bool GetStandardValuesExclusive(ITypeDescriptorContext? context)
+        {
+            return true;
+        }
+
+        /// Get the list using the property name as key.
+        public override StandardValuesCollection GetStandardValues(ITypeDescriptorContext? context)
+        {
+            List<string> rec = null;
+
+            switch (context.PropertyDescriptor.Name)
+            {
+                case "CurrentConfig":
+
+                    var settings = (UserSettings)context!.Instance!;
+                    rec = settings.Configs.Select(x => x.Name).ToList();
+
+
+
+                    //rec = new List<string>();
+                    //Array itypes = Enum.GetValues(typeof(Instrument.InstrumentType));
+                    //foreach (object val in itypes)
+                    //{
+                    //    if (val.ToString() != "None")
+                    //    {
+                    //        rec.Add(val.ToString());
+                    //    }
+                    //}
+                    break;
+
+                //case "DbServer":
+                //    rec = Globals.Instance.ServerNames.Where(n => n.Contains("ECON")).ToList();
+                //    break;
+
+                //case "ADDServer":
+                //    rec = Globals.Instance.ServerNames.Where(n => n.Contains("ADD")).ToList();
+                //    break;
+
+                //case "InstrumentDesc":
+                //    rec = Globals.Instance.UserSettings.FavoriteInstruments;
+                //    break;
+
+                //case "TimeTemplateId":
+                //    rec = Globals.Instance.TimeTemplates.GetAllIds();
+                //    break;
+
+                default:
+                    break;
+            }
+
+            StandardValuesCollection coll = new StandardValuesCollection(rec);
+
+            return coll;
+        }
+    }
+
 }

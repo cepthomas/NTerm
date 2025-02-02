@@ -23,8 +23,21 @@ namespace NTerm
         [Description("Playing now.")]
         [Browsable(true)]
         [JsonIgnore]
-        [Editor(typeof(ConfigSelector), typeof(UITypeEditor))]
+        //[Editor(typeof(ConfigSelector), typeof(UITypeEditor))]
+        [TypeConverter(typeof(SystemFixedListTypeConverter))]
         public string CurrentConfig { get; set; } = "";
+
+
+
+       // [Browsable(true)]
+       // [JsonIgnore]
+       //// [Editor(typeof(ConfigSelector), typeof(UITypeEditor))]
+       // public List<string> CurrentConfigList { get { return Configs.Select(x => x.Name).ToList(); } set { } }
+
+
+        //[TypeConverter(typeof(ExpandableObjectConverter))]
+
+
 
         [DisplayName("Configurations")]
         [Description("All your favorites.")]
@@ -40,6 +53,11 @@ namespace NTerm
         [Description("CLI prompt.")]
         [Browsable(true)]
         public string Prompt { get; set; } = ">";
+
+        [DisplayName("ANSI Color")]
+        [Description("Colorize output.")]
+        [Browsable(true)]
+        public bool AnsiColor { get; set; } = true;
 
         [DisplayName("File Log Level")]
         [Description("Log level for file write.")]
@@ -64,9 +82,6 @@ namespace NTerm
     [Serializable]
     public sealed class Config
     {
-        [Browsable(false)]
-        public int Id { get; private set; }
-
         [DisplayName("Name")]
         [Description("Name")]
         [Browsable(true)]
@@ -79,7 +94,7 @@ namespace NTerm
         public CommType CommType { get; set; } = CommType.Null;
 
         [DisplayName("Communication Arguments")] // TODO could get fancier later.
-        [Description("Type specific args.\n\"127.0.0.1 59120\"\n\"COM1 9600 E-O-N 6-7-8 0-1-1.5\"")]
+        [Description("Type specific args.\n\"127.0.0.1 59120\"\n\"COM1 9600 E|O|N 6|7|8 0|1|1.5\"")]
         [Browsable(true)]
         public string Args { get; set; } = "???";
 
@@ -92,21 +107,22 @@ namespace NTerm
         [DisplayName("Hot Keys")]
         [Description("Hot key definitions.\n\"key=command\"")] // like "k=do something"  "o=send me"
         [Browsable(true)]
-        [Editor(typeof(MultilineStringEditor), typeof(UITypeEditor))]
-        //[Editor(typeof(StringListEditor), typeof(UITypeEditor))]
-        public List<string> HotKeyDefs { get; set; } = [];
+        [Editor(typeof(StringListEditor), typeof(UITypeEditor))]
+        public List<string> HotKeys { get; set; } = [];
+
+
+
+        //[Browsable(true)]
+        //[Editor(typeof(MultilineStringEditor), typeof(UITypeEditor))]
+        //public string HotKeyDefs2 { get; set; } = "";
+
+
+
 
         #region Properties - internal
-        [JsonIgnore]
         [Browsable(false)]
-        public Dictionary<string, string> HotKeys { get { return _hotKeys; } }
-        Dictionary<string, string> _hotKeys = [];
+        public uint Id { get; private set; } = (uint)Guid.NewGuid().GetHashCode();
         #endregion
 
-
-        public Config()
-        {
-            Id = Guid.NewGuid().GetHashCode();
-        }
     }
 }
