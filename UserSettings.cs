@@ -23,21 +23,8 @@ namespace NTerm
         [Description("Playing now.")]
         [Browsable(true)]
         [JsonIgnore]
-        //[Editor(typeof(ConfigSelector), typeof(UITypeEditor))]
-        [TypeConverter(typeof(SystemFixedListTypeConverter))]
+        [TypeConverter(typeof(FixedListTypeConverter))]
         public string CurrentConfig { get; set; } = "";
-
-
-
-       // [Browsable(true)]
-       // [JsonIgnore]
-       //// [Editor(typeof(ConfigSelector), typeof(UITypeEditor))]
-       // public List<string> CurrentConfigList { get { return Configs.Select(x => x.Name).ToList(); } set { } }
-
-
-        //[TypeConverter(typeof(ExpandableObjectConverter))]
-
-
 
         [DisplayName("Configurations")]
         [Description("All your favorites.")]
@@ -72,7 +59,7 @@ namespace NTerm
         public LogLevel NotifLogLevel { get; set; } = LogLevel.Debug;
 
         #region Properties - internal
-        /// <summary>The Config.Id.</summary>
+        /// <summary>The Config.Id. TODO name</summary>
         [Browsable(false)]
         public int LastConfig { get; set; } = 0;
         #endregion
@@ -98,31 +85,15 @@ namespace NTerm
         [Browsable(true)]
         public string Args { get; set; } = "???";
 
-        //[DisplayName("Encoding")]
-        //[Description("Encoding.")]
-        //[JsonConverter(typeof(JsonStringEnumConverter))]
-        //[Browsable(true)]
-        //public Encoding Encoding { get; set; } = Encoding.UTF8; TODO? not an enum
-
         [DisplayName("Hot Keys")]
         [Description("Hot key definitions.\n\"key=command\"")] // like "k=do something"  "o=send me"
         [Browsable(true)]
         [Editor(typeof(StringListEditor), typeof(UITypeEditor))]
         public List<string> HotKeys { get; set; } = [];
 
-
-
-        //[Browsable(true)]
-        //[Editor(typeof(MultilineStringEditor), typeof(UITypeEditor))]
-        //public string HotKeyDefs2 { get; set; } = "";
-
-
-
-
         #region Properties - internal
         [Browsable(false)]
         public uint Id { get; private set; } = (uint)Guid.NewGuid().GetHashCode();
         #endregion
-
     }
 }

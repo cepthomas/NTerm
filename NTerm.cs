@@ -11,6 +11,18 @@ using Ephemera.NBagOfTricks;
 using Ephemera.NBagOfTricks.Slog;
 
 
+// Works:
+//AsyncUsingTcpClient();
+//StartServer(_config.Port);
+//var res = _comm.Send("djkdjsdfksdf;s");
+//Write($"{res}: {_comm.Response}");
+//var ser = new Serial();
+//var ports = ser.GetSerialPorts();
+
+
+//public List<ComPort> GetSerialPorts()
+//void Output(string message, bool force = false, bool newline = true, bool flush = false)
+
 namespace NTerm
 {
     public class App : IDisposable
@@ -27,15 +39,16 @@ namespace NTerm
 
         /// <summary>Client flavor.</summary>
         IComm? _comm = null;
-        #endregion
 
+        /// <summary>User hot keys.</summary>
+        readonly Dictionary<string, string> _hotKeys = [];
 
-        Dictionary<string, string> _hotKeys = [];
-
+        /// <summary>Prompt.</summary>
         const int PROMPT_COLOR = 94;
 
-        Dictionary<LogLevel, int> _logColors = new() { { LogLevel.Error, 91 }, { LogLevel.Warn, 93 }, { LogLevel.Info, 96 }, { LogLevel.Debug, 92 } };
-
+        /// <summary>Colors.</summary>
+        readonly Dictionary<LogLevel, int> _logColors = new() { { LogLevel.Error, 91 }, { LogLevel.Warn, 93 }, { LogLevel.Info, 96 }, { LogLevel.Debug, 92 } };
+        #endregion
 
         #region Lifecycle
         /// <summary>
@@ -45,7 +58,7 @@ namespace NTerm
         {
             LoadSettings();
 
-            DoFake();
+            //FakeSettings();
 
             // Set up log.
             var appDir = MiscUtils.GetAppDataDir("NTerm", "Ephemera");
@@ -53,9 +66,11 @@ namespace NTerm
             LogManager.Run(logFileName, 50000);
             LogManager.LogMessage += LogMessage;
 
-            //TODO Loc/size? https://stackoverflow.com/questions/67008500/how-to-move-c-sharp-console-application-window-to-the-center-of-the-screen
-            //not: Console.SetWindowPosition(_settings.FormGeometry.X, _settings.FormGeometry.Y);
-            //     Console.SetWindowSize(_settings.FormGeometry.Width, _settings.FormGeometry.Height);
+            // WritePrompt();
+
+            // TODO Loc/size? https://stackoverflow.com/questions/67008500/how-to-move-c-sharp-console-application-window-to-the-center-of-the-screen
+            // not: Console.SetWindowPosition(_settings.FormGeometry.X, _settings.FormGeometry.Y);
+            //      Console.SetWindowSize(_settings.FormGeometry.Width, _settings.FormGeometry.Height);
         }
 
         /// <summary>
@@ -69,7 +84,7 @@ namespace NTerm
         }
         #endregion
 
-        void DoFake()
+        void FakeSettings()
         {
             UserSettings ss = new();
             Random rnd = new();
@@ -87,31 +102,16 @@ namespace NTerm
 
                 for (int j = 0; j < 3; j++)
                 {
-                    c.HotKeys.Add($"hk{j}={i}bla bla{j}");
+                    c.HotKeys.Add($"{'x' + j}={i}bla bla{j}");
                 }
                 ss.Configs.Add(c);
-
-                //ss.CurrentConfig.Add(c.Name);
             }
 
             ss.CurrentConfig = "";
             var ed = new Editor() { Settings = ss };
             ed.ShowDialog();
-            LoadSettings();
-            
-            
-            // Works:
-            //AsyncUsingTcpClient();
-            //StartServer(_config.Port);
-            //var res = _comm.Send("djkdjsdfksdf;s");
-            //Write($"{res}: {_comm.Response}");
-            //var ser = new Serial();
-            //var ports = ser.GetSerialPorts();
-
-
-
-            //public List<ComPort> GetSerialPorts()
-            //void Output(string message, bool force = false, bool newline = true, bool flush = false)
+            ss.Save();
+            //LoadSettings();
         }
 
         /// <summary>
@@ -136,26 +136,27 @@ namespace NTerm
 
                     switch (key.Modifiers, lkey)
                     {
-                        case (ConsoleModifiers.None, _): // Get the rest of the line. Blocks.
+                        case (ConsoleModifiers.None, _):
+                            // Get the rest of the line. Blocks.
                             var s = Console.ReadLine();
                             ucmd = s is null ? key.KeyChar.ToString() : key.KeyChar + s;
                             break;
 
-                        case (ConsoleModifiers.Control, "q"): // Controlkey?
+                        case (ConsoleModifiers.Control, "q"):
                             running = false;
                             break;
 
-                        case (ConsoleModifiers.Control, "s"): // Controlkey?
+                        case (ConsoleModifiers.Control, "s"):
                             var ed = new Editor() { Settings = _settings };
                             ed.ShowDialog();
                             LoadSettings();
                             break;
 
-                        case (ConsoleModifiers.Control, "?"):
+                        case (ConsoleModifiers.Control, "h"):
                             Usage();
                             break;
 
-                        case (ConsoleModifiers.Alt, _): // Hotkey?
+                        case (ConsoleModifiers.Alt, _):
                             ok = _hotKeys.TryGetValue(lkey, out ucmd);
                             break;
 
@@ -167,14 +168,22 @@ namespace NTerm
                     if (!ok)
                     {
                         Write("Invalid command");
+                        // WritePrompt();
                     }
                     else if (ucmd is not null)
                     {
-                        _logger.Trace($"SND:{ucmd}");
-                        res = _comm.Send(ucmd);
-                        // Show results.
-                        Write($"{res}: {_comm.Response}");
-                        _logger.Trace($"RCV:{res}: {_comm.Response}");
+                        if (_comm is null)
+                        {
+                            _logger.Warn($"Comm is not initialized - edit settings");
+                        }
+                        else
+                        {
+                            _logger.Trace($"SND:{ucmd}");
+                            res = _comm.Send(ucmd);
+                            // Show results.
+                            _logger.Trace($"RCV:{res}: {_comm.Response}");
+                        }
+                        // WritePrompt();
                     }
                 }
                 else
@@ -193,6 +202,11 @@ namespace NTerm
         /// <exception cref="ArgumentException"></exception>
         void LoadSettings()
         {
+            // Reset.
+            _config = null;
+            _comm?.Dispose();
+            _comm = null;
+
             var appDir = MiscUtils.GetAppDataDir("NTerm", "Ephemera");
             _settings = (UserSettings)SettingsCore.Load(appDir, typeof(UserSettings));
 
@@ -211,11 +225,11 @@ namespace NTerm
                     CommType.Tcp => new TcpComm(),
                     CommType.Serial => new SerialComm(),
                     CommType.Null => new NullComm(),
-                    //_ => _logger.Error($"Invalid comm type:{_config.CommType}")
+                    _ => null
                 };
 
                 // Init and check stat.
-                stat = _comm.Init(_config.Args);
+                stat = _comm!.Init(_config.Args);
 
                 // Init hotkeys.
                 _hotKeys.Clear();
@@ -235,9 +249,10 @@ namespace NTerm
             }
             else
             {
-                _config = null;
+                _comm?.Dispose();
                 _comm = null;
-                _logger.Warn("TODO select a config!");
+                _config = null;
+                _logger.Warn($"Comm is not initialized - edit settings");
             }
         }
 
@@ -247,7 +262,7 @@ namespace NTerm
         public void SaveSettings()
         {
             //// Save user settings.
-            //_settingsX.FormGeometry = new()
+            //_settings.FormGeometry = new()
             //{
             //    X = Console.WindowLeft,
             //    Y = Console.WindowTop,
@@ -270,7 +285,7 @@ namespace NTerm
             if (_settings.AnsiColor)
             {
                 _logColors.TryGetValue(e.Level, out int color);
-                Write($"\033[{color}m{e.Message}\033[0m");
+                Write($"\u001b[{color}m{e.Message}\u001b[0m");
             }
             else
             {
@@ -279,16 +294,23 @@ namespace NTerm
         }
 
         /// <summary>
-        /// Write to user. Takes care of prompt.
+        /// Write to user.
         /// </summary>
         /// <param name="s"></param>
         void Write(string s)
         {
             Console.WriteLine(s);
+            // Console.Write(s + Environment.NewLine);
+        }
 
+        /// <summary>
+        /// Write prompt. TODO
+        /// </summary>
+        void WritePrompt()
+        {
             if (_settings.AnsiColor)
             {
-                Console.Write($"\033[{PROMPT_COLOR}m{_settings.Prompt}\033[0m");
+                Console.Write($"\u001b[{PROMPT_COLOR}m{_settings.Prompt}\u001b[0m");
             }
             else
             {
@@ -301,7 +323,9 @@ namespace NTerm
         /// </summary>
         void Usage()
         {
-            Write("TODO");
+            Write("===== TODO =====");
+            Write("===== 1 =====");
+            Write("===== 2 =====");
         }
         #endregion
     }
