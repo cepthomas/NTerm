@@ -11,18 +11,6 @@ using Ephemera.NBagOfTricks;
 using Ephemera.NBagOfTricks.Slog;
 
 
-// Works:
-//AsyncUsingTcpClient();
-//StartServer(_config.Port);
-//var res = _comm.Send("djkdjsdfksdf;s");
-//Write($"{res}: {_comm.Response}");
-//var ser = new Serial();
-//var ports = ser.GetSerialPorts();
-
-
-//public List<ComPort> GetSerialPorts()
-//void Output(string message, bool force = false, bool newline = true, bool flush = false)
-
 namespace NTerm
 {
     public class App : IDisposable
@@ -56,21 +44,19 @@ namespace NTerm
         /// </summary>
         public App()
         {
-            LoadSettings();
-
-            //FakeSettings();
-
-            // Set up log.
+            // Set up log first.
             var appDir = MiscUtils.GetAppDataDir("NTerm", "Ephemera");
             var logFileName = Path.Combine(appDir, "log.txt");
             LogManager.Run(logFileName, 50000);
             LogManager.LogMessage += LogMessage;
 
+            LoadSettings();
+
+            // FakeSettings();
+
             // WritePrompt();
 
-            // TODO Loc/size? https://stackoverflow.com/questions/67008500/how-to-move-c-sharp-console-application-window-to-the-center-of-the-screen
-            // not: Console.SetWindowPosition(_settings.FormGeometry.X, _settings.FormGeometry.Y);
-            //      Console.SetWindowSize(_settings.FormGeometry.Width, _settings.FormGeometry.Height);
+            // TODO Console loc/size? https://stackoverflow.com/questions/67008500/how-to-move-c-sharp-console-application-window-to-the-center-of-the-screen
         }
 
         /// <summary>
@@ -84,36 +70,6 @@ namespace NTerm
         }
         #endregion
 
-        void FakeSettings()
-        {
-            UserSettings ss = new();
-            Random rnd = new();
-
-            ss.Prompt = "!!!";
-            ss.FormGeometry = new(200, 200, 500, 500);
-
-            for (int i = 0; i < 5; i++)
-            {
-                var c = new Config()
-                {
-                    Args = $"arg{i}",
-                    Name = $"name{i}",
-                };
-
-                for (int j = 0; j < 3; j++)
-                {
-                    c.HotKeys.Add($"{'x' + j}={i}bla bla{j}");
-                }
-                ss.Configs.Add(c);
-            }
-
-            ss.CurrentConfig = "";
-            var ed = new Editor() { Settings = ss };
-            ed.ShowDialog();
-            ss.Save();
-            //LoadSettings();
-        }
-
         /// <summary>
         /// Run loop forever.
         /// </summary>
@@ -122,7 +78,7 @@ namespace NTerm
         {
             bool running = true;
             string? ucmd = null;
-            OpStatus res = OpStatus.Success;
+            OpStatus res;
             bool ok = true;
 
             while (running)
@@ -153,7 +109,7 @@ namespace NTerm
                             break;
 
                         case (ConsoleModifiers.Control, "h"):
-                            Usage();
+                            Help();
                             break;
 
                         case (ConsoleModifiers.Alt, _):
@@ -229,14 +185,15 @@ namespace NTerm
                 };
 
                 // Init and check stat.
-                stat = _comm!.Init(_config.Args);
+                stat = _comm.Init(_config.Args);
 
                 // Init hotkeys.
                 _hotKeys.Clear();
                 _config.HotKeys.ForEach(hk =>
                 {
-                    var parts = hk.SplitByToken("=", false); // leave intentional spaces
-                    if (parts.Count == 2)
+                    var parts = hk.SplitByToken("=", false); // respect intentional spaces
+
+                    if (parts.Count == 2 && parts[0].Length == 1 && parts[1].Length > 0)
                     {
                         _hotKeys[parts[0]] = parts[1];
                     }
@@ -246,14 +203,14 @@ namespace NTerm
                     }
                 });
 
+                _logger.Info($"NTerm using {_config.Name}({_config.CommType})");
+                return;
             }
-            else
-            {
-                _comm?.Dispose();
-                _comm = null;
-                _config = null;
-                _logger.Warn($"Comm is not initialized - edit settings");
-            }
+
+            _comm?.Dispose();
+            _comm = null;
+            _config = null;
+            _logger.Warn($"Comm is not initialized - edit settings");
         }
 
         /// <summary>
@@ -261,14 +218,7 @@ namespace NTerm
         /// </summary>
         public void SaveSettings()
         {
-            //// Save user settings.
-            //_settings.FormGeometry = new()
-            //{
-            //    X = Console.WindowLeft,
-            //    Y = Console.WindowTop,
-            //    Width = Console.WindowWidth,
-            //    Height = Console.WindowHeight
-            //};
+            //// Save user settings. _settings.FormGeometry = 
 
             _settings.Save();
         }
@@ -304,7 +254,7 @@ namespace NTerm
         }
 
         /// <summary>
-        /// Write prompt. TODO
+        /// Write prompt. TODO useful? Blinking cursor is probably adequate.
         /// </summary>
         void WritePrompt()
         {
@@ -321,11 +271,16 @@ namespace NTerm
         /// <summary>
         /// 
         /// </summary>
-        void Usage()
+        void Help()
         {
-            Write("===== TODO =====");
-            Write("===== 1 =====");
-            Write("===== 2 =====");
+            Write("ctrl-s to edit settings");
+            Write("ctrl-q to exit");
+            Write("ctrl-h this here");
+
+            _hotKeys.ForEach(x => Write($"alt-{x.Key} send {x.Value}"));
+
+            var cc = _config is not null ? $"{_config.Name}({_config.CommType})" : "None";
+            Write($"current config: {cc}");
         }
         #endregion
     }

@@ -7,6 +7,7 @@ using System.Net.Sockets;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using Ephemera.NBagOfTricks;
 using Ephemera.NBagOfTricks.Slog;
 
 
@@ -18,7 +19,6 @@ namespace NTerm
         readonly Logger _logger = LogManager.CreateLogger("TcpComm");
         string _host = "???";
         int _port = 0;
-        IPEndPoint _ipEndPoint;
         #endregion
 
         #region IComm implementation
@@ -30,13 +30,27 @@ namespace NTerm
 
         public OpStatus Send(string msg) { return SendAsync(msg).Result; }
 
-        public OpStatus Init(string args)//TODO
+        public OpStatus Init(string args)
         {
-            OpStatus stat = OpStatus.Success;
+            // Parse the args. "127.0.0.1 59120"
+            var parts = args.SplitByToken(" ");
+            OpStatus stat = parts.Count == 2 ? OpStatus.Success : OpStatus.ConfigError;
 
-            //_host = host;
-            //_port = port;
-            //_ipEndPoint = new(IPAddress.Parse(host), port);
+            try
+            {
+                _host = parts[0];
+                _port = int.Parse(parts[1]);
+
+                IPEndPoint ipEndPoint = new(IPAddress.Parse(_host), _port);
+
+                // Test by creating client.
+                using var client = new TcpClient(_host, _port);
+            }
+            catch (Exception)
+            {
+                _logger.Error($"Invalid comm args: {args}");
+                stat = OpStatus.ConfigError;
+            }
 
             return stat;
         }
@@ -91,7 +105,7 @@ namespace NTerm
                     _logger.Debug($"[Client] Sending [{tosend}]");
 
                     // If the send time-out expires, WriteAsync() throws SocketException.
-                        await stream.WriteAsync(bytes, ind, tosend);
+                        await stream.WriteAsync(bytes.AsMemory(ind, tosend));
 
                     ind += tosend;
                     sendDone = ind >= num;
@@ -107,7 +121,7 @@ namespace NTerm
                     var buffer = new byte[client.ReceiveBufferSize];
 
                     // If the read time-out expires, ReadAsync() throws IOException.
-                    var byteCount = await stream.ReadAsync(buffer, 0, buffer.Length);
+                    var byteCount = await stream.ReadAsync(buffer);
 
                     if (byteCount > 0)
                     {

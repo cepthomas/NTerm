@@ -31,11 +31,6 @@ namespace NTerm
         [Browsable(true)]
         public List<Config> Configs { get; set; } = [];
 
-        [DisplayName("Open Last Config")]
-        [Description("Open last config on start.")]
-        [Browsable(true)]
-        public bool OpenLastConfig { get; set; } = true;
-
         [DisplayName("Prompt")]
         [Description("CLI prompt.")]
         [Browsable(true)]
@@ -59,9 +54,6 @@ namespace NTerm
         public LogLevel NotifLogLevel { get; set; } = LogLevel.Debug;
 
         #region Properties - internal
-        /// <summary>The Config.Id. TODO name</summary>
-        [Browsable(false)]
-        public int LastConfig { get; set; } = 0;
         #endregion
     }
 
@@ -80,7 +72,7 @@ namespace NTerm
         [Browsable(true)]
         public CommType CommType { get; set; } = CommType.Null;
 
-        [DisplayName("Communication Arguments")] // TODO could get fancier later.
+        [DisplayName("Communication Arguments")]
         [Description("Type specific args.\n\"127.0.0.1 59120\"\n\"COM1 9600 E|O|N 6|7|8 0|1|1.5\"")]
         [Browsable(true)]
         public string Args { get; set; } = "???";

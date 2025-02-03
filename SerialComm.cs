@@ -1,4 +1,5 @@
-﻿using Ephemera.NBagOfTricks.Slog;
+﻿using Ephemera.NBagOfTricks;
+using Ephemera.NBagOfTricks.Slog;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -31,41 +32,65 @@ namespace NTerm
 
         public OpStatus Send(string msg) { return SendAsync(msg).Result; }
 
-        public OpStatus Init(string args)//TODO
+        public OpStatus Init(string args)
         {
-            OpStatus stat = OpStatus.Success;
+            Console.WriteLine("Available Ports:");
+            SerialPort.GetPortNames().ForEach(s => { _logger.Debug($"   {0}", s); });
 
-            //try
-            //{
-            //    Console.WriteLine("Available Ports:");
-            //    foreach (string s in SerialPort.GetPortNames())
-            //    {
-            //        Console.WriteLine("   {0}", s);
-            //    }
+            // Parse the args. "COM1 9600 E|O|N 6|7|8 0|1|1.5"
+            var parts = args.SplitByToken(" ");
+            OpStatus stat = parts.Count == 5 ? OpStatus.Success : OpStatus.ConfigError;
 
-            //    _serialPort = new()
-            //    {
-            //        PortName = name,
-            //        BaudRate = baud,
-            //        Parity = parity,
-            //        DataBits = dataBits,
-            //        StopBits = stopBits,
-            //        //_serialPort.Handshake = 
-            //        ReadBufferSize = BufferSize,
-            //        WriteBufferSize = BufferSize,
-            //        ReadTimeout = ResponseTime,
-            //        WriteTimeout = ResponseTime
-            //    };
+            try
+            {
+                SerialPort sport = new()
+                {
+                    //_serialPort.Handshake = 
+                    ReadBufferSize = BufferSize,
+                    WriteBufferSize = BufferSize,
+                    ReadTimeout = ResponseTime,
+                    WriteTimeout = ResponseTime
+                };
 
-            //    _serialPort.Open();
-            //}
-            //catch (Exception e)
-            //{
-            //    // Fatal.
-            //    _logger.Error($"Fatal error:{e}");
-            //    Response = $"Fatal error: {e.Message}";
-            //    //res = OpStatus.Error;
-            //}
+                var i = int.Parse(parts[0].Replace("COM", ""));
+                sport.PortName = $"COM{i}";
+
+                sport.BaudRate = int.Parse(parts[1]);
+
+                sport.Parity = parts[2] switch
+                {
+                    "E" => Parity.Even,
+                    "O" => Parity.Odd,
+                    "N" => Parity.None,
+                    _ => (Parity)999
+                };
+
+                sport.DataBits = parts[3] switch
+                {
+                    "6" => 6,
+                    "7" => 7,
+                    "8" => 8,
+                    _ => 999
+                };
+
+                sport.StopBits = parts[4] switch
+                {
+                    "0" => StopBits.None,
+                    "1" => StopBits.One,
+                    "1.5" => StopBits.OnePointFive,
+                    _ => (StopBits)999
+                };
+
+                sport.Open();
+
+                _serialPort = sport;
+
+            }
+            catch (Exception)
+            {
+                _logger.Error($"Invalid comm args: {args}");
+                stat = OpStatus.ConfigError;
+            }
 
             return stat;
         }
@@ -90,6 +115,12 @@ namespace NTerm
 
             try
             {
+                if (_serialPort is null)
+                {
+                    _logger.Warn($"Serial port is not open");
+                    return OpStatus.Error;
+                }
+
                 /////// Send ////////
                 using var stream = _serialPort.BaseStream;
                 byte[] bytes = Encoding.UTF8.GetBytes(request);
@@ -105,7 +136,7 @@ namespace NTerm
                     int tosend = num - ind >= _serialPort.WriteBufferSize ? _serialPort.WriteBufferSize : num - ind;
                     _logger.Debug($"[Client] Sending [{tosend}]");
 
-                    await stream.WriteAsync(bytes, ind, tosend);
+                    await stream.WriteAsync(bytes.AsMemory(ind, tosend));
 
                     ind += tosend;
                     sendDone = ind >= num;
@@ -121,7 +152,7 @@ namespace NTerm
                     var buffer = new byte[BufferSize];
 
                     // If the read time-out expires, ReadAsync() throws IOException.
-                    var byteCount = await stream.ReadAsync(buffer, 0, buffer.Length);
+                    var byteCount = await stream.ReadAsync(buffer);
 
                     if (byteCount > 0)
                     {
