@@ -70,6 +70,36 @@ namespace NTerm
         }
         #endregion
 
+
+        //(char key, bool ctrl, bool alt)  MyReadKey()
+        //{
+        //    //ConsoleModifiers.
+
+        //    _logger.Trace($">>> key available");
+
+        //    var key = Console.ReadKey(false);
+        //    var lkey = key.KeyChar.ToString();//.ToLower();
+        //                                      //var lkey = key.Key.ToString();//.ToLower();
+
+        //    _logger.Trace($">>> read key:{lkey}:{key.Modifiers}");
+
+        //    //ok = true;
+
+        //    //switch (key.Modifiers, lkey.ToLower())
+        //    //{
+        //    //    case (ConsoleModifiers.None, _):
+        //    //        // Get the rest of the line. Blocks.
+        //    //        var s = Console.ReadLine();
+        //    //        _logger.Trace($">>> got line:{s}");
+        //    //        ucmd = s is null ? lkey : lkey + s;
+        //    //        break;
+
+
+
+        
+        //}
+
+
         /// <summary>
         /// Run loop forever.
         /// </summary>
@@ -88,11 +118,20 @@ namespace NTerm
                 {
                     _logger.Trace($">>> key available");
 
-                    ok = true;
                     var key = Console.ReadKey(false);
-                    var lkey = key.Key.ToString().ToLower();
 
-                    _logger.Trace($">>> got key:{lkey}:{key.Modifiers}");
+                    var lkey = (key.Modifiers & ConsoleModifiers.Shift) > 0 ? key.Key.ToString() : key.Key.ToString().ToLower();
+
+
+                    // 2025-02-04 16:08:08.050 TRC NTerm App.cs(128) >>> read key.Key:A key.KeyChar:a mod:None
+
+                    // 2025-02-04 16:08:19.603 TRC NTerm App.cs(128) >>> read key.Key:A key.KeyChar: mod:Control
+
+                    //var lkey = key.Key.ToString();//.ToLower();
+
+                    _logger.Trace($">>> read key.Key:{key.Key} key.KeyChar:{key.KeyChar} mod:{key.Modifiers} {(int)key.Modifiers}");
+
+                    ok = true;
 
                     switch (key.Modifiers, lkey)
                     {
@@ -100,7 +139,7 @@ namespace NTerm
                             // Get the rest of the line. Blocks.
                             var s = Console.ReadLine();
                             _logger.Trace($">>> got line:{s}");
-                            ucmd = s is null ? key.KeyChar.ToString() : key.KeyChar + s;
+                            ucmd = s is null ? lkey : lkey + s;
                             break;
 
                         case (ConsoleModifiers.Control, "q"):
@@ -223,8 +262,6 @@ namespace NTerm
         /// </summary>
         public void SaveSettings()
         {
-            //// Save user settings. _settings.FormGeometry = 
-
             _settings.Save();
         }
         #endregion
@@ -255,7 +292,6 @@ namespace NTerm
         void Write(string s)
         {
             Console.WriteLine(s);
-            // Console.Write(s + Environment.NewLine);
         }
 
         /// <summary>

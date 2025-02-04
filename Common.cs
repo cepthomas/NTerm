@@ -54,7 +54,7 @@ namespace NTerm
         public int BufferSize { get; set; } = 4096;
         public string Response { get; private set; } = "Nothing to see here";
         public OpStatus Init(string args) { return OpStatus.Success; }
-        public OpStatus Send(string msg) { Response = $"<<<{DateTime.Now}"; return OpStatus.Success; }
+        public OpStatus Send(string msg) { Response = $"You sent {msg} at {DateTime.Now}"; return OpStatus.Success; }
         public void Dispose() { }
         #endregion
     }

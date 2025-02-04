@@ -59,7 +59,6 @@ namespace NTermTest
             //Random rnd = new();
 
             ss.Prompt = "!!!";
-            ss.FormGeometry = new(201, 202, 504, 505);
 
             for (int i = 0; i < 5; i++)
             {
