@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
@@ -51,12 +52,11 @@ namespace NTerm
             LogManager.LogMessage += LogMessage;
 
             LoadSettings();
+            // TODO Console loc/size? https://stackoverflow.com/questions/67008500/how-to-move-c-sharp-console-application-window-to-the-center-of-the-screen
 
             // FakeSettings();
 
             // WritePrompt();
-
-            // TODO Console loc/size? https://stackoverflow.com/questions/67008500/how-to-move-c-sharp-console-application-window-to-the-center-of-the-screen
         }
 
         /// <summary>
@@ -86,15 +86,20 @@ namespace NTerm
                 // Check for something to do. Get the first character in user input.
                 if (Console.KeyAvailable)
                 {
+                    _logger.Trace($">>> key available");
+
                     ok = true;
                     var key = Console.ReadKey(false);
                     var lkey = key.Key.ToString().ToLower();
+
+                    _logger.Trace($">>> got key:{lkey}:{key.Modifiers}");
 
                     switch (key.Modifiers, lkey)
                     {
                         case (ConsoleModifiers.None, _):
                             // Get the rest of the line. Blocks.
                             var s = Console.ReadLine();
+                            _logger.Trace($">>> got line:{s}");
                             ucmd = s is null ? key.KeyChar.ToString() : key.KeyChar + s;
                             break;
 
