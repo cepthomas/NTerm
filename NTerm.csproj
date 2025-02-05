@@ -1,8 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <!-- <OutputType>WinExe</OutputType> -->
-    <OutputType>Exe</OutputType>
+    <OutputType>WinExe</OutputType>
     <TargetFramework>net8.0-windows</TargetFramework>
     <Nullable>enable</Nullable>
     <UseWindowsForms>true</UseWindowsForms>
@@ -18,14 +17,21 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Remove="lib\**" />
     <Compile Remove="Test\**" />
+    <EmbeddedResource Remove="lib\**" />
     <EmbeddedResource Remove="Test\**" />
+    <None Remove="lib\**" />
     <None Remove="Test\**" />
   </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="System.IO.Ports" Version="9.0.0" />
     <PackageReference Include="System.Management" Version="9.0.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\Libs\NBagOfUis\NBagOfUis.csproj" />
   </ItemGroup>
 
   <ItemGroup>
