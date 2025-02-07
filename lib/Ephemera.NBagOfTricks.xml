@@ -4,6 +4,18 @@
         <name>Ephemera.NBagOfTricks</name>
     </assembly>
     <members>
+        <member name="T:Ephemera.NBagOfTricks.Ansi">
+            <summary>
+            Do things with ansi codes. FUTURE AnsiFromColor()
+            </summary>
+        </member>
+        <member name="M:Ephemera.NBagOfTricks.Ansi.ColorFromAnsi(System.String)">
+            <summary>
+            Convert ansi specs like: ESC[IDm  ESC[38;5;IDm ESC[38;2;R;G;Bm to Color.
+            </summary>
+            <param name="ansi">Ansi string</param>
+            <returns>Color and whether it's fg or bg. Color is Empty if invalid ansi string.</returns>
+        </member>
         <member name="T:Ephemera.NBagOfTricks.Bag">
             <summary>
             General purpose storage for things using a two part key.

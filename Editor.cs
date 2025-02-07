@@ -15,7 +15,7 @@ namespace NTerm
     public partial class Editor : Form
     {
         /// <summary>Edited flag.</summary>
-        public bool Dirty { get; private set; } = false;
+        //public bool Dirty { get; private set; } = false;
 
         /// <summary>Settings</summary>
         public UserSettings Settings { get; set; } = new();
@@ -63,33 +63,7 @@ namespace NTerm
         #endregion
     }
 
-    /// <summary>Generic property editor for lists of strings.</summary>
-    public class StringListEditor : UITypeEditor
-    {
-        IWindowsFormsEditorService? _service = null;
 
-        public override object EditValue(ITypeDescriptorContext? context, IServiceProvider provider, object? value)
-        {
-            List<string> ls = value is null ? [] : (List<string>)value;
-
-            TextBox tb = new()
-            {
-                Multiline = true,
-                ReadOnly = false,
-                AcceptsReturn = true,
-                ScrollBars = ScrollBars.Both,
-                Height = 100,
-                Text = string.Join(Environment.NewLine, ls)
-            };
-            tb.Select(0, 0);
-
-            _service = provider.GetService(typeof(IWindowsFormsEditorService)) as IWindowsFormsEditorService;
-            _service?.DropDownControl(tb);
-            return tb.Text.SplitByToken(Environment.NewLine);
-        }
-
-        public override UITypeEditorEditStyle GetEditStyle(ITypeDescriptorContext? context) { return UITypeEditorEditStyle.DropDown; }
-    }
 
     /// <summary>Converter for selecting property value from known string lists.</summary>
     public class FixedListTypeConverter : TypeConverter

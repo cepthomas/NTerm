@@ -12,12 +12,13 @@ using System.Windows.Forms;
 using System.Windows.Forms.Design;
 using Ephemera.NBagOfTricks;
 using Ephemera.NBagOfTricks.Slog;
+using Ephemera.NBagOfUis;
 
 
 namespace NTerm
 {
     [Serializable]
-    public sealed class UserSettings : SettingsCore
+    public class UserSettings : SettingsCore
     {
         [DisplayName("Current Configuration")]
         [Description("Playing now.")]
