@@ -74,12 +74,12 @@ namespace NTerm
         public CommType CommType { get; set; } = CommType.Null;
 
         [DisplayName("Communication Arguments")]
-        [Description("Type specific args.\n\"127.0.0.1 59120\"\n\"COM1 9600 E|O|N 6|7|8 0|1|1.5\"")]
+        [Description("Type specific args. See README.md.")]
         [Browsable(true)]
         public string Args { get; set; } = "???";
 
         [DisplayName("Hot Keys")]
-        [Description("Hot key definitions.\n\"key=command\"")] // like "k=do something"  "o=send me"
+        [Description("Hot key definitions. See README.md.")]
         [Browsable(true)]
         [Editor(typeof(StringListEditor), typeof(UITypeEditor))]
         public List<string> HotKeys { get; set; } = [];

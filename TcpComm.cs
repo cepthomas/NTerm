@@ -61,7 +61,7 @@ namespace NTerm
         #endregion
 
         /// <summary>
-        /// Does actual work of sending/receiving using async.
+        /// Does actual work of sending/receiving.
         /// </summary>
         /// <param name="request"></param>
         /// <returns>OpStatus and Response populated.</returns>

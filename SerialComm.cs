@@ -1,6 +1,4 @@
-﻿using Ephemera.NBagOfTricks;
-using Ephemera.NBagOfTricks.Slog;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using System.IO.Ports;
@@ -12,11 +10,13 @@ using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
+using Ephemera.NBagOfTricks;
+using Ephemera.NBagOfTricks.Slog;
 
 
 namespace NTerm
 {
-    public class SerialComm : IComm
+    public class SerialComm : IComm // TODO needs debug.
     {
         #region Fields
         readonly Logger _logger = LogManager.CreateLogger("SerialComm");
@@ -34,7 +34,7 @@ namespace NTerm
 
         public OpStatus Init(string args)
         {
-            Console.WriteLine("Available Ports:");
+            _logger.Debug("Available Ports:");
             SerialPort.GetPortNames().ForEach(s => { _logger.Debug($"   {0}", s); });
 
             // Parse the args. "COM1 9600 E|O|N 6|7|8 0|1|1.5"
@@ -45,11 +45,11 @@ namespace NTerm
             {
                 SerialPort sport = new()
                 {
-                    //_serialPort.Handshake = 
                     ReadBufferSize = BufferSize,
                     WriteBufferSize = BufferSize,
                     ReadTimeout = ResponseTime,
                     WriteTimeout = ResponseTime
+                    // Handshake
                 };
 
                 var i = int.Parse(parts[0].Replace("COM", ""));
@@ -62,7 +62,7 @@ namespace NTerm
                     "E" => Parity.Even,
                     "O" => Parity.Odd,
                     "N" => Parity.None,
-                    _ => (Parity)999
+                    _ => (Parity)-1 // invalid
                 };
 
                 sport.DataBits = parts[3] switch
@@ -70,7 +70,7 @@ namespace NTerm
                     "6" => 6,
                     "7" => 7,
                     "8" => 8,
-                    _ => 999
+                    _ => -1 // invalid
                 };
 
                 sport.StopBits = parts[4] switch
@@ -78,13 +78,11 @@ namespace NTerm
                     "0" => StopBits.None,
                     "1" => StopBits.One,
                     "1.5" => StopBits.OnePointFive,
-                    _ => (StopBits)999
+                    _ => (StopBits)-1 // invalid
                 };
 
                 sport.Open();
-
                 _serialPort = sport;
-
             }
             catch (Exception)
             {
@@ -104,7 +102,7 @@ namespace NTerm
         #endregion
 
         /// <summary>
-        /// Does actual work of sending/receiving using async.
+        /// Does actual work of sending/receiving.
         /// </summary>
         /// <param name="request"></param>
         /// <returns>OpStatus and Response populated.</returns>
@@ -176,7 +174,6 @@ namespace NTerm
                     throw new IOException();
                 }
             }
-
             catch (TimeoutException e)
             {
                 // Ignore and retry later.
