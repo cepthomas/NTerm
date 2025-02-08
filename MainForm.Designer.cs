@@ -21,11 +21,8 @@
             // 
             // tvOut
             // 
-            tvOut.Ansi = false;
-            tvOut.BufferSize = 120;
             tvOut.Location = new System.Drawing.Point(12, 12);
-            tvOut.MaxText = 50000;
-            tvOut.Mode = Ephemera.NBagOfUis.TextViewer.ModeT.Static;
+            tvOut.MaxText = 10000;
             tvOut.Name = "tvOut";
             tvOut.Prompt = "";
             tvOut.Size = new System.Drawing.Size(744, 312);

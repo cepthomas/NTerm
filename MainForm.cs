@@ -36,8 +36,8 @@ namespace NTerm
         /// <summary>User hot keys.</summary>
         readonly Dictionary<string, string> _hotKeys = [];
 
-        /// <summary>Colors.</summary>
-//        readonly Dictionary<LogLevel, int> _logColors = new() { { LogLevel.Error, 91 }, { LogLevel.Warn, 93 }, { LogLevel.Info, 96 }, { LogLevel.Debug, 92 } };
+        /// <summary>Colors - ansi.</summary>
+        readonly Dictionary<LogLevel, int> _logColors = new() { { LogLevel.Error, 91 }, { LogLevel.Warn, 93 }, { LogLevel.Info, 96 }, { LogLevel.Debug, 92 } };
 
         // /// <summary>Lazy singleton. https://csharpindepth.com/Articles/Singleton.</summary>
         // private readonly Lazy<XXXX> _instance = new(() => new XXXX());
@@ -495,23 +495,23 @@ namespace NTerm
         #endregion
 
         #region Misc
-        ///// <summary>
-        ///// 
-        ///// </summary>
-        ///// <param name="sender"></param>
-        ///// <param name="e"></param>
-        //void LogMessage(object? sender, LogMessageEventArgs e)
-        //{
-        //    if (_settings.AnsiColor)
-        //    {
-        //        _logColors.TryGetValue(e.Level, out int color);
-        //        Write($"\u001b[{color}m{e.Message}\u001b[0m");
-        //    }
-        //    else
-        //    {
-        //        Write(e.Message);
-        //    }
-        //}
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        void LogMessage(object? sender, LogMessageEventArgs e)
+        {
+            if (_settings.AnsiColor)
+            {
+                _logColors.TryGetValue(e.Level, out int color);
+                Write($"\u001b[{color}m{e.Message}\u001b[0m");
+            }
+            else
+            {
+                Write(e.Message);
+            }
+        }
 
         /// <summary>
         /// Write to user.
@@ -519,7 +519,14 @@ namespace NTerm
         /// <param name="s"></param>
         void Write(string s)
         {
-            tvOut.AppendLine(s);
+            if (_settings.AnsiColor)
+            {
+                tvOut.AppendAnsi(s);
+            }
+            else
+            {
+                tvOut.Append(s);
+            }
         }
 
         ///// <summary>
