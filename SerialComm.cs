@@ -20,7 +20,8 @@ namespace NTerm
     {
         #region Fields
         readonly Logger _logger = LogManager.CreateLogger("SerialComm");
-        SerialPort? _serialPort = null;
+        ISerialPort? _serialPort = null;
+        // SerialPort? _serialPort = null;
         #endregion
 
         #region IComm implementation
@@ -43,7 +44,8 @@ namespace NTerm
 
             try
             {
-                SerialPort sport = new()
+                // SerialPort sport = new()
+                var sport = new SerialPortEmu()
                 {
                     ReadBufferSize = BufferSize,
                     WriteBufferSize = BufferSize,
@@ -62,7 +64,7 @@ namespace NTerm
                     "E" => Parity.Even,
                     "O" => Parity.Odd,
                     "N" => Parity.None,
-                    _ => (Parity)-1 // invalid
+                    _ => (Parity)(-1) // invalid
                 };
 
                 sport.DataBits = parts[3] switch
@@ -78,7 +80,7 @@ namespace NTerm
                     "0" => StopBits.None,
                     "1" => StopBits.One,
                     "1.5" => StopBits.OnePointFive,
-                    _ => (StopBits)-1 // invalid
+                    _ => (StopBits)(-1) // invalid
                 };
 
                 sport.Open();
@@ -134,7 +136,8 @@ namespace NTerm
                     int tosend = num - ind >= _serialPort.WriteBufferSize ? _serialPort.WriteBufferSize : num - ind;
                     _logger.Debug($"[Client] Sending [{tosend}]");
 
-                    await stream.WriteAsync(bytes.AsMemory(ind, tosend));
+                    await stream.WriteAsync(bytes);
+                    //await stream.WriteAsync(bytes.AsMemory(ind, tosend));
 
                     ind += tosend;
                     sendDone = ind >= num;
