@@ -20,9 +20,20 @@ namespace NTerm
     {
         #region Fields
         readonly Logger _logger = LogManager.CreateLogger("SerialComm");
+
+
+        // public partial class SerialPort : Component
         ISerialPort? _serialPort = null;
-        // SerialPort? _serialPort = null;
+        //xxx SerialPort? _serialPort = null;
+
+
         #endregion
+
+
+        public SerialComm(ISerialPort sport)
+        {
+            _serialPort = sport;
+        }
 
         #region IComm implementation
         public int ResponseTime { get; set; } = 500;
@@ -35,31 +46,18 @@ namespace NTerm
 
         public OpStatus Init(string args)
         {
-            _logger.Debug("Available Ports:");
-            SerialPort.GetPortNames().ForEach(s => { _logger.Debug($"   {0}", s); });
-
             // Parse the args. "COM1 9600 E|O|N 6|7|8 0|1|1.5"
             var parts = args.SplitByToken(" ");
             OpStatus stat = parts.Count == 5 ? OpStatus.Success : OpStatus.ConfigError;
 
             try
             {
-                // SerialPort sport = new()
-                var sport = new SerialPortEmu()
-                {
-                    ReadBufferSize = BufferSize,
-                    WriteBufferSize = BufferSize,
-                    ReadTimeout = ResponseTime,
-                    WriteTimeout = ResponseTime
-                    // Handshake
-                };
-
                 var i = int.Parse(parts[0].Replace("COM", ""));
-                sport.PortName = $"COM{i}";
+                _serialPort.PortName = $"COM{i}";
 
-                sport.BaudRate = int.Parse(parts[1]);
+                _serialPort.BaudRate = int.Parse(parts[1]);
 
-                sport.Parity = parts[2] switch
+                _serialPort.Parity = parts[2] switch
                 {
                     "E" => Parity.Even,
                     "O" => Parity.Odd,
@@ -67,7 +65,7 @@ namespace NTerm
                     _ => (Parity)(-1) // invalid
                 };
 
-                sport.DataBits = parts[3] switch
+                _serialPort.DataBits = parts[3] switch
                 {
                     "6" => 6,
                     "7" => 7,
@@ -75,7 +73,7 @@ namespace NTerm
                     _ => -1 // invalid
                 };
 
-                sport.StopBits = parts[4] switch
+                _serialPort.StopBits = parts[4] switch
                 {
                     "0" => StopBits.None,
                     "1" => StopBits.One,
@@ -83,8 +81,14 @@ namespace NTerm
                     _ => (StopBits)(-1) // invalid
                 };
 
-                sport.Open();
-                _serialPort = sport;
+                // Other params.
+                _serialPort.ReadBufferSize = BufferSize;
+                _serialPort.WriteBufferSize = BufferSize;
+                _serialPort.ReadTimeout = ResponseTime;
+                _serialPort.WriteTimeout = ResponseTime;
+                // Handshake
+
+                _serialPort.Open();
             }
             catch (Exception)
             {
@@ -137,7 +141,6 @@ namespace NTerm
                     _logger.Debug($"[Client] Sending [{tosend}]");
 
                     await stream.WriteAsync(bytes);
-                    //await stream.WriteAsync(bytes.AsMemory(ind, tosend));
 
                     ind += tosend;
                     sendDone = ind >= num;
@@ -152,7 +155,6 @@ namespace NTerm
                     // Get response.
                     var buffer = new byte[BufferSize];
 
-                    // If the read time-out expires, ReadAsync() throws IOException.
                     var byteCount = await stream.ReadAsync(buffer);
 
                     if (byteCount > 0)
@@ -186,7 +188,7 @@ namespace NTerm
             }
             catch (Exception e)
             {
-                // Other errors are considered fatal.
+                // Other errors are considered fatal. TODO?
                 _logger.Error($"Fatal error:{e}");
                 Response = $"Fatal error: {e.Message}";
                 res = OpStatus.Error;

@@ -1,4 +1,3 @@
-using Ephemera.NBagOfTricks;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -8,6 +7,7 @@ using System.Linq;
 using System.Text.Json;
 using System.Windows.Forms;
 using System.Windows.Forms.Design;
+using Ephemera.NBagOfTricks;
 
 
 namespace NTerm
@@ -62,8 +62,6 @@ namespace NTerm
         }
         #endregion
     }
-
-
 
     /// <summary>Converter for selecting property value from known string lists.</summary>
     public class FixedListTypeConverter : TypeConverter

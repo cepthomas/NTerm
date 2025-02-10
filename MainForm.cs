@@ -4,8 +4,8 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Drawing;
 using System.IO;
+using System.IO.Ports;
 using System.Linq;
-using System.Runtime.InteropServices;
 using System.Text;
 using System.Text.Json;
 using System.Threading;
@@ -56,8 +56,10 @@ namespace NTerm
         public event EventHandler<CliInputEventArgs>? CliInput;
         #endregion
 
-
-
+        #region Lifecycle
+        /// <summary>
+        /// 
+        /// </summary>
         public MainForm()
         {
             InitializeComponent();
@@ -68,11 +70,15 @@ namespace NTerm
             LogManager.Run(logFileName, 50000);
             LogManager.LogMessage += LogMessage;
 
-            LoadSettings();
+            //var appDir = MiscUtils.GetAppDataDir("NTerm", "Ephemera");
+            _settings = (UserSettings)SettingsCore.Load(appDir, typeof(UserSettings));
 
             StartPosition = FormStartPosition.Manual;
             Location = new Point(_settings.FormGeometry.X, _settings.FormGeometry.Y);
             Size = new Size(_settings.FormGeometry.Width, _settings.FormGeometry.Height);
+
+            // Init configuration.
+            InitFromSettings();
 
             cliIn.InputEvent += (object? sender, CliInputEventArgs e) =>
             {
@@ -100,36 +106,39 @@ namespace NTerm
             base.Dispose(disposing);
         }
 
-        ///// <summary>
-        ///// 
-        ///// </summary>
-        ///// <param name="e"></param>
-        //protected override void OnLoad(EventArgs e)
-        //{
-        //    // Open config.
-        //    var fn = @"C:\Dev\WinFormsApp1\config.json";
-        //    try
-        //    {
-        //        string json = File.ReadAllText(fn);
-        //        object? set = JsonSerializer.Deserialize(json, typeof(Config));
-        //        _config = (Config)set!;
-        //        switch (_config.Protocol.ToLower())
-        //        {
-        //            case "tcp":
-        //                _prot = new TcpProtocol(_config.Host, _config.Port);
-        //                break;
-        //            default:
-        //                _logger.Error($"Invalid protocol: {_config.Protocol}");
-        //                break;
-        //        }
-        //    }
-        //    catch (Exception ex)
-        //    {
-        //        // Errors are considered fatal.
-        //        _logger.Debug($"Invalid config {fn}:{ex}");
-        //    }
-        //    base.OnLoad(e);
-        //}
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="e"></param>
+        protected override void OnLoad(EventArgs e)
+        {
+            Run();
+
+
+            //// Open config.
+            //var fn = @"C:\Dev\WinFormsApp1\config.json";
+            //try
+            //{
+            //    string json = File.ReadAllText(fn);
+            //    object? set = JsonSerializer.Deserialize(json, typeof(Config));
+            //    _config = (Config)set!;
+            //    switch (_config.Protocol.ToLower())
+            //    {
+            //        case "tcp":
+            //            _prot = new TcpProtocol(_config.Host, _config.Port);
+            //            break;
+            //        default:
+            //            _logger.Error($"Invalid protocol: {_config.Protocol}");
+            //            break;
+            //    }
+            //}
+            //catch (Exception ex)
+            //{
+            //    // Errors are considered fatal.
+            //    _logger.Debug($"Invalid config {fn}:{ex}");
+            //}
+            base.OnLoad(e);
+        }
 
         /// <summary>
         /// 
@@ -141,6 +150,7 @@ namespace NTerm
 
             base.OnFormClosing(e);
         }
+        #endregion
 
         ///// <summary>
         ///// 
@@ -189,7 +199,7 @@ namespace NTerm
                             // Do the work...
 
                             //bool running = true;
-                            string? ucmd = null;    
+                            string? ucmd = null;
                             OpStatus res;
                             bool ok = true;
 
@@ -201,19 +211,19 @@ namespace NTerm
                                     ucmd = le.Text;
                                     break;
 
-                                case (Modifier.Ctrl, "q"):
-                                    _tokenSource.Cancel();
-                                    break;
+                                //case (Modifier.Ctrl, "q"):
+                                //    _tokenSource.Cancel();
+                                //    break;
 
-                                case (Modifier.Ctrl, "s"):
-                                    var ed = new Editor() { Settings = _settings };
-                                    ed.ShowDialog();
-                                    LoadSettings();
-                                    break;
+                                //case (Modifier.Ctrl, "s"):
+                                //    var ed = new Editor() { Settings = _settings };
+                                //    ed.ShowDialog();
+                                //    LoadSettings();
+                                //    break;
 
-                                case (Modifier.Ctrl, "h"):
-                                    Help();
-                                    break;
+                                //case (Modifier.Ctrl, "h"):
+                                //    Help();
+                                //    break;
 
                                 case (Modifier.Alt, _):
                                     ok = _hotKeys.TryGetValue(le.Text, out ucmd);
@@ -426,15 +436,15 @@ namespace NTerm
         /// 
         /// </summary>
         /// <exception cref="ArgumentException"></exception>
-        void LoadSettings()
+        void InitFromSettings()
         {
             // Reset.
             _config = null;
             _comm?.Dispose();
             _comm = null;
 
-            var appDir = MiscUtils.GetAppDataDir("NTerm", "Ephemera");
-            _settings = (UserSettings)SettingsCore.Load(appDir, typeof(UserSettings));
+            cliIn.BackColor = _settings.BackColor;
+            tvOut.BackColor = _settings.BackColor;
 
             LogManager.MinLevelFile = _settings.FileLogLevel;
             LogManager.MinLevelNotif = _settings.NotifLogLevel;
@@ -443,13 +453,15 @@ namespace NTerm
 
             if (lc.Count > 0)
             {
-                _config = _settings.Configs[0];
+                var c = _settings.Configs.FirstOrDefault(x => x.Name == _settings.CurrentConfig);
+                _config = c is null ? _settings.Configs[0] : c;
+
                 OpStatus stat = OpStatus.Success;
 
                 _comm = _config.CommType switch
                 {
                     CommType.Tcp => new TcpComm(),
-                    CommType.Serial => new SerialComm(),
+                    CommType.Serial => new SerialComm(new SerialPort() as ISerialPort),
                     CommType.Null => new NullComm(),
                     _ => null
                 };
@@ -543,21 +555,30 @@ namespace NTerm
         //        Console_xxx.Write(_settings.Prompt);
         //    }
         //}
+        #endregion
 
-        /// <summary>
-        /// 
-        /// </summary>
-        void Help()
+
+
+        private void Settings_Click(object sender, EventArgs e)
+        {
+            var ed = new Editor() { Settings = _settings };
+            ed.ShowDialog();
+            InitFromSettings();
+        }
+
+        private void Help_Click(object sender, EventArgs e)
         {
             Write("ctrl-s to edit settings");
             Write("ctrl-q to exit");
             Write("ctrl-h this here");
 
-            _hotKeys.ForEach(x => Write($"alt-{x.Key} send {x.Value}"));
+            _hotKeys.ForEach(x => Write($"alt-{x.Key} sends: [{x.Value}]"));
 
             var cc = _config is not null ? $"{_config.Name}({_config.CommType})" : "None";
             Write($"current config: {cc}");
+
+            Write("serial ports:");
+            SerialPort.GetPortNames().ForEach(s => { Write($"   {s}"); });
         }
-        #endregion
     }
 }

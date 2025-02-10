@@ -23,7 +23,6 @@ namespace NTerm
         [DisplayName("Current Configuration")]
         [Description("Playing now.")]
         [Browsable(true)]
-        [JsonIgnore]
         [TypeConverter(typeof(FixedListTypeConverter))]
         public string CurrentConfig { get; set; } = "";
 
@@ -41,6 +40,12 @@ namespace NTerm
         [Description("Colorize output.")]
         [Browsable(true)]
         public bool AnsiColor { get; set; } = true;
+
+        [DisplayName("Back Color")]
+        [Description("Colorize controls.")]
+        [Browsable(true)]
+        [JsonConverter(typeof(JsonColorConverter))]
+        public Color BackColor { get; set; } = Color.SeaShell;
 
         [DisplayName("File Log Level")]
         [Description("Log level for file write.")]

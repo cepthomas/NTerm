@@ -1,20 +1,39 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
-  <PropertyGroup>
-    <OutputType>Exe</OutputType>
-    <TargetFramework>net8.0-windows</TargetFramework>
-    <ImplicitUsings>enable</ImplicitUsings>
-    <Nullable>enable</Nullable>
-  </PropertyGroup>
+    <PropertyGroup>
+        <OutputType>Exe</OutputType>
+        <TargetFramework>net8.0-windows</TargetFramework>
+        <ImplicitUsings>disable</ImplicitUsings>
+        <UseWindowsForms>true</UseWindowsForms>
+        <Nullable>enable</Nullable>
+    </PropertyGroup>
 
-  <ItemGroup>
-    <Compile Include="..\Common.cs" Link="Common.cs" />
-  </ItemGroup>
+    <ItemGroup>
+        <Compile Remove="SerialPort_XXX.cs" />
+        <Compile Remove="SerialStream_XXX.cs" />
+        <Compile Remove="Stream_XXX.cs" />
+    </ItemGroup>
 
-  <ItemGroup>
-    <Reference Include="Ephemera.NBagOfTricks">
-      <HintPath>..\lib\Ephemera.NBagOfTricks.dll</HintPath>
-    </Reference>
-  </ItemGroup>
+    <ItemGroup>
+        <Compile Include="..\Common.cs" Link="Common.cs" />
+        <Compile Include="..\SerialComm.cs" Link="SerialComm.cs" />
+        <Compile Include="..\TcpComm.cs" Link="TcpComm.cs" />
+        <Compile Include="..\Types.cs" Link="Types.cs" />
+        <Compile Include="..\UserSettings.cs" Link="UserSettings.cs" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <PackageReference Include="System.IO.Ports" Version="9.0.1" />
+        <PackageReference Include="System.Management" Version="9.0.1" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <Reference Include="Ephemera.NBagOfTricks">
+            <HintPath>..\lib\Ephemera.NBagOfTricks.dll</HintPath>
+        </Reference>
+        <Reference Include="Ephemera.NBagOfUis">
+          <HintPath>..\lib\Ephemera.NBagOfUis.dll</HintPath>
+        </Reference>
+    </ItemGroup>
 
 </Project>

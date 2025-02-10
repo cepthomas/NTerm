@@ -1,5 +1,7 @@
 ﻿using System.Drawing;
 using System.Windows.Forms;
+using Ephemera.NBagOfUis;
+
 
 namespace NTerm
 {
@@ -32,7 +34,7 @@ namespace NTerm
         /// </summary>
         private void InitializeComponent()
         {
-            pgSettings = new PropertyGrid();
+            pgSettings = new PropertyGridEx();
             splitContainer1 = new SplitContainer();
             pgConfig = new PropertyGrid();
             ((System.ComponentModel.ISupportInitialize)splitContainer1).BeginInit();
@@ -90,7 +92,7 @@ namespace NTerm
 
         #endregion
 
-        private PropertyGrid pgSettings;
+        private PropertyGridEx pgSettings;
         private SplitContainer splitContainer1;
         private PropertyGrid pgConfig;
     }

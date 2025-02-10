@@ -6,7 +6,7 @@ using System.Numerics;
 using System.Text;
 
 
-namespace NTermTest
+namespace NTerm.Test
 {
     public class Server
     {
