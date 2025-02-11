@@ -28,7 +28,7 @@ namespace NTerm
     /// <summary>Real serial port implementation.</summary>
     public class SerialPortImpl : ISerialPort
     {
-        SerialPort _serialPort = new();
+        readonly SerialPort _serialPort = new();
 
         #region ISerialPort implementation
         public int ReadBufferSize { get => _serialPort.ReadBufferSize; set => _serialPort.ReadBufferSize = value; }

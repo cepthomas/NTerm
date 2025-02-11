@@ -15,11 +15,14 @@
         /// </summary>
         private void InitializeComponent()
         {
+            System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(MainForm));
             tvOut = new Ephemera.NBagOfUis.TextViewer();
             cliIn = new Ephemera.NBagOfUis.CliInput();
             toolStrip1 = new System.Windows.Forms.ToolStrip();
             btnSettings = new System.Windows.Forms.ToolStripButton();
             btnHelp = new System.Windows.Forms.ToolStripButton();
+            btnClear = new System.Windows.Forms.ToolStripButton();
+            btnWrap = new System.Windows.Forms.ToolStripButton();
             toolStrip1.SuspendLayout();
             SuspendLayout();
             // 
@@ -46,32 +49,53 @@
             // toolStrip1
             // 
             toolStrip1.ImageScalingSize = new System.Drawing.Size(18, 18);
-            toolStrip1.Items.AddRange(new System.Windows.Forms.ToolStripItem[] { btnSettings, btnHelp });
+            toolStrip1.Items.AddRange(new System.Windows.Forms.ToolStripItem[] { btnSettings, btnHelp, btnClear, btnWrap });
             toolStrip1.Location = new System.Drawing.Point(0, 0);
             toolStrip1.Name = "toolStrip1";
-            toolStrip1.Size = new System.Drawing.Size(800, 25);
+            toolStrip1.Size = new System.Drawing.Size(800, 26);
             toolStrip1.TabIndex = 2;
             toolStrip1.Text = "toolStrip1";
             // 
             // btnSettings
             // 
-            btnSettings.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Image;
-            btnSettings.Image = Properties.Resources.glyphicons_137_cogwheel;
+            btnSettings.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Text;
             btnSettings.ImageTransparentColor = System.Drawing.Color.Magenta;
             btnSettings.Name = "btnSettings";
-            btnSettings.Size = new System.Drawing.Size(26, 22);
-            btnSettings.Text = "toolStripButton1";
+            btnSettings.Size = new System.Drawing.Size(61, 23);
+            btnSettings.Text = "settings";
+            btnSettings.ToolTipText = "Edit settings";
             btnSettings.Click += Settings_Click;
             // 
             // btnHelp
             // 
-            btnHelp.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Image;
-            btnHelp.Image = Properties.Resources.glyphicons_195_question_sign;
+            btnHelp.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Text;
             btnHelp.ImageTransparentColor = System.Drawing.Color.Magenta;
             btnHelp.Name = "btnHelp";
-            btnHelp.Size = new System.Drawing.Size(26, 22);
-            btnHelp.Text = "toolStripButton1";
+            btnHelp.Size = new System.Drawing.Size(39, 23);
+            btnHelp.Text = "help";
+            btnHelp.ToolTipText = "You need some help";
             btnHelp.Click += Help_Click;
+            // 
+            // btnClear
+            // 
+            btnClear.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Text;
+            btnClear.Image = (System.Drawing.Image)resources.GetObject("btnClear.Image");
+            btnClear.ImageTransparentColor = System.Drawing.Color.Magenta;
+            btnClear.Name = "btnClear";
+            btnClear.Size = new System.Drawing.Size(41, 23);
+            btnClear.Text = "clear";
+            btnClear.ToolTipText = "Clear output";
+            // 
+            // btnWrap
+            // 
+            btnWrap.CheckOnClick = true;
+            btnWrap.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Text;
+            btnWrap.Image = (System.Drawing.Image)resources.GetObject("btnWrap.Image");
+            btnWrap.ImageTransparentColor = System.Drawing.Color.Magenta;
+            btnWrap.Name = "btnWrap";
+            btnWrap.Size = new System.Drawing.Size(43, 23);
+            btnWrap.Text = "wrap";
+            btnWrap.ToolTipText = "Wrap output";
             // 
             // MainForm
             // 
@@ -96,5 +120,7 @@
         private System.Windows.Forms.ToolStrip toolStrip1;
         private System.Windows.Forms.ToolStripButton btnSettings;
         private System.Windows.Forms.ToolStripButton btnHelp;
+        private System.Windows.Forms.ToolStripButton btnClear;
+        private System.Windows.Forms.ToolStripButton btnWrap;
     }
 }

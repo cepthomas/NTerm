@@ -47,6 +47,13 @@ namespace NTerm
         [JsonConverter(typeof(JsonColorConverter))]
         public Color BackColor { get; set; } = Color.SeaShell;
 
+        [DisplayName("Monospace Font")]
+        [Description("Select Monospace Font.")]
+        [Browsable(true)]
+        [JsonConverter(typeof(JsonFontConverter))]
+        [Editor(typeof(MonospaceFontEditor), typeof(UITypeEditor))]
+        public Font Font { get; set; } = new("Cascadia Code", 8);
+
         [DisplayName("File Log Level")]
         [Description("Log level for file write.")]
         [Browsable(true)]

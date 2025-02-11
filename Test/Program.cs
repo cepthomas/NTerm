@@ -13,6 +13,31 @@ using System.Text;
 //var ports = ser.GetSerialPorts();
 
 
+///// <summary>
+///// 
+///// </summary>
+///// <param name="sender"></param>
+///// <param name="e"></param>
+//void BtnGo_Click(object? sender, EventArgs e)
+//{
+//    try
+//    {
+//        // Works:
+//        //AsyncUsingTcpClient();
+
+//        //StartServer(_config.Port);
+//        //var res = _prot.Send("djkdjsdfksdf;s");
+//        //tvOut.AppendLine(res);
+
+//    }
+//    catch (Exception ex)
+//    {
+//        _logger.Error($"Fatal error: {ex.Message}");
+//    }
+//}
+
+
+
 namespace NTermTest
 {
     internal class Program

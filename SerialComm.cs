@@ -16,24 +16,13 @@ using Ephemera.NBagOfTricks.Slog;
 
 namespace NTerm
 {
-    public class SerialComm : IComm // TODO needs debug.
+    public class SerialComm(ISerialPort sport) : IComm // TODO needs debug.
     {
         #region Fields
         readonly Logger _logger = LogManager.CreateLogger("SerialComm");
 
-
-        // public partial class SerialPort : Component
-        ISerialPort? _serialPort = null;
-        //xxx SerialPort? _serialPort = null;
-
-
+        readonly ISerialPort _serialPort = sport;
         #endregion
-
-
-        public SerialComm(ISerialPort sport)
-        {
-            _serialPort = sport;
-        }
 
         #region IComm implementation
         public int ResponseTime { get; set; } = 500;
@@ -62,7 +51,7 @@ namespace NTerm
                     "E" => Parity.Even,
                     "O" => Parity.Odd,
                     "N" => Parity.None,
-                    _ => (Parity)(-1) // invalid
+                    _ => throw new ArgumentException($"Invalid parity:{parts[2]}"),
                 };
 
                 _serialPort.DataBits = parts[3] switch
@@ -70,7 +59,7 @@ namespace NTerm
                     "6" => 6,
                     "7" => 7,
                     "8" => 8,
-                    _ => -1 // invalid
+                    _ => throw new ArgumentException($"Invalid data bits:{parts[3]}"),
                 };
 
                 _serialPort.StopBits = parts[4] switch
@@ -78,7 +67,7 @@ namespace NTerm
                     "0" => StopBits.None,
                     "1" => StopBits.One,
                     "1.5" => StopBits.OnePointFive,
-                    _ => (StopBits)(-1) // invalid
+                    _ => throw new ArgumentException($"Invalid stop bits:{parts[4]}"),
                 };
 
                 // Other params.
@@ -103,7 +92,6 @@ namespace NTerm
         {
             _serialPort?.Close();
             _serialPort?.Dispose();
-            _serialPort = null;
         }
         #endregion
 
