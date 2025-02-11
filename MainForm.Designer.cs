@@ -39,7 +39,7 @@
             cliIn.Anchor = System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left | System.Windows.Forms.AnchorStyles.Right;
             cliIn.Location = new System.Drawing.Point(10, 398);
             cliIn.Name = "cliIn";
-            cliIn.Prompt = "???";
+            cliIn.Prompt = "";
             cliIn.Size = new System.Drawing.Size(778, 40);
             cliIn.TabIndex = 1;
             // 

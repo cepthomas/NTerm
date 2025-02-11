@@ -247,10 +247,10 @@ namespace NTerm
                                 }
                                 else
                                 {
-                                    _logger.Trace($"SND:{ucmd}");
+                                    _logger.Debug($"SND:{ucmd}");
                                     res = _comm.Send(ucmd);
                                     // Show results.
-                                    _logger.Trace($"RCV:{res}: {_comm.Response}");
+                                    _logger.Debug($"RCV:{res}: {_comm.Response}");
                                 }
                                 // WritePrompt();
                             }

@@ -39,7 +39,7 @@ namespace NTerm.Test
                 Console.WriteLine($"Client said [{request}]");
 
                 ////// Reply /////
-                string resp = "???";
+                string resp = "resp???";
                 switch (request)
                 {
                     case "l": // large payload
