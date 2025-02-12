@@ -6,6 +6,7 @@ using System.Drawing;
 using System.IO;
 using System.IO.Ports;
 using System.Linq;
+using System.Reflection;
 using System.Text;
 using System.Text.Json;
 using System.Threading;
@@ -63,28 +64,27 @@ namespace NTerm
             LogManager.Run(logFileName, 50000);
             LogManager.LogMessage += LogMessage;
 
-            //var appDir = MiscUtils.GetAppDataDir("NTerm", "Ephemera");
             _settings = (UserSettings)SettingsCore.Load(appDir, typeof(UserSettings));
 
             StartPosition = FormStartPosition.Manual;
             Location = new Point(_settings.FormGeometry.X, _settings.FormGeometry.Y);
             Size = new Size(_settings.FormGeometry.Width, _settings.FormGeometry.Height);
+            Icon = Icon.ExtractAssociatedIcon(Assembly.GetExecutingAssembly().Location);
 
             KeyPreview = true;
-
-            //private void Clear_Click(object sender, EventArgs e)
-            //private void Wrap_Click(object sender, EventArgs e)
 
             // Init configuration.
             InitFromSettings();
 
-            cliIn.InputEvent += (object? sender, CliInputEventArgs e) =>
-            {
-                if (_running) // don't fill a dead queue.
-                {
-                    _queue.Enqueue(e);
-                }
-            };
+            // TODO buttons?
+            //btnSettings.DisplayStyle = ToolStripItemDisplayStyle.Text;
+            //btnSettings.Image = Image.FromFile("C:\\Dev\\Apps\\NTerm\\Ramon.png");
+
+            // UI handlers.
+            btnSettings.Click += (_, _) => SettingsEditor.Edit(_settings, "User Settings", 500);
+            btnClear.Click += (_, _) => tvOut.Clear();
+            btnWrap.Click += (_, _) => tvOut.WordWrap = btnWrap.Checked;
+            cliIn.InputEvent += (object? sender, CliInputEventArgs e) => _queue.Enqueue(e);
         }
 
         /// <summary>
@@ -130,22 +130,24 @@ namespace NTerm
 
 
         /// <summary>
-        /// Do some global key handling.
+        /// Send all keystrokes to the cli.
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
         protected override void OnKeyDown(KeyEventArgs e)
         {
-            // TODO send everything to cli control.
+            // Send everything to cli control.
+            //            cliIn.ProcessKey(e);
 
-            switch (e.KeyCode)
-            {
-                case Keys.Space:
-                    // Toggle.
-                    //   UpdateState(btnPlay.Checked ? ExplorerState.Stop : ExplorerState.Play);
-                    e.Handled = true;
-                    break;
-            }
+            //https://stackoverflow.com/questions/1264227/send-keystroke-to-other-control
+
+            //cliIn.Focus();
+
+            //SendKeys.SendWait();
+
+
+            //e.Handled = true;
+
             base.OnKeyDown(e);
         }
 
@@ -361,23 +363,11 @@ namespace NTerm
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
-        private void Settings_Click(object sender, EventArgs e)
+        void Help_Click(object sender, EventArgs e)
         {
-            var ed = new Editor() { Settings = _settings };
-            ed.ShowDialog();
-            InitFromSettings();
-        }
-
-        /// <summary>
-        /// 
-        /// </summary>
-        /// <param name="sender"></param>
-        /// <param name="e"></param>
-        private void Help_Click(object sender, EventArgs e)
-        {
-            Write("ctrl-s to edit settings");
-            Write("ctrl-q to exit");
-            Write("ctrl-h this here");
+            // Write("ctrl-s to edit settings");
+            // Write("ctrl-q to exit");
+            // Write("ctrl-h this here");
 
             _hotKeys.ForEach(x => Write($"alt-{x.Key} sends: [{x.Value}]"));
 
@@ -385,8 +375,8 @@ namespace NTerm
             Write($"current config: {cc}");
 
             Write("serial ports:");
-            SerialPort.GetPortNames().ForEach(s => { Write($"   {s}"); });
+            var sports = SerialPort.GetPortNames();
+            sports.ForEach(s => { Write($"   {s}"); });
         }
-
     }
 }

@@ -64,7 +64,6 @@
             btnSettings.Size = new System.Drawing.Size(61, 23);
             btnSettings.Text = "settings";
             btnSettings.ToolTipText = "Edit settings";
-            btnSettings.Click += Settings_Click;
             // 
             // btnHelp
             // 

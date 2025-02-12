@@ -23,7 +23,7 @@ namespace NTerm
         [DisplayName("Current Configuration")]
         [Description("Playing now.")]
         [Browsable(true)]
-        [TypeConverter(typeof(FixedListTypeConverter))]
+        [TypeConverter(typeof(SettingsListConverter))]
         public string CurrentConfig { get; set; } = "";
 
         [DisplayName("Configurations")]
@@ -51,7 +51,7 @@ namespace NTerm
         [Description("Select Monospace Font.")]
         [Browsable(true)]
         [JsonConverter(typeof(JsonFontConverter))]
-        [Editor(typeof(MonospaceFontEditor), typeof(UITypeEditor))]
+        [Editor(typeof(MonospaceFontEditor), typeof(UITypeEditor))] // TODO weird font sizes
         public Font Font { get; set; } = new("Cascadia Code", 8);
 
         [DisplayName("File Log Level")]
@@ -100,5 +100,23 @@ namespace NTerm
         [Browsable(false)]
         public uint Id { get; private set; } = (uint)Guid.NewGuid().GetHashCode();
         #endregion
+    }
+
+
+    /// <summary>Converter for providing property options.</summary>
+    public class SettingsListConverter : TypeConverter
+    {
+        public override StandardValuesCollection GetStandardValues(ITypeDescriptorContext? context)
+        {
+            var settings = (UserSettings)context!.Instance!;
+            switch (context!.PropertyDescriptor!.Name)
+            {
+                case "CurrentConfig": return new StandardValuesCollection(settings.Configs.Select(x => x.Name).ToList());
+                default: return new StandardValuesCollection(null);
+            }
+        }
+
+        public override bool GetStandardValuesSupported(ITypeDescriptorContext? context) { return true; }
+        public override bool GetStandardValuesExclusive(ITypeDescriptorContext? context) { return true; }
     }
 }
