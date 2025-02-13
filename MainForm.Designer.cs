@@ -16,35 +16,15 @@
         private void InitializeComponent()
         {
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(MainForm));
-            tvOut = new Ephemera.NBagOfUis.TextViewer();
-            cliIn = new Ephemera.NBagOfUis.CliInput();
             toolStrip1 = new System.Windows.Forms.ToolStrip();
             btnSettings = new System.Windows.Forms.ToolStripButton();
             btnHelp = new System.Windows.Forms.ToolStripButton();
             btnClear = new System.Windows.Forms.ToolStripButton();
             btnWrap = new System.Windows.Forms.ToolStripButton();
+            rtbOut = new System.Windows.Forms.RichTextBox();
+            rtbIn = new System.Windows.Forms.RichTextBox();
             toolStrip1.SuspendLayout();
             SuspendLayout();
-            // 
-            // tvOut
-            // 
-            tvOut.Anchor = System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left | System.Windows.Forms.AnchorStyles.Right;
-            tvOut.Location = new System.Drawing.Point(10, 28);
-            tvOut.MaxText = 10000;
-            tvOut.Name = "tvOut";
-            tvOut.Prompt = "";
-            tvOut.Size = new System.Drawing.Size(778, 364);
-            tvOut.TabIndex = 0;
-            tvOut.WordWrap = true;
-            // 
-            // cliIn
-            // 
-            cliIn.Anchor = System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left | System.Windows.Forms.AnchorStyles.Right;
-            cliIn.Location = new System.Drawing.Point(10, 398);
-            cliIn.Name = "cliIn";
-            cliIn.Prompt = "";
-            cliIn.Size = new System.Drawing.Size(778, 40);
-            cliIn.TabIndex = 1;
             // 
             // toolStrip1
             // 
@@ -96,14 +76,32 @@
             btnWrap.Text = "wrap";
             btnWrap.ToolTipText = "Wrap output";
             // 
+            // rtbOut
+            // 
+            rtbOut.BorderStyle = System.Windows.Forms.BorderStyle.None;
+            rtbOut.Location = new System.Drawing.Point(22, 40);
+            rtbOut.Name = "rtbOut";
+            rtbOut.Size = new System.Drawing.Size(753, 362);
+            rtbOut.TabIndex = 3;
+            rtbOut.Text = "";
+            // 
+            // rtbIn
+            // 
+            rtbIn.BorderStyle = System.Windows.Forms.BorderStyle.None;
+            rtbIn.Location = new System.Drawing.Point(22, 417);
+            rtbIn.Name = "rtbIn";
+            rtbIn.Size = new System.Drawing.Size(753, 38);
+            rtbIn.TabIndex = 4;
+            rtbIn.Text = "";
+            // 
             // MainForm
             // 
             AutoScaleDimensions = new System.Drawing.SizeF(8F, 19F);
             AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            ClientSize = new System.Drawing.Size(800, 450);
+            ClientSize = new System.Drawing.Size(800, 485);
+            Controls.Add(rtbIn);
+            Controls.Add(rtbOut);
             Controls.Add(toolStrip1);
-            Controls.Add(cliIn);
-            Controls.Add(tvOut);
             Name = "MainForm";
             Text = "Form1";
             toolStrip1.ResumeLayout(false);
@@ -113,13 +111,12 @@
         }
 
         #endregion
-
-        private Ephemera.NBagOfUis.TextViewer tvOut;
-        private Ephemera.NBagOfUis.CliInput cliIn;
         private System.Windows.Forms.ToolStrip toolStrip1;
         private System.Windows.Forms.ToolStripButton btnSettings;
         private System.Windows.Forms.ToolStripButton btnHelp;
         private System.Windows.Forms.ToolStripButton btnClear;
         private System.Windows.Forms.ToolStripButton btnWrap;
+        private System.Windows.Forms.RichTextBox rtbOut;
+        private System.Windows.Forms.RichTextBox rtbIn;
     }
 }

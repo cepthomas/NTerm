@@ -31,15 +31,15 @@ namespace NTerm
         [Browsable(true)]
         public List<Config> Configs { get; set; } = [];
 
-        // [DisplayName("Prompt")]
-        // [Description("CLI prompt.")]
-        // [Browsable(true)]
-        // public string Prompt { get; set; } = ">";
-
-        [DisplayName("ANSI Color")]
-        [Description("Colorize output.")]
+        [DisplayName("Prompt")]
+        [Description("CLI prompt.")]
         [Browsable(true)]
-        public bool AnsiColor { get; set; } = true;
+        public string Prompt { get; set; } = ">";
+
+        //[DisplayName("ANSI Color")]
+        //[Description("Colorize output.")]
+        //[Browsable(true)]
+        //public bool AnsiColor { get; set; } = true;
 
         [DisplayName("Back Color")]
         [Description("Colorize controls.")]

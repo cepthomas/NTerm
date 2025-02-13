@@ -264,9 +264,6 @@
         <member name="T:Ephemera.NBagOfUis.Modifier">
             <summary>For hotkeys.</summary>
         </member>
-        <member name="T:Ephemera.NBagOfUis.CliInputEventArgs">
-            <summary>Internal cli entry data container.</summary>
-        </member>
         <member name="P:Ephemera.NBagOfUis.CliInputEventArgs.Mod">
             <summary>Test for hotkey press.</summary>
         </member>
@@ -299,18 +296,18 @@
             Constructor sets some defaults.
             </summary>
         </member>
-        <member name="M:Ephemera.NBagOfUis.CliInput.AddToHistory(System.String)">
-            <summary>
-            Update the history with the new entry.
-            </summary>
-            <param name="s"></param>
-        </member>
         <member name="M:Ephemera.NBagOfUis.CliInput.Rtb_KeyDown(System.Object,System.Windows.Forms.KeyEventArgs)">
             <summary>
             Catch a few keys.
             </summary>
             <param name="sender"></param>
             <param name="e"></param>
+        </member>
+        <member name="M:Ephemera.NBagOfUis.CliInput.AddToHistory(System.String)">
+            <summary>
+            Update the history with the new entry.
+            </summary>
+            <param name="s"></param>
         </member>
         <member name="F:Ephemera.NBagOfUis.CpuMeter._cpuPerf">
             <summary>Total usage.</summary>
@@ -1240,7 +1237,7 @@
             </summary>
         </member>
         <member name="P:Ephemera.NBagOfUis.TextViewer.MatchText">
-            <summary>The colors to display when text is matched. TODO option for word or whole line.</summary>
+            <summary>The colors to display when text is matched. TODO option for coloring just word or whole line.</summary>
         </member>
         <member name="P:Ephemera.NBagOfUis.TextViewer.BackColor">
             <summary>Cosmetics. Note this needs to be set in client constructor not OnLoad(). Unknown reason.</summary>
@@ -1260,18 +1257,6 @@
         <member name="F:Ephemera.NBagOfUis.TextViewer._rtb">
             <summary>Contained control.</summary>
         </member>
-        <member name="F:Ephemera.NBagOfUis.TextViewer._state">
-            <summary>Ansi parse state.</summary>
-        </member>
-        <member name="F:Ephemera.NBagOfUis.TextViewer.ParseState.Look">
-            Plain text
-        </member>
-        <member name="F:Ephemera.NBagOfUis.TextViewer.ParseState.Collect">
-            Looking for '[' in sequence
-        </member>
-        <member name="F:Ephemera.NBagOfUis.TextViewer._ansiArgs">
-            <summary>Accumulated ansi arguments.</summary>
-        </member>
         <member name="M:Ephemera.NBagOfUis.TextViewer.#ctor">
             <summary>
             Constructor sets some defaults.
@@ -1289,20 +1274,13 @@
             </summary>
             <param name="disposing">true if managed resources should be disposed; otherwise, false.</param>
         </member>
-        <member name="M:Ephemera.NBagOfUis.TextViewer.Append(System.String,System.Nullable{System.Drawing.Color},System.Nullable{System.Drawing.Color},System.Boolean)">
+        <member name="M:Ephemera.NBagOfUis.TextViewer.AppendColor(System.String,System.Nullable{System.Drawing.Color},System.Nullable{System.Drawing.Color},System.Boolean)">
             <summary>
             Output text wwith explicit color.
             </summary>
             <param name="text">The text to show.</param>
             <param name="fg"></param>
             <param name="bg"></param>
-            <param name="nl">Add new line.</param>
-        </member>
-        <member name="M:Ephemera.NBagOfUis.TextViewer.AppendAnsi(System.String,System.Boolean)">
-            <summary>
-            Output text wwith ansi encoding.    
-            </summary>
-            <param name="text">The text to show.</param>
             <param name="nl">Add new line.</param>
         </member>
         <member name="M:Ephemera.NBagOfUis.TextViewer.AppendMatch(System.String,System.Boolean,System.Boolean)">
@@ -1313,17 +1291,15 @@
             <param name="line">Light up whole line otherwise just the word.</param>
             <param name="nl">Add new line.</param>
         </member>
+        <member name="M:Ephemera.NBagOfUis.TextViewer.Clear">
+            <summary>
+            Clean up.
+            </summary>
+        </member>
         <member name="M:Ephemera.NBagOfUis.TextViewer.Write(System.String,System.Boolean)">
             <summary>
             Low level output. Assumes caller has taken care of cross-thread issues.
             </summary>
-        </member>
-        <member name="M:Ephemera.NBagOfUis.TextViewer.ColorFromAnsi(System.String)">
-            <summary>
-            Decode ansi escape sequence arguments.
-            </summary>
-            <param name="ansi">Ansi args string</param>
-            <returns>Foreground and background colors. Color is Empty if invalid ansi string.</returns>
         </member>
         <member name="M:Ephemera.NBagOfUis.TextViewer.Rtb_KeyDown(System.Object,System.Windows.Forms.KeyEventArgs)">
             <summary>
