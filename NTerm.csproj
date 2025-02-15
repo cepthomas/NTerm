@@ -28,6 +28,10 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Compile Remove="MainForm_1.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
     <Content Include="cucaracha.ico" />
   </ItemGroup>
 

@@ -23,6 +23,22 @@ namespace NTerm
 {
     public partial class MainForm : Form
     {
+        #region Types
+        /// <summary></summary>
+        enum ColorMode { None, Ansi, Match }
+        
+        /// <summary></summary>
+        enum Modifier { None, Ctrl, Alt }
+
+        /// <summary>Spec for one match.</summary>
+        /// <param name="Text"></param>
+        /// <param name="WholeWord"></param>
+        /// <param name="WholeLine"></param>
+        /// <param name="ForeColor"></param>
+        /// <param name="BackColor"></param>
+        record Matcher(string Text, bool WholeWord, bool WholeLine, Color? ForeColor, Color? BackColor);
+        #endregion
+
         #region Fields
         /// <summary>My logger</summary>
         readonly Logger _logger = LogManager.CreateLogger("NTerm");
@@ -33,17 +49,8 @@ namespace NTerm
         /// <summary>Current config</summary>
         Config? _config = null;
 
-        /// <summary>Client flavor.</summary>
+        /// <summary>Client comm flavor.</summary>
         IComm? _comm = null;
-
-        /// <summary>User hot keys.</summary>
-        readonly Dictionary<string, string> _hotKeys = [];
-
-        /// <summary>Colors - ansi.</summary>
-        readonly Dictionary<LogLevel, int> _logColors = new() { { LogLevel.Error, 91 }, { LogLevel.Warn, 93 }, { LogLevel.Info, 96 }, { LogLevel.Debug, 92 } };
-
-        /// <summary>Cli event queue.</summary>
-        readonly ConcurrentQueue<CliInput> _queue = new();
 
         /// <summary>Queue management.</summary>
         bool _running = false;
@@ -51,22 +58,8 @@ namespace NTerm
         /// <summary>Queue management.</summary>
         readonly CancellationTokenSource _tokenSource = new();
 
-        /// <summary>Limit the size.</summary>
-        int _maxText = 10000;
-        #endregion
-
-
-        enum Modifier { None, Ctrl, Alt }
-
-        /// <summary>Internal data container.</summary>
-        record CliInput(Modifier Mod, string Text);
-
-        /// <summary>Ansi parse state.</summary>
-        AnsiParseState _state = AnsiParseState.Idle;
-        enum AnsiParseState { Idle, LookForBracket, CollectSequence }
-
-        /// <summary>Accumulated ansi arguments.</summary>
-        string _ansiArgs = "";
+        /// <summary>User hot keys.</summary>
+        readonly Dictionary<string, string> _hotKeys = [];
 
         /// <summary>Most recent at beginning.</summary>
         List<string> _history = [];
@@ -74,6 +67,33 @@ namespace NTerm
         /// <summary>Current location in list.</summary>
         int _historyIndex = 0;
 
+        /// <summary>Limit the output size. TODO use lines</summary>
+        int _maxText = 10000;
+
+        /// <summary>Internal data container.</summary>
+        record CliInput(Modifier Mod, string Text);
+
+        /// <summary>Cli async event queue.</summary>
+        readonly ConcurrentQueue<CliInput> _queue = new();
+
+        // [DisplayName("Color Mode TODO or in Config? + matchers?")]
+        // [Description("Colorize Mode.")]
+        // [Browsable(true)]
+        // public ColorMode ColorMode { get; set; } = ColorMode.None;
+        ColorMode _colorMode = ColorMode.Ansi;
+
+        /// <summary>All the match specs.</summary>
+        List<Matcher> _matchers = [];
+
+        /// <summary>Ansi regex.</summary>
+        string _ansiPattern = @"([^\u001B]+)\u001B\[([^m)]+)m";
+
+        /// <summary>Current ansi color.</summary>
+        Color _ansiForeColor;
+
+        /// <summary>Current ansi color.</summary>
+        Color _ansiBackColor;
+        #endregion
 
         #region Lifecycle
         /// <summary>
@@ -87,7 +107,7 @@ namespace NTerm
             var appDir = MiscUtils.GetAppDataDir("NTerm", "Ephemera");
             var logFileName = Path.Combine(appDir, "log.txt");
             LogManager.Run(logFileName, 50000);
-            LogManager.LogMessage += LogMessage;
+            LogManager.LogMessage += (object? sender, LogMessageEventArgs e) => Write(e.Message);
 
             _settings = (UserSettings)SettingsCore.Load(appDir, typeof(UserSettings));
 
@@ -111,8 +131,81 @@ namespace NTerm
             btnSettings.Click += (_, _) => SettingsEditor.Edit(_settings, "User Settings", 500);
             btnClear.Click += (_, _) => rtbOut.Clear();
             btnWrap.Click += (_, _) => rtbOut.WordWrap = btnWrap.Checked;
-            btnDebug.Click += (_, _) => DoRegex();
+
+            _ansiForeColor = rtbOut.ForeColor;
+            _ansiBackColor = rtbOut.BackColor;
+
+
+            btnDebug.Click += (_, _) => TestRegex();
         }
+
+        void TestRegex() // TODO put in Test.
+        {
+            // https://learn.microsoft.com/en-us/dotnet/api/system.text.regularexpressions.group.captures
+
+            string s = "No color [31m Standard color [38;5;32m  256 Color [38;2;60;120;180m  RGB Color [0m reset";
+
+            /* >>>
+            Matched:0-14
+                Group0:No color [31m
+                  Capture0:No color [31m
+                Group1:No color 
+                  Capture0:No color 
+                Group2:31
+                  Capture0:31
+            Matched:14-27
+                Group0: Standard color [38;5;32m
+                  Capture0: Standard color [38;5;32m
+                Group1: Standard color
+                  Capture0: Standard color
+                Group2:38;5;32
+                  Capture0:38;5;32
+            Matched:41-31
+                Group0:  256 Color [38;2;60;120;180m
+                  Capture0:  256 Color [38;2;60;120;180m
+                Group1:  256 Color 
+                  Capture0:  256 Color
+                Group2:38;2;60;120;180
+                  Capture0:38;2;60;120;180
+            Matched:72-17
+                Group0:  RGB Color [0m
+                  Capture0:  RGB Color [0m
+                Group1:  RGB Color
+                  Capture0:  RGB Color
+                Group2:0
+                  Capture0:0
+            Dangling: reset
+            */
+
+            int end = 0;
+            var matches = Regex.Matches(s, _ansiPattern);
+            foreach (Match match in Regex.Matches(s, _ansiPattern))
+            {
+                end = match.Index + match.Length;
+
+                //Write($"Matched text: {match.Value} [{match.Index} {match.Length}]");
+                Write($"Matched:{match.Index}-{match.Length}");
+
+                int groupCtr = 0;
+                foreach (Group group in match.Groups)
+                {
+                    Write($"  Group{groupCtr}:{group.Value}");
+                    groupCtr++;
+
+                    int capCtr = 0;
+                    foreach (Capture capture in group.Captures)
+                    {
+                        Write($"    Capture{capCtr}:{capture.Value}");
+                        capCtr++;
+                    }
+                }
+            }
+
+            var dangling = s.Substring(end);
+            Write($"Dangling:{dangling}");
+        }
+
+
 
         /// <summary>
         ///  Clean up any resources being used.
@@ -138,194 +231,8 @@ namespace NTerm
         protected override void OnLoad(EventArgs e)
         {
             Run();
-
             base.OnLoad(e);
         }
-
-
-        void DoRegex() // TODO 
-        {
-            /*
-            \x1b[34;01m
-            "\u001B"
-            [38;5;32m
-            (\u001B\[\d+;\d+m)+
-
-            section-heading:
-            - match: ^(#+ +[^\[]+) *(?:\[(.*)\])?\n
-
-            link definition <name>(link)
-            - match: <([^>)]+)>\(([^\)]+)\)
-            captures:
-            1: markup.link.name.notr
-            2: markup.link.target.notr
-            3: markup.link.tags.notr
-            */
-
-            // https://learn.microsoft.com/en-us/dotnet/api/system.text.regularexpressions.group.captures
-
-            string pattern = @"([^\u001B]+)\u001B\[([^m)]+)m";
-            string input = "No color [31m Standard colors [38;5;32m  256 Colors [38;2;60;120;180m  RGB Colors [0m reset";
-            //>>>
-            //Matched text: No color [31m [0 14]
-            //  Group 0: No color [31m
-            //    Capture 1 :  No color [31m
-            //  Group 1: No color 
-            //    Capture 2 :  No color 
-            //  Group 2: 31
-            //    Capture 3 :  31
-            //Matched text:  Standard colors [38;5;32m [14 27]
-            //  Group 0:  Standard colors [38;5;32m
-            //    Capture 1 :   Standard colors [38;5;32m
-            //  Group 1:  Standard colors 
-            //    Capture 2 :   Standard colors 
-            //  Group 2: 38;5;32
-            //    Capture 3 :  38;5;32
-            //Matched text:   256 Colors [38;2;60;120;180m [41 31]
-            //  Group 0:   256 Colors [38;2;60;120;180m
-            //    Capture 1 :    256 Colors [38;2;60;120;180m
-            //  Group 1:   256 Colors 
-            //    Capture 2 :    256 Colors 
-            //  Group 2: 38;2;60;120;180
-            //    Capture 3 :  38;2;60;120;180
-            //Matched text:   RGB Colors [0m [72 17]
-            //  Group 0:   RGB Colors [0m
-            //    Capture 1 :    RGB Colors [0m
-            //  Group 1:   RGB Colors 
-            //    Capture 2 :    RGB Colors 
-            //  Group 2: 0
-            //    Capture 3 :  0
-
-
-            bool mult = true;
-            if (mult)
-            {
-                int lastIndex = 0;
-
-                var matches = Regex.Matches(input, pattern);
-
-                foreach (Match match in Regex.Matches(input, pattern))
-                {
-                    lastIndex = match.Index + match.Length;
-
-                    Write($"Matched text: {match.Value} [{match.Index} {match.Length}]");
-
-                    int groupCtr = 0;
-
-                    foreach (Group group in match.Groups)
-                    {
-                        Write($"  Group {groupCtr}: {group.Value}");
-                        groupCtr++;
-
-                        int capCtr = 0;
-                        foreach (Capture capture in group.Captures)
-                        {
-                            Write($"    Capture {groupCtr} :  {group.Value}");
-                            capCtr++;
-                        }
-                    }
-                }
-
-                var dangling = input.Substring(lastIndex);
-                Write($"  Dangling : [{dangling}]");
-            }
-
-
-            //string pattern = @"([^<]+)<([^>)]+)>\(([^\)]+)\)";
-            //string input = "1111 <name1>(lnk1)  2222 <name2>(lnk2)  3333 <name3>(lnk3)";
-            //>>>
-            //Matched text: 1111 <name1>(lnk1)
-            //  Group 1: 1111 
-            //    Capture 0: 1111 
-            //  Group 2: name1
-            //    Capture 0: name1
-            //  Group 3: lnk1
-            //    Capture 0: lnk1
-            //Matched text:   2222 <name2>(lnk2)
-            //  Group 1:   2222 
-            //    Capture 0:   2222 
-            //  Group 2: name2
-            //    Capture 0: name2
-            //  Group 3: lnk2
-            //    Capture 0: lnk2
-
-
-            //string pattern = @"\b(\w+\s*)+\.";
-            //string input = "This is a sentence. This is another sentence.";
-            //>>>
-            //Matched text: This is a sentence.
-            //  Group 1: sentence
-            //    Capture 0: This 
-            //    Capture 1: is 
-            //    Capture 2: a 
-            //    Capture 3: sentence
-            //Matched text: This is another sentence.
-            //  Group 1: sentence
-            //    Capture 0: This 
-            //    Capture 1: is 
-            //    Capture 2: another 
-            //    Capture 3: sentence
-
-            // 1st Capturing Group (\w+\s*)+
-            //   + matches the previous token between one and unlimited times, as many times as possible, giving back as needed (greedy)
-            //   \w match any word character in any script (equivalent to [\p{L}\p{Mn}\p{Nd}\p{Pc}])
-            //   + matches the previous token between one and unlimited times, as many times as possible, giving back as needed (greedy)
-            //   \s matches any kind of invisible character (equivalent to [\f\n\r\t\v\p{Z}])
-            //   * matches the previous token between zero and unlimited times, as many times as possible, giving back as needed (greedy)
-            // \. matches the character . with index 4610 (2E16 or 568) literally (case sensitive)
-
-
-            //string input = "QSMDRYCELL   11.00   11.10   11.00   11.00    -.90      11     11000     1.212";
-            //string pattern = @"^(\S+)\s+(\s+[\d.-]+){8}$";
-            // >>>
-            //Matched text: QSMDRYCELL   11.00   11.10   11.00   11.00 - .90      11     11000     1.212
-            //   Group 1: QSMDRYCELL
-            //      Capture 0: QSMDRYCELL
-            //   Group 2:      1.212
-            //      Capture 0:  11.00
-            //      Capture 1:    11.10
-            //      Capture 2:    11.00
-            //      Capture 3:    11.00
-            //      Capture 4:     -.90
-            //      Capture 5:       11
-            //      Capture 6:      11000
-            //      Capture 7:      1.212
-
-
-            // string pattern = @"\b(\w+)\b";
-            // string input = "This is one sentence.";
-            // >>>
-            //       Matched text: This
-            //          Group 1:  This
-            //             Capture 0: This
-
-
-            //// extract and clean up port name and number
-            //c.name = p.GetPropertyValue("Name").ToString();
-            //Match mName = Regex.Match(c.name, namePattern);
-            //if (mName.Success)
-            //{
-            //    c.name = mName.Value;
-            //    c.num = int.Parse(c.name.Substring(3));
-            //}
-
-            //// if the port name or number cannot be determined, skip this port and move on
-            //if (c.num < 1)
-            //{
-            //    continue;
-            //}
-
-            //// get the device's VID and PID
-            //string pidvid = p.GetPropertyValue("PNPDeviceID").ToString();
-
-            //// extract and clean up device's VID
-            //Match mVID = Regex.Match(pidvid, vidPattern, RegexOptions.IgnoreCase);
-            //if (mVID.Success)
-            //{
-            //    c.vid = mVID.Groups[1].Value.Substring(0, Math.Min(4, c.vid.Length));
-            //}
-        }
-
 
         /// <summary>
         /// 
@@ -334,7 +241,6 @@ namespace NTerm
         protected override void OnFormClosing(FormClosingEventArgs e)
         {
             SaveSettings();
-
             base.OnFormClosing(e);
         }
         #endregion
@@ -351,10 +257,7 @@ namespace NTerm
             {
                 while (_running)
                 {
-                    if (_tokenSource.Token.IsCancellationRequested)
-                    {
-                        _running = false;
-                    }
+                    _running = !_tokenSource.Token.IsCancellationRequested;
 
                     try
                     {
@@ -413,6 +316,7 @@ namespace NTerm
                                 {
                                     _logger.Debug($"SND:{ucmd}");
                                     res = _comm.Send(ucmd);
+                                    Write(_comm.Response);
                                     // Show results.
                                     _logger.Debug($"RCV:{res}: {_comm.Response}");
                                 }
@@ -433,13 +337,13 @@ namespace NTerm
         }
         #endregion
 
-        #region Key handlers TODO
+        #region Key handlers
         /// <summary>
         /// 
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
-        void RtbOut_KeyDown(object? sender, KeyEventArgs e)
+        void RtbOut_KeyDown(object? sender, KeyEventArgs e)// TODO
         {
 
         }
@@ -449,7 +353,7 @@ namespace NTerm
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
-        void RtbIn_KeyDown(object? sender, KeyEventArgs e)
+        void RtbIn_KeyDown(object? sender, KeyEventArgs e)// TODO
         {
             //var cv = (char)e.KeyValue;
             //var iv = e.KeyValue;
@@ -525,7 +429,7 @@ namespace NTerm
         }
 
         /// <summary>
-        /// Send all keystrokes to the cli.
+        /// Send all keystrokes to the cli.// TODO
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
@@ -546,116 +450,216 @@ namespace NTerm
 
         #region Output text
         /// <summary>
-        /// Output text wwith ansi encoding.    
+        /// Top level outputter. Takes care of UI thread.
         /// </summary>
-        /// <param name="text">The text to show.</param>
-        /// <param name="nl">Add new line.</param>
-        void AppendAnsi(string text, bool nl = true)
+        /// <param name="text"></param>
+        /// <param name="nl"></param>
+        void Write(string text, bool nl = true)
         {
-            for (int i = 0; i < text.Length; i++)
+            this.InvokeIfRequired(_ =>
             {
-                char c = text[i];
-
-                switch (_state, c)
+                // Trim buffer.
+                if (rtbOut.TextLength > _maxText)
                 {
-                    case (AnsiParseState.Idle, (char)Keys.Escape):
-                        _state = AnsiParseState.LookForBracket;
-                        break;
-
-                    case (AnsiParseState.Idle, (char)Keys.Return):
-                        _ansiArgs = "";
-                        Write("");
-                        break;
-
-                    case (AnsiParseState.LookForBracket, '['):
-                        _ansiArgs = "";
-                        _state = AnsiParseState.CollectSequence;
-                        break;
-
-                    case (AnsiParseState.CollectSequence, 'm'):
-                        var (fg, bg) = ColorFromAnsi(_ansiArgs);
-                        rtbOut.SelectionColor = fg;
-                        rtbOut.SelectionBackColor = bg;
-                        _state = AnsiParseState.Idle;
-                        _ansiArgs = "";
-                        break;
-
-                    case (AnsiParseState.CollectSequence, _):
-                        _ansiArgs += c;
-                        break;
-
-                    // TODO these useful?
-                    //case (ParseState.Idle, CANCEL):
-                    //case (ParseState.Idle, BACKSPACE):
-                    //case (ParseState.Idle, TAB):
-                    //case (ParseState.Idle, LINEFEED):
-                    //case (ParseState.Idle, CLEAR):
-                    //    break;
-
-                    case (AnsiParseState.Idle, _):
-                        Write(c.ToString(), false);
-                        break;
-
-                    case (_, _):
-                        // Anything else is a syntax error.
-                        Write($"ERROR<{_ansiArgs}", false);
-                        _state = AnsiParseState.Idle;
-                        break;
+                    int end = _maxText / 5;
+                    while (rtbOut.Text[end] != (char)Keys.LineFeed) end++;
+                    rtbOut.Select(0, end);
+                    rtbOut.SelectedText = "";
                 }
-            }
 
-            Write("", nl);
+                bool ok = _colorMode switch
+                {
+                    ColorMode.None => WritePlain(text),
+                    ColorMode.Ansi => WriteAnsi(text),
+                    ColorMode.Match => WriteMatch(text),
+                    _ => false
+                };
+
+                rtbOut.ScrollToCaret();
+
+                if (nl)
+                {
+                    rtbOut.AppendText(Environment.NewLine);
+                }
+            });
         }
 
-        //public void AppendColor(string text, Color? fg = null, Color? bg = null, bool nl = true)
-        //{
-        //    {
-        //        rtbOut.SelectionColor = (Color)(fg == null ? rtbOut.ForeColor : fg);
-        //        rtbOut.SelectionBackColor = (Color)(bg == null ? rtbOut.SelectionBackColor : bg);
-
-        //        Write(text, nl);
-        //    });
-        //}
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="text"></param>
+        bool WritePlain(string text)
+        {
+            rtbOut.AppendText(text);
+            return true;
+        }
 
         /// <summary>
-        /// Output text using text matching color.
+        /// 
         /// </summary>
-        /// <param name="text">The text to show.</param>
-        /// <param name="line">Light up whole line otherwise just the word.</param>
-        /// <param name="nl">Add new line.</param>
-        //public void AppendMatch(string text, bool line = true, bool nl = true)
-        //{
-        //    {
-        //        //TODO use regex
-        //        if (line)
-        //        {
-        //            foreach (string s in MatchText.Keys)
-        //            {
-        //                if (text.Contains(s))
-        //                {
-        //                    rtbOut.SelectionBackColor = MatchText[s];
-        //                    break;
-        //                }
-        //            }
-        //            Write(text, nl);
-        //        }
-        //        else
-        //        {
-        //            foreach (string s in MatchText.Keys)
-        //            {
-        //                var pos = text.IndexOf(s);
-        //                if (pos == -1)
-        //                {
-        //                    continue;
-        //                }
-        //            }
-        //            Write(text, nl);
-        //        }
-        //    });
-        //}
+        /// <param name="text"></param>
+        bool WriteAnsi(string text)
+        {
+            int end = 0;
+
+            var matches = Regex.Matches(text, _ansiPattern);
+
+            foreach (Match match in matches)
+            {
+                end = match.Index + match.Length;
+
+                // Write text in group.
+                rtbOut.AppendText(match.Groups[1].Value);
+
+                // Update colors.
+                var clrs = ColorFromAnsi(match.Groups[2].Value);
+                _ansiBackColor = clrs.bg;
+                _ansiForeColor = clrs.fg;
+            }
+
+            var trailing = text.Substring(end);
+            rtbOut.AppendText(trailing);
+
+            return true;
+        }
+
+        /// <summary>
+        /// Use simple matching.
+        /// </summary>
+        /// <param name="text"></param>
+        bool WriteMatch(string text)
+        {
+            // This could use some clumsy regex. Eric Lippert says don't bother: https://stackoverflow.com/q/48294100.
+
+            foreach (Matcher m in _matchers)
+            {
+                int pos = 0;
+
+                do
+                {
+                    pos = text.IndexOf(m.Text, pos);
+
+                    if (pos >= 0)
+                    {
+                        if (m.WholeWord)
+                        {
+                            // Check neighbors.
+                            bool leftww = pos == 0 || !char.IsAsciiLetterOrDigit(text[pos - 1]);
+                            bool rightww = pos + m.Text.Length >= Text.Length || !char.IsAsciiLetterOrDigit(text[pos + 1]);
+
+                            if (leftww && rightww)
+                            {
+                                DoOneMatch(m);
+                            }
+                            else
+                            {
+                                rtbOut.AppendText(m.Text);
+                            }
+                        }
+                        else
+                        {
+                            DoOneMatch(m);
+                        }
+                    }
+                }
+                while (pos >= 0);
+            }
+
+            // Local function.
+            void DoOneMatch(Matcher m)
+            {
+                // cache
+                var fc = rtbOut.SelectionColor;
+                var bc = rtbOut.SelectionBackColor;
+                rtbOut.SelectionColor = m.ForeColor ?? rtbOut.ForeColor;
+                rtbOut.SelectionBackColor = m.BackColor ?? rtbOut.BackColor;
+                rtbOut.AppendText(m.Text);
+                // restore
+                rtbOut.SelectionColor = fc;
+                rtbOut.SelectionBackColor = bc;
+            }
+
+            return true;
+        }
         #endregion
 
+        #region Settings
+        /// <summary>
+        /// Handle persisted settings.
+        /// </summary>
+        /// <exception cref="ArgumentException"></exception>
+        void InitFromSettings()
+        {
+            // Reset.
+            _config = null;
+            _comm?.Dispose();
+            _comm = null;
 
+            rtbIn.BackColor = _settings.BackColor;
+            rtbIn.Font = _settings.Font;
+            rtbOut.BackColor = _settings.BackColor;
+            rtbOut.Font = _settings.Font;
+
+            LogManager.MinLevelFile = _settings.FileLogLevel;
+            LogManager.MinLevelNotif = _settings.NotifLogLevel;
+
+            var lc = _settings.Configs.Select(x => x.Name).ToList();
+
+            if (lc.Count > 0)
+            {
+                var c = _settings.Configs.FirstOrDefault(x => x.Name == _settings.CurrentConfig);
+                _config = c is null ? _settings.Configs[0] : c;
+
+                OpStatus stat = OpStatus.Success;
+
+                _comm = _config.CommType switch
+                {
+                    CommType.Tcp => new TcpComm(),
+                    CommType.Serial => new SerialComm(new SerialPortImpl()),
+                    CommType.Null => new NullComm(),
+                    _ => throw new NotImplementedException(),
+                };
+
+                // Init and check stat.
+                stat = _comm.Init(_config.Args);
+
+                // Init hotkeys.
+                _hotKeys.Clear();
+                _config.HotKeys.ForEach(hk =>
+                {
+                    var parts = hk.SplitByToken("=", false); // respect intentional spaces
+
+                    if (parts.Count == 2 && parts[0].Length == 1 && parts[1].Length > 0)
+                    {
+                        _hotKeys[parts[0]] = parts[1];
+                    }
+                    else
+                    {
+                        _logger.Warn($"Invalid hotkey:{hk}");
+                    }
+                });
+
+                _logger.Info($"NTerm using {_config.Name}({_config.CommType})");
+                return;
+            }
+
+            _comm?.Dispose();
+            _comm = null;
+            _config = null;
+            _logger.Warn($"Comm is not initialized - edit settings");
+        }
+
+        /// <summary>
+        /// Persist.
+        /// </summary>
+        public void SaveSettings()
+        {
+            _settings.FormGeometry = new Rectangle(Location.X, Location.Y, Size.Width, Size.Height);
+            _settings.Save();
+        }
+        #endregion
+
+        #region Misc
         /// <summary>
         /// Decode ansi escape sequence arguments.
         /// </summary>
@@ -740,139 +744,18 @@ namespace NTerm
             }
         }
 
-
-
-
-        #region Settings
-        /// <summary>
-        /// Handle persisted settings.
-        /// </summary>
-        /// <exception cref="ArgumentException"></exception>
-        void InitFromSettings()
-        {
-            // Reset.
-            _config = null;
-            _comm?.Dispose();
-            _comm = null;
-
-            rtbIn.BackColor = _settings.BackColor;
-            rtbIn.Font = _settings.Font;
-            rtbOut.BackColor = _settings.BackColor;
-            rtbOut.Font = _settings.Font;
-
-            LogManager.MinLevelFile = _settings.FileLogLevel;
-            LogManager.MinLevelNotif = _settings.NotifLogLevel;
-
-            var lc = _settings.Configs.Select(x => x.Name).ToList();
-
-            if (lc.Count > 0)
-            {
-                var c = _settings.Configs.FirstOrDefault(x => x.Name == _settings.CurrentConfig);
-                _config = c is null ? _settings.Configs[0] : c;
-
-                OpStatus stat = OpStatus.Success;
-
-                _comm = _config.CommType switch
-                {
-                    CommType.Tcp => new TcpComm(),
-                    CommType.Serial => new SerialComm(new SerialPortImpl()),
-                    CommType.Null => new NullComm(),
-                    _ => throw new NotImplementedException(),
-                };
-
-                // Init and check stat.
-                stat = _comm.Init(_config.Args);
-
-                // Init hotkeys.
-                _hotKeys.Clear();
-                _config.HotKeys.ForEach(hk =>
-                {
-                    var parts = hk.SplitByToken("=", false); // respect intentional spaces
-
-                    if (parts.Count == 2 && parts[0].Length == 1 && parts[1].Length > 0)
-                    {
-                        _hotKeys[parts[0]] = parts[1];
-                    }
-                    else
-                    {
-                        _logger.Warn($"Invalid hotkey:{hk}");
-                    }
-                });
-
-                _logger.Info($"NTerm using {_config.Name}({_config.CommType})");
-                return;
-            }
-
-            _comm?.Dispose();
-            _comm = null;
-            _config = null;
-            _logger.Warn($"Comm is not initialized - edit settings");
-        }
-
-        /// <summary>
-        /// Persist.
-        /// </summary>
-        public void SaveSettings()
-        {
-            _settings.FormGeometry = new Rectangle(Location.X, Location.Y, Size.Width, Size.Height);
-
-            _settings.Save();
-        }
-        #endregion
-
-        #region Misc
-        /// <summary>
-        /// Low level output. Assumes caller has taken care of cross-thread issues.
-        /// </summary>
-        void Write(string text, bool nl = true)
-        {
-            this.InvokeIfRequired(_ =>
-            {
-                // Trim buffer.
-                if (rtbOut.TextLength > _maxText)
-                {
-                    int end = _maxText / 5;
-                    while (rtbOut.Text[end] != (char)Keys.LineFeed) end++;
-                    rtbOut.Select(0, end);
-                    rtbOut.SelectedText = "";
-                }
-
-                rtbOut.AppendText(text);
-                if (nl)
-                {
-                    rtbOut.AppendText(Environment.NewLine);
-                }
-                rtbOut.ScrollToCaret();
-            });
-
-        }
-
         // /// <summary>
-        // /// Write to user.
+        // /// 
         // /// </summary>
-        // /// <param name="s"></param>
-        // void Write(string s)
+        // /// <param name="sender"></param>
+        // /// <param name="e"></param>
+        // void LogMessage(object? sender, LogMessageEventArgs e)
         // {
-        //     if (_settings.AnsiColor)
-        //     {
-        //        tvOut.AppendAnsi(s);
-        //     }
-        //     else
-        //     {
-        //        tvOut.Append(s);
-        //     }
+        //     _logColors.TryGetValue(e.Level, out int color);
+        //     Write($"\u001b[{color}m{e.Message}\u001b[0m");
         // }
-
-        /// <summary>
-        /// 
-        /// </summary>
-        /// <param name="sender"></param>
-        /// <param name="e"></param>
-        void LogMessage(object? sender, LogMessageEventArgs e)
-        {
-            _logColors.TryGetValue(e.Level, out int color);
-            Write($"\u001b[{color}m{e.Message}\u001b[0m");
-        }
+        // /// <summary>Colors - ansi. TODO use ??</summary>
+        // readonly Dictionary<LogLevel, int> _logColors = new() { { LogLevel.Error, 91 }, { LogLevel.Warn, 93 }, { LogLevel.Info, 96 }, { LogLevel.Debug, 92 } };
 
         /// <summary>
         /// Update the history with the new entry.

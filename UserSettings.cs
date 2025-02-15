@@ -36,11 +36,6 @@ namespace NTerm
         [Browsable(true)]
         public string Prompt { get; set; } = ">";
 
-        //[DisplayName("ANSI Color")]
-        //[Description("Colorize output.")]
-        //[Browsable(true)]
-        //public bool AnsiColor { get; set; } = true;
-
         [DisplayName("Back Color")]
         [Description("Colorize controls.")]
         [Browsable(true)]
@@ -64,7 +59,7 @@ namespace NTerm
         [Description("Log level for UI notification.")]
         [Browsable(true)]
         [JsonConverter(typeof(JsonStringEnumConverter))]
-        public LogLevel NotifLogLevel { get; set; } = LogLevel.Debug;
+        public LogLevel NotifLogLevel { get; set; } = LogLevel.Info;
 
         #region Properties - internal
         #endregion
