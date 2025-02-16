@@ -36,6 +36,16 @@ namespace NTerm
         [Browsable(true)]
         public string Prompt { get; set; } = ">";
 
+        [DisplayName("Color Mode")] // TODO probably per config later?
+        [Description("Colorize Mode.")]
+        [Browsable(true)]
+        public ColorMode ColorMode { get; set; } = ColorMode.None;
+
+        [DisplayName("Matchers")] // TODO probably per config later?
+        [Description("All the match specs.")]
+        [Browsable(true)]
+        public List<Matcher> Matchers { get; set; } = [];
+
         [DisplayName("Back Color")]
         [Description("Colorize controls.")]
         [Browsable(true)]

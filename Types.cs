@@ -18,6 +18,17 @@ namespace NTerm
     /// <summary>How did we do?</summary>
     public enum OpStatus { Success, Timeout, Error, ConfigError }
 
+    /// <summary></summary>
+    public enum ColorMode { None, Ansi, Match }
+
+    /// <summary>Spec for one match.</summary>
+    /// <param name="Text"></param>
+    /// <param name="WholeWord"></param>
+    /// <param name="WholeLine"></param>
+    /// <param name="ForeColor"></param>
+    /// <param name="BackColor"></param>
+    public record Matcher(string Text, bool WholeWord, bool WholeLine, Color? ForeColor, Color? BackColor);
+
     /// <summary>Comm type abstraction.</summary>
     public interface IComm : IDisposable
     {

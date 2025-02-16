@@ -2,74 +2,37 @@
 using System.Net.Sockets;
 using System.Numerics;
 using System.Text;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.IO;
+using System.Windows.Forms;
+using Ephemera.NBagOfTricks.PNUT;
 
-
-// Works:
-//AsyncUsingTcpClient();
-//StartServer(_config.Port);
-//var res = _comm.Send("djkdjsdfksdf;s");
-//Write($"{res}: {_comm.Response}");
-//var ser = new Serial();
-//var ports = ser.GetSerialPorts();
-
-
-///// <summary>
-///// 
-///// </summary>
-///// <param name="sender"></param>
-///// <param name="e"></param>
-//void BtnGo_Click(object? sender, EventArgs e)
-//{
-//    try
-//    {
-//        // Works:
-//        //AsyncUsingTcpClient();
-
-//        //StartServer(_config.Port);
-//        //var res = _prot.Send("djkdjsdfksdf;s");
-//        //tvOut.AppendLine(res);
-
-//    }
-//    catch (Exception ex)
-//    {
-//        _logger.Error($"Fatal error: {ex.Message}");
-//    }
-//}
 
 
 
 namespace NTermTest
 {
-    internal class Program
+    static class Program
     {
-        static void Main(string[] args)
+        /// <summary>
+        /// The main entry point for the application.
+        /// </summary>
+        [STAThread]
+        static void Main(string[] _)
         {
-            bool ok = false;
+            // Run pnut tests from cmd line.
+            TestRunner runner = new(OutputFormat.Readable);
+            var cases = new[] { "ANSI" };
+            //var cases = new[] { "ANSI", "SER", "TCP" };
+            runner.RunSuites(cases);
+            File.WriteAllLines(@"..\..\out\test_out.txt", runner.Context.OutputLines);
 
-            if (args.Length == 1)
-            {
-                switch (args[0])
-                {
-                    //case "ansi":
-                    //    ok = true;
-                    //    Ansi.Run();
-                    //    break;
-
-                    default:
-                        if (int.TryParse(args[1], out int result))
-                        {
-                            ok = true;
-                            Server.Run(result);
-                        }
-                        break;
-                }
-            }
-
-            if (!ok)
-            {
-                Console.WriteLine("Invalid args");
-                Environment.Exit(1);
-            }
+            // // Run pnut tests from ui host.
+            // Application.SetHighDpiMode(HighDpiMode.SystemAware);
+            // Application.EnableVisualStyles();
+            // Application.SetCompatibleTextRenderingDefault(false);
+            // Application.Run(new TestHost());
         }
 
         static void FakeSettings()
@@ -106,8 +69,5 @@ namespace NTermTest
             ss.Save();
             //LoadSettings();
         }
-
-
-
     }
 }

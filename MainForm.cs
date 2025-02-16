@@ -24,19 +24,13 @@ namespace NTerm
     public partial class MainForm : Form
     {
         #region Types
-        /// <summary></summary>
-        enum ColorMode { None, Ansi, Match }
         
         /// <summary></summary>
         enum Modifier { None, Ctrl, Alt }
 
-        /// <summary>Spec for one match.</summary>
-        /// <param name="Text"></param>
-        /// <param name="WholeWord"></param>
-        /// <param name="WholeLine"></param>
-        /// <param name="ForeColor"></param>
-        /// <param name="BackColor"></param>
-        record Matcher(string Text, bool WholeWord, bool WholeLine, Color? ForeColor, Color? BackColor);
+        /// <summary>Internal data container.</summary>
+        record CliInput(Modifier Mod, string Text);
+
         #endregion
 
         #region Fields
@@ -70,20 +64,9 @@ namespace NTerm
         /// <summary>Limit the output size. TODO use lines</summary>
         int _maxText = 10000;
 
-        /// <summary>Internal data container.</summary>
-        record CliInput(Modifier Mod, string Text);
 
         /// <summary>Cli async event queue.</summary>
         readonly ConcurrentQueue<CliInput> _queue = new();
-
-        // [DisplayName("Color Mode TODO or in Config? + matchers?")]
-        // [Description("Colorize Mode.")]
-        // [Browsable(true)]
-        // public ColorMode ColorMode { get; set; } = ColorMode.None;
-        ColorMode _colorMode = ColorMode.Ansi;
-
-        /// <summary>All the match specs.</summary>
-        List<Matcher> _matchers = [];
 
         /// <summary>Ansi regex.</summary>
         string _ansiPattern = @"([^\u001B]+)\u001B\[([^m)]+)m";
@@ -116,6 +99,7 @@ namespace NTerm
             Size = new Size(_settings.FormGeometry.Width, _settings.FormGeometry.Height);
             Icon = Icon.ExtractAssociatedIcon(Assembly.GetExecutingAssembly().Location);
 
+            // Route all app key strokes through this form first.
             KeyPreview = true;
 
             // Init from previously loaded settings.
@@ -127,7 +111,8 @@ namespace NTerm
 
             // UI handlers.
             rtbIn.KeyDown += RtbIn_KeyDown;
-            rtbOut.KeyDown += RtbOut_KeyDown;
+            rtbIn.KeyPress += (object? sender, KeyPressEventArgs e) => Debug.WriteLine($"KeyPress:{e.KeyChar}");
+            rtbOut.KeyDown += (object? sender, KeyEventArgs e) => throw new NotImplementedException();
             btnSettings.Click += (_, _) => SettingsEditor.Edit(_settings, "User Settings", 500);
             btnClear.Click += (_, _) => rtbOut.Clear();
             btnWrap.Click += (_, _) => rtbOut.WordWrap = btnWrap.Checked;
@@ -136,76 +121,8 @@ namespace NTerm
             _ansiBackColor = rtbOut.BackColor;
 
 
-            btnDebug.Click += (_, _) => TestRegex();
+            // btnDebug.Click += (_, _) => ???();
         }
-
-        void TestRegex() // TODO put in Test.
-        {
-            // https://learn.microsoft.com/en-us/dotnet/api/system.text.regularexpressions.group.captures
-
-            string s = "No color [31m Standard color [38;5;32m  256 Color [38;2;60;120;180m  RGB Color [0m reset";
-
-            /* >>>
-            Matched:0-14
-                Group0:No color [31m
-                  Capture0:No color [31m
-                Group1:No color 
-                  Capture0:No color 
-                Group2:31
-                  Capture0:31
-            Matched:14-27
-                Group0: Standard color [38;5;32m
-                  Capture0: Standard color [38;5;32m
-                Group1: Standard color
-                  Capture0: Standard color
-                Group2:38;5;32
-                  Capture0:38;5;32
-            Matched:41-31
-                Group0:  256 Color [38;2;60;120;180m
-                  Capture0:  256 Color [38;2;60;120;180m
-                Group1:  256 Color 
-                  Capture0:  256 Color
-                Group2:38;2;60;120;180
-                  Capture0:38;2;60;120;180
-            Matched:72-17
-                Group0:  RGB Color [0m
-                  Capture0:  RGB Color [0m
-                Group1:  RGB Color
-                  Capture0:  RGB Color
-                Group2:0
-                  Capture0:0
-            Dangling: reset
-            */
-
-            int end = 0;
-            var matches = Regex.Matches(s, _ansiPattern);
-            foreach (Match match in Regex.Matches(s, _ansiPattern))
-            {
-                end = match.Index + match.Length;
-
-                //Write($"Matched text: {match.Value} [{match.Index} {match.Length}]");
-                Write($"Matched:{match.Index}-{match.Length}");
-
-                int groupCtr = 0;
-                foreach (Group group in match.Groups)
-                {
-                    Write($"  Group{groupCtr}:{group.Value}");
-                    groupCtr++;
-
-                    int capCtr = 0;
-                    foreach (Capture capture in group.Captures)
-                    {
-                        Write($"    Capture{capCtr}:{capture.Value}");
-                        capCtr++;
-                    }
-                }
-            }
-
-            var dangling = s.Substring(end);
-            Write($"Dangling:{dangling}");
-        }
-
-
 
         /// <summary>
         ///  Clean up any resources being used.
@@ -225,13 +142,13 @@ namespace NTerm
         }
 
         /// <summary>
-        /// 
+        /// Time to run the application.
         /// </summary>
         /// <param name="e"></param>
-        protected override void OnLoad(EventArgs e)
+        protected override void OnShown(EventArgs e)
         {
+            base.OnShown(e);
             Run();
-            base.OnLoad(e);
         }
 
         /// <summary>
@@ -339,35 +256,44 @@ namespace NTerm
 
         #region Key handlers
         /// <summary>
-        /// 
+        /// Send all keystrokes to the cli.// TODO
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
-        void RtbOut_KeyDown(object? sender, KeyEventArgs e)// TODO
+        protected override void OnKeyDown(KeyEventArgs e)
         {
+            // Send everything to cli control.
+            //cliIn.ProcessKey(e);
+            //https://stackoverflow.com/questions/1264227/send-keystroke-to-other-control
+            //SendKeys.SendWait();
 
+            // Debug.WriteLine($">>> MAI:{e.KeyCode}");
+
+            //e.Handled = true;
+
+            base.OnKeyDown(e);
         }
 
         /// <summary>
-        /// 
+        /// User wants to do something.
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
-        void RtbIn_KeyDown(object? sender, KeyEventArgs e)// TODO
+        void RtbIn_KeyDown(object? sender, KeyEventArgs e)// TODO // UT
         {
-            //var cv = (char)e.KeyValue;
-            //var iv = e.KeyValue;
-            //char creal = e.KeyValue >= 65 && e.KeyValue <= 90 && e.Shift ? (char)e.KeyValue : (char)(e.KeyValue + 32);
-            ////char creal = (char)e.KeyValue;
-            //char ctest = char.ToLower(creal);
-            //Debug.WriteLine($">>> RTB:{creal} {ctest}");
-            ////Debug.WriteLine($">>> RTB:{e.KeyCode} {e.KeyValue}");
+            Debug.WriteLine($"KeyDown:{e.KeyCode}");
+
+            // Check for text input.
+            var ch = KeyUtils.KeyToChar(e.KeyCode, e.Modifiers).ch;
+            // if (ch > 0)
+            // {
+            //     Debug.WriteLine($"char:{ch}");
+            // }
 
             //if (sender == null)
             //{
             //    rtbIn.Text += creal;
             //}
-            //char creal = e.KeyValue >= 65 && e.KeyValue <= 90 && e.Shift ? (char)e.KeyValue : (char)(e.KeyValue + 32);
 
             switch (e.Control, e.Alt, e.KeyCode)
             {
@@ -380,7 +306,6 @@ namespace NTerm
 
                         CliInput la = new(Modifier.None, t);
                         _queue.Enqueue(la);
-                        //InputEvent?.Invoke(this, la);
                         // Clear line.
                         rtbIn.Text = $"{_settings.Prompt}";
                     }
@@ -409,42 +334,16 @@ namespace NTerm
                     }
                     break;
 
-                case (true, false, _) when IsAlNum(e.KeyCode):
+                case (true, false, _) when ch > 0:
                     // Hot key?
-                    _queue.Enqueue(new(Modifier.Ctrl, e.KeyCode.ToString()));
-                    //InputEvent?.Invoke(this, new() { Mod = ModifierXXX.Ctrl, Text = e.KeyCode.ToString() });
+                    _queue.Enqueue(new(Modifier.Ctrl, ch.ToString()));
                     break;
 
-                case (false, true, _) when IsAlNum(e.KeyCode):
+                case (false, true, _) when ch > 0:
                     // Hot key?
-                    _queue.Enqueue(new(Modifier.Alt, e.KeyCode.ToString()));
-                    //InputEvent?.Invoke(this, new() { Mod = ModifierXXX.Alt, Text = e.KeyCode.ToString() });
+                    _queue.Enqueue(new(Modifier.Alt, ch.ToString()));
                     break;
             }
-
-            bool IsAlNum(Keys key)
-            {
-                return (e.KeyCode >= Keys.D0 && e.KeyCode <= Keys.D9) || (e.KeyCode >= Keys.A && e.KeyCode <= Keys.Z);
-            }
-        }
-
-        /// <summary>
-        /// Send all keystrokes to the cli.// TODO
-        /// </summary>
-        /// <param name="sender"></param>
-        /// <param name="e"></param>
-        protected override void OnKeyDown(KeyEventArgs e)
-        {
-            // Send everything to cli control.
-            //cliIn.ProcessKey(e);
-            //https://stackoverflow.com/questions/1264227/send-keystroke-to-other-control
-            //SendKeys.SendWait();
-
-            Debug.WriteLine($">>> MAI:{e.KeyCode}");
-
-            //e.Handled = true;
-
-            base.OnKeyDown(e);
         }
         #endregion
 
@@ -467,7 +366,7 @@ namespace NTerm
                     rtbOut.SelectedText = "";
                 }
 
-                bool ok = _colorMode switch
+                bool ok = _settings.ColorMode switch
                 {
                     ColorMode.None => WritePlain(text),
                     ColorMode.Ansi => WriteAnsi(text),
@@ -531,7 +430,7 @@ namespace NTerm
         {
             // This could use some clumsy regex. Eric Lippert says don't bother: https://stackoverflow.com/q/48294100.
 
-            foreach (Matcher m in _matchers)
+            foreach (Matcher m in _settings.Matchers)
             {
                 int pos = 0;
 
@@ -588,7 +487,7 @@ namespace NTerm
         /// Handle persisted settings.
         /// </summary>
         /// <exception cref="ArgumentException"></exception>
-        void InitFromSettings()
+        void InitFromSettings() // UT global
         {
             // Reset.
             _config = null;
@@ -665,7 +564,7 @@ namespace NTerm
         /// </summary>
         /// <param name="ansi">Ansi args string</param>
         /// <returns>Foreground and background colors. Color is Empty if invalid ansi string.</returns>
-        (Color fg, Color bg) ColorFromAnsi(string ansi)
+        (Color fg, Color bg) ColorFromAnsi(string ansi) // UT
         {
             Color fg = Color.Empty;
             Color bg = Color.Empty;
@@ -761,7 +660,7 @@ namespace NTerm
         /// Update the history with the new entry.
         /// </summary>
         /// <param name="s"></param>
-        void AddToHistory(string s)
+        void AddToHistory(string s) // UT
         {
             if (s.Length > 0)
             {
