@@ -12,7 +12,7 @@ using Ephemera.NBagOfTricks;
 
 namespace NTerm
 {
-    /// <summary>Supported flavors  .</summary>
+    /// <summary>Supported flavors.</summary>
     public enum CommType { Null, Tcp, Serial }
 
     /// <summary>How did we do?</summary>
@@ -20,6 +20,14 @@ namespace NTerm
 
     /// <summary></summary>
     public enum ColorMode { None, Ansi, Match }
+
+    /// <summary>Internal version of core types.</summary>
+    enum Modifier { None, Ctrl, Alt }
+
+    /// <summary>Internal data container.</summary>
+    record CliInput(Modifier Mod, string Text);
+
+
 
     /// <summary>Spec for one match.</summary>
     /// <param name="Text"></param>

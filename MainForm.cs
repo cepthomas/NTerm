@@ -7,6 +7,7 @@ using System.IO;
 using System.IO.Ports;
 using System.Linq;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Text.Json;
@@ -18,21 +19,12 @@ using Ephemera.NBagOfTricks;
 using Ephemera.NBagOfTricks.Slog;
 using Ephemera.NBagOfUis;
 
+[assembly: InternalsVisibleTo("NTerm.Test")]
 
 namespace NTerm
 {
     public partial class MainForm : Form
     {
-        #region Types
-        
-        /// <summary></summary>
-        enum Modifier { None, Ctrl, Alt }
-
-        /// <summary>Internal data container.</summary>
-        record CliInput(Modifier Mod, string Text);
-
-        #endregion
-
         #region Fields
         /// <summary>My logger</summary>
         readonly Logger _logger = LogManager.CreateLogger("NTerm");
@@ -111,8 +103,9 @@ namespace NTerm
 
             // UI handlers.
             rtbIn.KeyDown += RtbIn_KeyDown;
-            rtbIn.KeyPress += (object? sender, KeyPressEventArgs e) => Debug.WriteLine($"KeyPress:{e.KeyChar}");
-            rtbOut.KeyDown += (object? sender, KeyEventArgs e) => throw new NotImplementedException();
+            rtbOut.KeyDown += RtbOut_KeyDown;
+            //rtbIn.KeyPress += (object? sender, KeyPressEventArgs e) => Debug.WriteLine($"KeyPress:{e.KeyChar}");
+            //rtbOut.KeyDown += (object? sender, KeyEventArgs e) => throw new NotImplementedException();
             btnSettings.Click += (_, _) => SettingsEditor.Edit(_settings, "User Settings", 500);
             btnClear.Click += (_, _) => rtbOut.Clear();
             btnWrap.Click += (_, _) => rtbOut.WordWrap = btnWrap.Checked;
@@ -166,7 +159,7 @@ namespace NTerm
         /// <summary>
         /// Main loop.
         /// </summary>
-        public void Run()
+        internal void Run()
         {
             _running = true;
 
@@ -254,6 +247,33 @@ namespace NTerm
         }
         #endregion
 
+
+
+
+
+
+
+        // handled=true
+        // >>> OnKeyDown:[I]
+        // >>> OnKeyDown:[O]
+        // >>> OnKeyDown:[I]
+        // >>> OnKeyDown:[O]
+        // >>> OnKeyDown:[Back]
+        // 
+        // handled=false
+        // >>> OnKeyDown:[I]
+        // >>> RtbIn_KeyDown:[I]
+        // >>> OnKeyDown:[O]
+        // >>> RtbOut_KeyDown:[O]
+        // >>> OnKeyDown:[I]
+        // >>> RtbIn_KeyDown:[I]
+        // >>> OnKeyDown:[O]
+        // >>> RtbOut_KeyDown:[O]
+        // >>> OnKeyDown:[Back]
+        // >>> RtbOut_KeyDown:[Back]
+
+
+
         #region Key handlers
         /// <summary>
         /// Send all keystrokes to the cli.// TODO
@@ -261,16 +281,11 @@ namespace NTerm
         /// <param name="sender"></param>
         /// <param name="e"></param>
         protected override void OnKeyDown(KeyEventArgs e)
-        {
-            // Send everything to cli control.
-            //cliIn.ProcessKey(e);
-            //https://stackoverflow.com/questions/1264227/send-keystroke-to-other-control
-            //SendKeys.SendWait();
-
-            // Debug.WriteLine($">>> MAI:{e.KeyCode}");
-
+        {   
+            Debug.WriteLine($">>> OnKeyDown:[{e.KeyCode}]");
+            // Route everything to cli control.
+            //ProcessKey(e);
             //e.Handled = true;
-
             base.OnKeyDown(e);
         }
 
@@ -279,21 +294,53 @@ namespace NTerm
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
-        void RtbIn_KeyDown(object? sender, KeyEventArgs e)// TODO // UT
+        void RtbIn_KeyDown(object? sender, KeyEventArgs e)// TODO
         {
-            Debug.WriteLine($"KeyDown:{e.KeyCode}");
+            Debug.WriteLine($">>> RtbIn_KeyDown:[{e.KeyCode}]");
+            //ProcessKey(e);
+            e.Handled = true;
+
+//            ;rtbIn.ReadOnly
+
+        }
+
+        void RtbOut_KeyDown(object? sender, KeyEventArgs e)// TODO
+        {
+            Debug.WriteLine($">>> RtbOut_KeyDown:[{e.KeyCode}]");
+            //ProcessKey(e);
+            e.Handled = true;
+
+        }
+
+        /// <summary>
+        /// User wants to do something.
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        void ProcessKey(KeyEventArgs e)// TODO
+        {
+            // Debug.WriteLine($"KeyDown:{e.KeyCode}");
 
             // Check for text input.
             var ch = KeyUtils.KeyToChar(e.KeyCode, e.Modifiers).ch;
-            // if (ch > 0)
-            // {
-            //     Debug.WriteLine($"char:{ch}");
-            // }
+            // if (ch > 0) { Debug.WriteLine($"char:{ch}"); }
+            //ProcessKey(ActiveControl, e);
 
-            //if (sender == null)
-            //{
-            //    rtbIn.Text += creal;
-            //}
+            if (ActiveControl == rtbOut)
+            {
+                if (ch > 0)
+                {
+                    rtbIn.Text += ch;
+                }
+            }
+            else if (ActiveControl == rtbIn)
+            {
+                // something else
+            }
+            else
+            {
+                throw new NotImplementedException();
+            }
 
             switch (e.Control, e.Alt, e.KeyCode)
             {
@@ -353,7 +400,7 @@ namespace NTerm
         /// </summary>
         /// <param name="text"></param>
         /// <param name="nl"></param>
-        void Write(string text, bool nl = true)
+        internal void Write(string text, bool nl = true)
         {
             this.InvokeIfRequired(_ =>
             {
@@ -487,7 +534,7 @@ namespace NTerm
         /// Handle persisted settings.
         /// </summary>
         /// <exception cref="ArgumentException"></exception>
-        void InitFromSettings() // UT global
+        internal void InitFromSettings()
         {
             // Reset.
             _config = null;
@@ -551,7 +598,7 @@ namespace NTerm
         /// <summary>
         /// Persist.
         /// </summary>
-        public void SaveSettings()
+        internal void SaveSettings()
         {
             _settings.FormGeometry = new Rectangle(Location.X, Location.Y, Size.Width, Size.Height);
             _settings.Save();
@@ -564,7 +611,7 @@ namespace NTerm
         /// </summary>
         /// <param name="ansi">Ansi args string</param>
         /// <returns>Foreground and background colors. Color is Empty if invalid ansi string.</returns>
-        (Color fg, Color bg) ColorFromAnsi(string ansi) // UT
+        internal (Color fg, Color bg) ColorFromAnsi(string ansi)
         {
             Color fg = Color.Empty;
             Color bg = Color.Empty;
@@ -660,7 +707,7 @@ namespace NTerm
         /// Update the history with the new entry.
         /// </summary>
         /// <param name="s"></param>
-        void AddToHistory(string s) // UT
+        internal void AddToHistory(string s)
         {
             if (s.Length > 0)
             {
