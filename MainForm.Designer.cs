@@ -18,15 +18,15 @@ namespace NTerm
         /// </summary>
         private void InitializeComponent()
         {
-            System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(MainForm));
             toolStrip1 = new ToolStrip();
             btnSettings = new ToolStripButton();
             btnHelp = new ToolStripButton();
             btnClear = new ToolStripButton();
             btnWrap = new ToolStripButton();
+            btnDebug = new ToolStripButton();
             rtbOut = new RichTextBox();
             rtbIn = new RichTextBox();
-            btnDebug = new ToolStripButton();
+            rtbTest = new RichTextBox();
             toolStrip1.SuspendLayout();
             SuspendLayout();
             // 
@@ -36,7 +36,7 @@ namespace NTerm
             toolStrip1.Items.AddRange(new ToolStripItem[] { btnSettings, btnHelp, btnClear, btnWrap, btnDebug });
             toolStrip1.Location = new Point(0, 0);
             toolStrip1.Name = "toolStrip1";
-            toolStrip1.Size = new Size(800, 26);
+            toolStrip1.Size = new Size(803, 26);
             toolStrip1.TabIndex = 2;
             toolStrip1.Text = "toolStrip1";
             // 
@@ -78,43 +78,54 @@ namespace NTerm
             btnWrap.Text = "wrap";
             btnWrap.ToolTipText = "Wrap output";
             // 
-            // rtbOut
-            // 
-            rtbOut.BorderStyle = BorderStyle.None;
-            rtbOut.ForeColor = Color.Black;
-            rtbOut.Location = new Point(22, 40);
-            rtbOut.Name = "rtbOut";
-            rtbOut.ReadOnly = true;
-            rtbOut.Size = new Size(753, 362);
-            rtbOut.TabIndex = 3;
-            rtbOut.Text = "";
-            // 
-            // rtbIn
-            // 
-            rtbIn.BorderStyle = BorderStyle.None;
-            rtbIn.ForeColor = Color.Black;
-            rtbIn.Location = new Point(22, 417);
-            rtbIn.Multiline = false;
-            rtbIn.Name = "rtbIn";
-            rtbIn.ScrollBars = RichTextBoxScrollBars.Horizontal;
-            rtbIn.Size = new Size(753, 38);
-            rtbIn.TabIndex = 4;
-            rtbIn.Text = "";
-            // 
             // btnDebug
             // 
             btnDebug.DisplayStyle = ToolStripItemDisplayStyle.Text;
-            btnDebug.Image = (Image)resources.GetObject("btnDebug.Image");
             btnDebug.ImageTransparentColor = Color.Magenta;
             btnDebug.Name = "btnDebug";
             btnDebug.Size = new Size(52, 23);
             btnDebug.Text = "debug";
             // 
+            // rtbOut
+            // 
+            rtbOut.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
+            rtbOut.BorderStyle = BorderStyle.None;
+            rtbOut.ForeColor = Color.Black;
+            rtbOut.Location = new Point(22, 40);
+            rtbOut.Name = "rtbOut";
+            rtbOut.ReadOnly = true;
+            rtbOut.Size = new Size(756, 278);
+            rtbOut.TabIndex = 3;
+            rtbOut.Text = "";
+            // 
+            // rtbIn
+            // 
+            rtbIn.Anchor = AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
+            rtbIn.BorderStyle = BorderStyle.None;
+            rtbIn.ForeColor = Color.Black;
+            rtbIn.Location = new Point(22, 443);
+            rtbIn.Multiline = false;
+            rtbIn.Name = "rtbIn";
+            rtbIn.ScrollBars = RichTextBoxScrollBars.Horizontal;
+            rtbIn.Size = new Size(756, 38);
+            rtbIn.TabIndex = 4;
+            rtbIn.Text = "";
+            // 
+            // rtbTest
+            // 
+            rtbTest.BackColor = Color.FromArgb(192, 255, 255);
+            rtbTest.Location = new Point(181, 334);
+            rtbTest.Name = "rtbTest";
+            rtbTest.Size = new Size(358, 89);
+            rtbTest.TabIndex = 5;
+            rtbTest.Text = "";
+            // 
             // MainForm
             // 
             AutoScaleDimensions = new SizeF(8F, 19F);
             AutoScaleMode = AutoScaleMode.Font;
-            ClientSize = new Size(800, 485);
+            ClientSize = new Size(803, 493);
+            Controls.Add(rtbTest);
             Controls.Add(rtbIn);
             Controls.Add(rtbOut);
             Controls.Add(toolStrip1);
@@ -135,5 +146,6 @@ namespace NTerm
         private System.Windows.Forms.RichTextBox rtbOut;
         private System.Windows.Forms.RichTextBox rtbIn;
         private ToolStripButton btnDebug;
+        private RichTextBox rtbTest;
     }
 }

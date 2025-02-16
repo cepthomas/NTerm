@@ -1,17 +1,32 @@
-using System;
-using System.Collections.Generic;
+using System.Diagnostics;
 using System.Drawing;
 using System.IO;
-using System.IO.Ports;
-using System.Linq;
+using System.Net.Sockets;
+using System.Numerics;
 using System.Text;
-using System.Threading;
-using System.Threading.Tasks;
 using Ephemera.NBagOfTricks;
+using Ephemera.NBagOfTricks.PNUT;
 
 
 namespace NTerm.Test
 {
+    public class SERIAL_COMM : TestSuite
+    {
+        public override void RunSuite()
+        {
+            UT_INFO("Tests serial port functions.");
+
+            // UT_TRUE(invert);
+            // UT_EQUAL(color.Name, "ff7f007f");
+
+
+        }
+    }
+
+
+
+
+    // a test serial mock
     public class SerialStreamEmu : Stream
     {
         long _length = 0;
@@ -68,7 +83,6 @@ namespace NTerm.Test
         public string WriteBuffer { get; private set; } = "";
         public string ReadBuffer { get; private set; } = "";
     }
-
 
 
     public class SerialPortEmu : ISerialPort

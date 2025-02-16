@@ -19,6 +19,7 @@ using Ephemera.NBagOfTricks;
 using Ephemera.NBagOfTricks.Slog;
 using Ephemera.NBagOfUis;
 
+
 [assembly: InternalsVisibleTo("NTerm.Test")]
 
 namespace NTerm
@@ -27,7 +28,7 @@ namespace NTerm
     {
         #region Fields
         /// <summary>My logger</summary>
-        readonly Logger _logger = LogManager.CreateLogger("NTerm");
+        readonly Logger _logger = LogManager.CreateLogger("Main");
 
         /// <summary>Settings</summary>
         readonly UserSettings _settings = new();
@@ -92,10 +93,20 @@ namespace NTerm
             Icon = Icon.ExtractAssociatedIcon(Assembly.GetExecutingAssembly().Location);
 
             // Route all app key strokes through this form first.
-            KeyPreview = true;
+            //KeyPreview = true;
+
+
+           // rtbOut.EnabledChanged += (_, _) => rtbOut.BackColor = Color.Pink;
+
+
+            // Force all keystrokes to the cli input.
+            //rtbOut.Enabled = false;
+
 
             // Init from previously loaded settings.
             InitFromSettings();
+
+            //rtbOut.BackColor = Color.Pink;
 
             // TODO button images?
             //btnSettings.DisplayStyle = ToolStripItemDisplayStyle.Text;
@@ -109,12 +120,10 @@ namespace NTerm
             btnSettings.Click += (_, _) => SettingsEditor.Edit(_settings, "User Settings", 500);
             btnClear.Click += (_, _) => rtbOut.Clear();
             btnWrap.Click += (_, _) => rtbOut.WordWrap = btnWrap.Checked;
+            //btnDebug.Click += (_, _) => rtbOut.BackColor = Color.Pink;
 
             _ansiForeColor = rtbOut.ForeColor;
             _ansiBackColor = rtbOut.BackColor;
-
-
-            // btnDebug.Click += (_, _) => ???();
         }
 
         /// <summary>
@@ -247,33 +256,6 @@ namespace NTerm
         }
         #endregion
 
-
-
-
-
-
-
-        // handled=true
-        // >>> OnKeyDown:[I]
-        // >>> OnKeyDown:[O]
-        // >>> OnKeyDown:[I]
-        // >>> OnKeyDown:[O]
-        // >>> OnKeyDown:[Back]
-        // 
-        // handled=false
-        // >>> OnKeyDown:[I]
-        // >>> RtbIn_KeyDown:[I]
-        // >>> OnKeyDown:[O]
-        // >>> RtbOut_KeyDown:[O]
-        // >>> OnKeyDown:[I]
-        // >>> RtbIn_KeyDown:[I]
-        // >>> OnKeyDown:[O]
-        // >>> RtbOut_KeyDown:[O]
-        // >>> OnKeyDown:[Back]
-        // >>> RtbOut_KeyDown:[Back]
-
-
-
         #region Key handlers
         /// <summary>
         /// Send all keystrokes to the cli.// TODO
@@ -282,7 +264,7 @@ namespace NTerm
         /// <param name="e"></param>
         protected override void OnKeyDown(KeyEventArgs e)
         {   
-            Debug.WriteLine($">>> OnKeyDown:[{e.KeyCode}]");
+            Write($">>> OnKeyDown:[{e.KeyCode}]");
             // Route everything to cli control.
             //ProcessKey(e);
             //e.Handled = true;
@@ -294,22 +276,18 @@ namespace NTerm
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
-        void RtbIn_KeyDown(object? sender, KeyEventArgs e)// TODO
+        void RtbIn_KeyDown(object? sender, KeyEventArgs e)
         {
-            Debug.WriteLine($">>> RtbIn_KeyDown:[{e.KeyCode}]");
-            //ProcessKey(e);
-            e.Handled = true;
-
-//            ;rtbIn.ReadOnly
-
+            Write($">>> RtbIn_KeyDown:[{e.KeyCode}]");
+            ProcessKey(e);
+            //e.Handled = true;
         }
 
-        void RtbOut_KeyDown(object? sender, KeyEventArgs e)// TODO
+        void RtbOut_KeyDown(object? sender, KeyEventArgs e)
         {
-            Debug.WriteLine($">>> RtbOut_KeyDown:[{e.KeyCode}]");
+            Write($">>> RtbOut_KeyDown:[{e.KeyCode}]");
             //ProcessKey(e);
-            e.Handled = true;
-
+            //e.Handled = true;
         }
 
         /// <summary>
@@ -317,30 +295,28 @@ namespace NTerm
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
-        void ProcessKey(KeyEventArgs e)// TODO
+        void ProcessKey(KeyEventArgs e)
         {
-            // Debug.WriteLine($"KeyDown:{e.KeyCode}");
-
             // Check for text input.
             var ch = KeyUtils.KeyToChar(e.KeyCode, e.Modifiers).ch;
             // if (ch > 0) { Debug.WriteLine($"char:{ch}"); }
             //ProcessKey(ActiveControl, e);
 
-            if (ActiveControl == rtbOut)
-            {
-                if (ch > 0)
-                {
-                    rtbIn.Text += ch;
-                }
-            }
-            else if (ActiveControl == rtbIn)
-            {
-                // something else
-            }
-            else
-            {
-                throw new NotImplementedException();
-            }
+            //if (ActiveControl == rtbOut)
+            //{
+            //    if (ch > 0)
+            //    {
+            //        rtbIn.Text += ch;
+            //    }
+            //}
+            //else if (ActiveControl == rtbIn)
+            //{
+            //    // something else
+            //}
+            //else
+            //{
+            //    throw new NotImplementedException();
+            //}
 
             switch (e.Control, e.Alt, e.KeyCode)
             {

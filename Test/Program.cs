@@ -7,8 +7,8 @@ using System.Diagnostics;
 using System.IO;
 using System.Windows.Forms;
 using Ephemera.NBagOfTricks.PNUT;
-
-
+using NTerm;
+using Ephemera.NBagOfTricks;
 
 
 namespace NTermTest

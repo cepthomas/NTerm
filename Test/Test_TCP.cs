@@ -1,13 +1,74 @@
-﻿using System;
 using System.Diagnostics;
+using System.Drawing;
 using System.IO;
 using System.Net.Sockets;
 using System.Numerics;
 using System.Text;
+using Ephemera.NBagOfTricks;
+using Ephemera.NBagOfTricks.PNUT;
+
+
+
+
+// Works:
+//AsyncUsingTcpClient();
+//StartServer(_config.Port);
+//var res = _comm.Send("djkdjsdfksdf;s");
+//Write($"{res}: {_comm.Response}");
+//var ser = new Serial();
+//var ports = ser.GetSerialPorts();
+
+
+///// <summary>
+///// 
+///// </summary>
+///// <param name="sender"></param>
+///// <param name="e"></param>
+//void BtnGo_Click(object? sender, EventArgs e)
+//{
+//    try
+//    {
+//        // Works:
+//        //AsyncUsingTcpClient();
+
+//        //StartServer(_config.Port);
+//        //var res = _prot.Send("djkdjsdfksdf;s");
+//        //tvOut.AppendLine(res);
+
+//    }
+//    catch (Exception ex)
+//    {
+//        _logger.Error($"Fatal error: {ex.Message}");
+//    }
+//}
+
+
 
 
 namespace NTerm.Test
 {
+    public class TCP_COMM : TestSuite
+    {
+        public override void RunSuite()
+        {
+            UT_INFO("Tests tcp comm functions.");
+
+            // UT_TRUE(invert);
+            // UT_EQUAL(color.Name, "ff7f007f");
+
+
+            // if (int.TryParse(args[1], out int result))
+            // {
+            //     ok = true;
+            //     Server.Run(result);
+            // }
+
+
+        }
+    }
+
+
+    // a test tcp server
     public class Server
     {
         public static void Run(int port)
