@@ -20,7 +20,7 @@ using Ephemera.NBagOfTricks.Slog;
 using Ephemera.NBagOfUis;
 
 
-[assembly: InternalsVisibleTo("NTerm.Test")]
+// [assembly: InternalsVisibleTo("NTerm.Test")]
 
 namespace NTerm
 {
@@ -106,8 +106,6 @@ namespace NTerm
             // Init from previously loaded settings.
             InitFromSettings();
 
-            //rtbOut.BackColor = Color.Pink;
-
             // TODO button images?
             //btnSettings.DisplayStyle = ToolStripItemDisplayStyle.Text;
             //btnSettings.Image = Image.FromFile("C:\\Dev\\Apps\\NTerm\\Ramon.png");
@@ -168,7 +166,7 @@ namespace NTerm
         /// <summary>
         /// Main loop.
         /// </summary>
-        internal void Run()
+        void Run()
         {
             _running = true;
 
@@ -257,19 +255,19 @@ namespace NTerm
         #endregion
 
         #region Key handlers
-        /// <summary>
-        /// Send all keystrokes to the cli.// TODO
-        /// </summary>
-        /// <param name="sender"></param>
-        /// <param name="e"></param>
-        protected override void OnKeyDown(KeyEventArgs e)
-        {   
-            Write($">>> OnKeyDown:[{e.KeyCode}]");
-            // Route everything to cli control.
-            //ProcessKey(e);
-            //e.Handled = true;
-            base.OnKeyDown(e);
-        }
+        // /// <summary>
+        // /// Top level handler via KeyPreview. Send all keystrokes to the cli.  TODO
+        // /// </summary>
+        // /// <param name="sender"></param>
+        // /// <param name="e"></param>
+        // protected override void OnKeyDown(KeyEventArgs e)
+        // {   
+        //     Write($">>> OnKeyDown:[{e.KeyCode}]");
+        //     // Route everything to cli control.
+        //     //ProcessKey(e);
+        //     //e.Handled = true;
+        //     base.OnKeyDown(e);
+        // }
 
         /// <summary>
         /// User wants to do something.
@@ -280,7 +278,7 @@ namespace NTerm
         {
             Write($">>> RtbIn_KeyDown:[{e.KeyCode}]");
             ProcessKey(e);
-            //e.Handled = true;
+            e.Handled = true;
         }
 
         void RtbOut_KeyDown(object? sender, KeyEventArgs e)
@@ -376,7 +374,7 @@ namespace NTerm
         /// </summary>
         /// <param name="text"></param>
         /// <param name="nl"></param>
-        internal void Write(string text, bool nl = true)
+        void Write(string text, bool nl = true)
         {
             this.InvokeIfRequired(_ =>
             {
@@ -510,7 +508,7 @@ namespace NTerm
         /// Handle persisted settings.
         /// </summary>
         /// <exception cref="ArgumentException"></exception>
-        internal void InitFromSettings()
+        void InitFromSettings()
         {
             // Reset.
             _config = null;
@@ -537,8 +535,8 @@ namespace NTerm
                 _comm = _config.CommType switch
                 {
                     CommType.Tcp => new TcpComm(),
-                    CommType.Serial => new SerialComm(new SerialPortImpl()),
-                    CommType.Null => new NullComm(),
+                    CommType.Serial => new SerialComm(new RealSerialPort()),
+                    CommType.Debug => new DebugComm(),
                     _ => throw new NotImplementedException(),
                 };
 
@@ -574,7 +572,7 @@ namespace NTerm
         /// <summary>
         /// Persist.
         /// </summary>
-        internal void SaveSettings()
+        void SaveSettings()
         {
             _settings.FormGeometry = new Rectangle(Location.X, Location.Y, Size.Width, Size.Height);
             _settings.Save();
@@ -587,7 +585,7 @@ namespace NTerm
         /// </summary>
         /// <param name="ansi">Ansi args string</param>
         /// <returns>Foreground and background colors. Color is Empty if invalid ansi string.</returns>
-        internal (Color fg, Color bg) ColorFromAnsi(string ansi)
+        (Color fg, Color bg) ColorFromAnsi(string ansi)
         {
             Color fg = Color.Empty;
             Color bg = Color.Empty;
@@ -666,24 +664,11 @@ namespace NTerm
             }
         }
 
-        // /// <summary>
-        // /// 
-        // /// </summary>
-        // /// <param name="sender"></param>
-        // /// <param name="e"></param>
-        // void LogMessage(object? sender, LogMessageEventArgs e)
-        // {
-        //     _logColors.TryGetValue(e.Level, out int color);
-        //     Write($"\u001b[{color}m{e.Message}\u001b[0m");
-        // }
-        // /// <summary>Colors - ansi. TODO use ??</summary>
-        // readonly Dictionary<LogLevel, int> _logColors = new() { { LogLevel.Error, 91 }, { LogLevel.Warn, 93 }, { LogLevel.Info, 96 }, { LogLevel.Debug, 92 } };
-
         /// <summary>
         /// Update the history with the new entry.
         /// </summary>
         /// <param name="s"></param>
-        internal void AddToHistory(string s)
+        void AddToHistory(string s)
         {
             if (s.Length > 0)
             {

@@ -88,7 +88,7 @@ namespace NTerm
         [Description("Talk like this.")]
         [JsonConverter(typeof(JsonStringEnumConverter))]
         [Browsable(true)]
-        public CommType CommType { get; set; } = CommType.Null;
+        public CommType CommType { get; set; } = CommType.None;
 
         [DisplayName("Communication Arguments")]
         [Description("Type specific args. See README.md.")]

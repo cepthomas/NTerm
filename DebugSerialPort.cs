@@ -6,36 +6,37 @@ using System.Net.Sockets;
 using System.Numerics;
 using System.Text;
 using Ephemera.NBagOfTricks;
-using Ephemera.NBagOfTricks.PNUT;
 
 
-namespace NTerm.Test
+namespace NTerm
 {
-    public class SERIAL_COMM : TestSuite
-    {
-        public override void RunSuite()
-        {
-            UT_INFO("Tests serial port functions.");
-
-            // UT_TRUE(invert);
-            // UT_EQUAL(color.Name, "ff7f007f");
-
-
-        }
-    }
-
-
-
-
     // a test serial mock
-    public class SerialStreamEmu : Stream
+    public class DebugSerialStream : Stream
     {
         long _length = 0;
         long _position = 0;
 
+
+        // What was last sent by the device.
+        public string WriteBuffer { get; private set; } = "";
+
+        // Set this to what the next read op gets.
+        public string ReadBuffer { get; private set; } = "";
+
+        #region Stream implementation
+// ArgumentException - The sum of offset and count is larger than the buffer length.
+// ArgumentNullException - buffer is null.
+// ArgumentOutOfRangeException - offset or count is negative.
+// IOException - An I/O error occurs.
+// NotSupportedException - The stream does not support reading.
+// ObjectDisposedException - Methods were called after the stream was closed.
+
         public override bool CanRead => true;
+
         public override bool CanSeek => true;
+
         public override bool CanTimeout => true;
+
         public override bool CanWrite => true;
 
         public override long Length { get { return _length; } }
@@ -45,6 +46,10 @@ namespace NTerm.Test
             get { return _position; }
             set { _position = value; }
         }
+
+
+
+
 
         public override long Seek(long offset, SeekOrigin origin)
         {
@@ -57,17 +62,32 @@ namespace NTerm.Test
 
         public override int ReadByte()
         {
+            //Reads a byte from the stream and advances the position within the stream by one byte, or returns -1 if at the end of the stream.
             return 0;
         }
 
+
         public override int Read(byte[] buffer, int offset, int count)
         {
-            return 0;
+            int numRead = -1;
+
+            //zero-based byte offset in buffer at which to begin storing the data
+            //maximum number of bytes to be read from the current stream.
+
+            // Check args.
+
+            // Copy from ReadBuffer to buffer.
+
+
+            return numRead;
         }
 
         public override void Write(byte[] array, int offset, int count)
         {
-            //Write(array, offset, count, WriteTimeout);
+
+            //write WriteBuffer
+
+            // put something in ReadBuffer?
         }
 
         public override void Flush()
@@ -75,20 +95,17 @@ namespace NTerm.Test
         }
 
 
-        ~SerialStreamEmu()
-        {
-            Dispose(false);
-        }
-
-        /////// debug stuff
-        public string WriteBuffer { get; private set; } = "";
-        public string ReadBuffer { get; private set; } = "";
+        // ~DebugSerialStream()
+        // {
+        //     Dispose(false);
+        // }
+        #endregion
     }
 
 
-    public class SerialPortEmu : ISerialPort
+    public class DebugSerialPort : ISerialPort
     {
-        SerialStreamEmu _stream = new();
+        DebugSerialStream _stream = new();
 
         #region ISerialPort implementation
         public int ReadBufferSize { get; set; }

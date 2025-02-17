@@ -13,7 +13,7 @@ using Ephemera.NBagOfTricks;
 namespace NTerm
 {
     /// <summary>Supported flavors.</summary>
-    public enum CommType { Null, Tcp, Serial }
+    public enum CommType { None, Debug, Tcp, Serial }
 
     /// <summary>How did we do?</summary>
     public enum OpStatus { Success, Timeout, Error, ConfigError }
@@ -31,10 +31,6 @@ namespace NTerm
 
     /// <summary>Spec for one match.</summary>
     /// <param name="Text"></param>
-    /// <param name="WholeWord"></param>
-    /// <param name="WholeLine"></param>
-    /// <param name="ForeColor"></param>
-    /// <param name="BackColor"></param>
     public record Matcher(string Text, bool WholeWord, bool WholeLine, Color? ForeColor, Color? BackColor);
 
     /// <summary>Comm type abstraction.</summary>
