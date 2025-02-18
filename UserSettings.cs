@@ -90,6 +90,12 @@ namespace NTerm
         [Browsable(true)]
         public CommType CommType { get; set; } = CommType.None;
 
+        [DisplayName("Communication Mode")]
+        [Description("Block or poll.")]
+        [JsonConverter(typeof(JsonStringEnumConverter))]
+        [Browsable(true)]
+        public CommMode CommMode { get; set; } = CommMode.Poll;
+
         [DisplayName("Communication Arguments")]
         [Description("Type specific args. See README.md.")]
         [Browsable(true)]
@@ -100,6 +106,16 @@ namespace NTerm
         [Browsable(true)]
         [Editor(typeof(StringListEditor), typeof(UITypeEditor))]
         public List<string> HotKeys { get; set; } = [];
+
+        [DisplayName("Response Time")]
+        [Description("Server must connect or reply to commands in msec.")]
+        [Browsable(true)]
+        public int ResponseTime { get; set; } = 0;
+
+        [DisplayName("Buffer Size")]
+        [Description("R/W buffer size.")]
+        [Browsable(true)]
+        public int BufferSize { get; set; } = 4096;
 
         #region Properties - internal
         [Browsable(false)]

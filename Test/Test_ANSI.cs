@@ -144,7 +144,7 @@ namespace NTerm.Test
         }
 
 
-        void RegexLeftovers() // TODO 
+        void RegexLeftovers() // clean up 
         {
             /*
             \x1b[34;01m

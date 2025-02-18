@@ -19,56 +19,56 @@ namespace NTerm
         readonly Logger _logger = LogManager.CreateLogger("TcpComm");
         string _host = "???";
         int _port = 0;
+        Config? _config;
         #endregion
 
         #region IComm implementation
-        public int ResponseTime { get; set; } = 500;
-
-        public int BufferSize { get; set; } = 4096;
-
-        public string Response { get; private set; } = "";
-
-        public OpStatus Send(string msg) { return SendAsync(msg).Result; }
-
-        public OpStatus Init(string args)
+        public (OpStatus stat, string resp) Init(Config config)
         {
-            // Parse the args. "127.0.0.1 59120"
-            var parts = args.SplitByToken(" ");
-            OpStatus stat = parts.Count == 2 ? OpStatus.Success : OpStatus.ConfigError;
+            _config = config;
+            var resp = "";
 
+            OpStatus stat;
             try
             {
+                // Parse the args. "127.0.0.1 59120"
+                var parts = _config.Args.SplitByToken(" ");
+                stat = parts.Count == 2 ? OpStatus.Success : OpStatus.Error;
+
                 _host = parts[0];
                 _port = int.Parse(parts[1]);
 
                 IPEndPoint ipEndPoint = new(IPAddress.Parse(_host), _port);
 
-                // Test by creating client.
+                // Test args by creating client.
                 using var client = new TcpClient(_host, _port);
             }
             catch (Exception)
             {
-                _logger.Error($"Invalid comm args: {args}");
-                stat = OpStatus.ConfigError;
+                //_logger.Error($"Invalid comm args");
+                resp = "Invalid comm args";
+                stat = OpStatus.Error;
             }
 
-            return stat;
+            return (stat, resp);
         }
 
-        public void Dispose()
-        {
-        }
+        public (OpStatus stat, string resp) Send(string? msg) { return WriteAsync(msg).Result; }
+
+        public void Dispose() { }
         #endregion
 
         /// <summary>
         /// Does actual work of sending/receiving.
         /// </summary>
-        /// <param name="request"></param>
+        /// <param name="msg"></param>
         /// <returns>OpStatus and Response populated.</returns>
-        public async Task<OpStatus> SendAsync(string request)
+        public async Task<(OpStatus stat, string resp)> WriteAsync(string? msg)
         {
-            OpStatus res = OpStatus.Success;
-            Response = "";
+            OpStatus stat = OpStatus.Success;
+            var resp = "";
+            msg ??= "\0"; // check for poll TODO option?
+            _logger.Debug($"[Client] Writing request [{msg}]");
 
             try
             {
@@ -76,22 +76,20 @@ namespace NTerm
                 using var client = new TcpClient(_host, _port);
 
                 // Set some properties.
-                client.SendTimeout = ResponseTime;
-                client.ReceiveTimeout = ResponseTime;
-                client.SendBufferSize = BufferSize;
-                client.ReceiveBufferSize = BufferSize;
+                client.SendTimeout = _config.ResponseTime;
+                client.ReceiveTimeout = _config.ResponseTime;
+                client.SendBufferSize = _config.BufferSize;
+                client.ReceiveBufferSize = _config.BufferSize;
 
                 _logger.Debug("[Client] Try connecting to server");
-                var cts = new CancellationTokenSource(TimeSpan.FromMilliseconds(ResponseTime));
-                // Throws OperationCanceledException if timeout or several other failure types.
+                var cts = new CancellationTokenSource(TimeSpan.FromMilliseconds(_config.ResponseTime));
                 await client.ConnectAsync(_host, _port, cts.Token);
 
                 _logger.Debug("[Client] Connected to server");
 
                 /////// Send ////////
                 using var stream = client.GetStream();
-                byte[] bytes = Encoding.UTF8.GetBytes(request);
-                _logger.Debug($"[Client] Writing request [{request}]");
+                byte[] bytes = Encoding.UTF8.GetBytes(msg);
 
                 bool sendDone = false;
                 int num = bytes.Length;
@@ -102,10 +100,10 @@ namespace NTerm
                     // Do a chunk.
                     int tosend = num - ind >= client.SendBufferSize ? client.SendBufferSize : num - ind;
 
-                    _logger.Debug($"[Client] Sending [{tosend}]");
+                    _logger.Trace($"[Client] Sending [{tosend}]");
 
                     // If the send time-out expires, WriteAsync() throws SocketException.
-                        await stream.WriteAsync(bytes.AsMemory(ind, tosend));
+                    await stream.WriteAsync(bytes.AsMemory(ind, tosend));
 
                     ind += tosend;
                     sendDone = ind >= num;
@@ -134,14 +132,14 @@ namespace NTerm
                     }
                 }
 
-                Response = string.Join("", parts);
+                resp = string.Join("", parts);
 
-                _logger.Debug($"[Client] Server response was [{Response}]");
+                _logger.Debug($"[Client] Server response was [{resp}]");
             }
             catch (OperationCanceledException e)
             {
-                Response = "Usually connect timeout.";
-                res = OpStatus.Timeout;
+                resp = "Usually connect timeout.";
+                stat = OpStatus.Timeout;
                 _logger.Debug($"{e.Message}: {e}");
             }
             catch (SocketException e)
@@ -152,13 +150,13 @@ namespace NTerm
                 if (valid.Contains(e.NativeErrorCode))
                 {
                     // Ignore and retry later.
-                    Response = "Usually send timeout.";
-                    res = OpStatus.Timeout;
+                    resp = "Usually send timeout.";
+                    stat = OpStatus.Timeout;
                 }
                 else
                 {
-                    Response = $"Hard socket error: {e.Message}";
-                    res = OpStatus.Error;
+                    resp = $"Hard socket error: {e.Message}";
+                    stat = OpStatus.Error;
                 }
             }
             catch (IOException e)
@@ -166,18 +164,18 @@ namespace NTerm
                 // Usually receive timeout.
                 // Ignore and retry later.
                 _logger.Debug($"{e.Message}: {e}");
-                Response = "Usually receive timeout.";
-                res = OpStatus.Timeout;
+                resp = "Usually receive timeout.";
+                stat = OpStatus.Timeout;
             }
             catch (Exception e)
             {
                 // Other errors are considered fatal.
                 _logger.Error($"Fatal error:{e}");
-                Response = $"Fatal error: {e.Message}";
-                res = OpStatus.Error;
+                resp = $"Fatal error: {e.Message}";
+                stat = OpStatus.Error;
             }
 
-            return res;
+            return (stat, resp);
         }
     }
 }

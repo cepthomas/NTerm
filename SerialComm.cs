@@ -20,27 +20,23 @@ namespace NTerm
     {
         #region Fields
         readonly Logger _logger = LogManager.CreateLogger("SerialComm");
-
         readonly ISerialPort _serialPort = sport;
+        Config? _config;
         #endregion
 
         #region IComm implementation
-        public int ResponseTime { get; set; } = 500;
-
-        public int BufferSize { get; set; } = 4096;
-
-        public string Response { get; private set; } = "";
-
-        public OpStatus Send(string msg) { return SendAsync(msg).Result; }
-
-        public OpStatus Init(string args)
+        public (OpStatus stat, string resp) Init(Config config)
         {
-            // Parse the args. "COM1 9600 E|O|N 6|7|8 0|1|1.5"
-            var parts = args.SplitByToken(" ");
-            OpStatus stat = parts.Count == 5 ? OpStatus.Success : OpStatus.ConfigError;
+            _config = config;
+            var resp = "";
 
+            OpStatus stat;
             try
             {
+                // Parse the args. "COM1 9600 E|O|N 6|7|8 0|1|1.5"
+                var parts = _config.Args.SplitByToken(" ");
+                stat = parts.Count == 5 ? OpStatus.Success : OpStatus.Error;
+
                 var i = int.Parse(parts[0].Replace("COM", ""));
                 _serialPort.PortName = $"COM{i}";
 
@@ -71,22 +67,24 @@ namespace NTerm
                 };
 
                 // Other params.
-                _serialPort.ReadBufferSize = BufferSize;
-                _serialPort.WriteBufferSize = BufferSize;
-                _serialPort.ReadTimeout = ResponseTime;
-                _serialPort.WriteTimeout = ResponseTime;
+                _serialPort.ReadBufferSize = _config.BufferSize;
+                _serialPort.WriteBufferSize = _config.BufferSize;
+                _serialPort.ReadTimeout = _config.ResponseTime;
+                _serialPort.WriteTimeout = _config.ResponseTime;
                 // Handshake
 
                 _serialPort.Open();
             }
             catch (Exception)
             {
-                _logger.Error($"Invalid comm args: {args}");
-                stat = OpStatus.ConfigError;
+                resp = "Invalid comm args";
+                stat = OpStatus.Error;
             }
 
-            return stat;
+            return (stat, resp);
         }
+
+        public (OpStatus stat, string resp) Send(string? cmd) { return SendAsync(cmd).Result; }
 
         public void Dispose()
         {
@@ -98,40 +96,44 @@ namespace NTerm
         /// <summary>
         /// Does actual work of sending/receiving.
         /// </summary>
-        /// <param name="request"></param>
+        /// <param name="msg"></param>
         /// <returns>OpStatus and Response populated.</returns>
-        public async Task<OpStatus> SendAsync(string request)
+        public async Task<(OpStatus stat, string resp)> SendAsync(string? msg)
         {
-            OpStatus res = OpStatus.Success;
-            Response = "";
+            OpStatus stat = OpStatus.Success;
+            var resp = "";
 
             try
             {
                 if (_serialPort is null)
                 {
-                    _logger.Warn($"Serial port is not open");
-                    return OpStatus.Error;
+                    //_logger.Error($"Serial port is not open");
+                    return (OpStatus.Error, "Serial port is not open");
                 }
 
-                /////// Send ////////
                 using var stream = _serialPort.BaseStream;
-                byte[] bytes = Encoding.UTF8.GetBytes(request);
-                _logger.Debug($"[Client] Writing request [{request}]");
 
-                bool sendDone = false;
-                int num = bytes.Length;
-                int ind = 0;
-
-                while (!sendDone)
+                /////// Send ////////
+                if (msg is not null) // check for poll
                 {
-                    // Do a chunk.
-                    int tosend = num - ind >= _serialPort.WriteBufferSize ? _serialPort.WriteBufferSize : num - ind;
-                    _logger.Debug($"[Client] Sending [{tosend}]");
+                    byte[] bytes = Encoding.UTF8.GetBytes(msg);
+                    _logger.Debug($"[Client] Writing request [{msg}]");
 
-                    await stream.WriteAsync(bytes);
+                    bool sendDone = false;
+                    int num = bytes.Length;
+                    int ind = 0;
 
-                    ind += tosend;
-                    sendDone = ind >= num;
+                    while (!sendDone)
+                    {
+                        // Do a chunk.
+                        int tosend = num - ind >= _serialPort.WriteBufferSize ? _serialPort.WriteBufferSize : num - ind;
+                        _logger.Debug($"[Client] Sending [{tosend}]");
+
+                        await stream.WriteAsync(bytes);
+
+                        ind += tosend;
+                        sendDone = ind >= num;
+                    }
                 }
 
                 /////// Receive ////////
@@ -141,7 +143,7 @@ namespace NTerm
                 while (!rcvDone)
                 {
                     // Get response.
-                    var buffer = new byte[BufferSize];
+                    var buffer = new byte[_config.BufferSize];
 
                     var byteCount = await stream.ReadAsync(buffer);
 
@@ -156,10 +158,9 @@ namespace NTerm
                     }
                 }
 
-                Response = string.Join("", parts);
+                resp = string.Join("", parts);
 
-                _logger.Debug($"[Client] Server response was [{Response}]");
-
+                _logger.Debug($"[Client] Server response was [{resp}]");
 
                 // if the serial port is unexpectedly closed, throw an exception
                 if (!_serialPort.IsOpen)
@@ -171,18 +172,18 @@ namespace NTerm
             {
                 // Ignore and retry later.
                 _logger.Debug($"{e.Message}: {e}");
-                Response = "Usually receive timeout.";
-                res = OpStatus.Timeout;
+                resp = "Usually receive timeout.";
+                stat = OpStatus.Timeout;
             }
             catch (Exception e)
             {
-                // Other errors are considered fatal. TODO?
+                // Other errors are considered fatal.
                 _logger.Error($"Fatal error:{e}");
-                Response = $"Fatal error: {e.Message}";
-                res = OpStatus.Error;
+                resp = $"Fatal error: {e.Message}";
+                stat = OpStatus.Error;
             }
 
-            return res;
+            return (stat, resp);
         }
     }
 }

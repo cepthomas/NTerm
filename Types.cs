@@ -13,54 +13,74 @@ using Ephemera.NBagOfTricks;
 namespace NTerm
 {
     /// <summary>Supported flavors.</summary>
-    public enum CommType { None, Debug, Tcp, Serial }
+    public enum CommType
+    {
+        None,       // aka Debug
+        Tcp,
+        Serial
+    }
 
-    /// <summary>How did we do?</summary>
-    public enum OpStatus { Success, Timeout, Error, ConfigError }
+        /// <summary>Supported flavors.</summary>
+    public enum CommMode
+    {
+        CmdResp,    // each command expects a response
+        Poll        // check periodically for server msgs
+    }
+
+    /// <summary>How did operation turn out?</summary>
+    public enum OpStatus
+    {
+        Success,    // okeydokey
+        Timeout,    // try again
+        NoResp,     // poll no answer
+        Error       // it's dead jim
+    }
 
     /// <summary></summary>
-    public enum ColorMode { None, Ansi, Match }
+    public enum ColorMode
+    {
+        None,
+        Ansi,
+        Match
+    }
 
     /// <summary>Internal version of core types.</summary>
-    enum Modifier { None, Ctrl, Alt }
+    enum Modifier
+    {
+        None,
+        Ctrl,
+        Alt
+    }
 
     /// <summary>Internal data container.</summary>
     record CliInput(Modifier Mod, string Text);
 
-
-
     /// <summary>Spec for one match.</summary>
     /// <param name="Text"></param>
+    /// <param name="WholeWord"></param>
+    /// <param name="WholeLine"></param>
+    /// <param name="ForeColor"></param>
+    /// <param name="BackColor"></param>
     public record Matcher(string Text, bool WholeWord, bool WholeLine, Color? ForeColor, Color? BackColor);
 
     /// <summary>Comm type abstraction.</summary>
     public interface IComm : IDisposable
     {
-        /// <summary>Server must connect or reply to commands in msec.</summary>
-        int ResponseTime { get; set; }
-
-        /// <summary>R/W buffer size.</summary>
-        int BufferSize { get; set; }
-
-        /// <summary>The text if Success otherwise error message.</summary>
-        string Response { get; }
-
         /// <summary>Initialize the comm device.</summary>
-        /// <param name="args">Setup info.</param>
-        /// <returns>Operation status.</returns>
-        OpStatus Init(string args);
+        /// <param name="config">Setup info.</param>
+        /// <returns>Operation status, response.</returns>
+        (OpStatus stat, string resp) Init(Config config);//string args);
 
         /// <summary>Send a message to the server.</summary>
-        /// <param name="msg">What to send.</param>
-        /// <returns>Operation status.</returns>
-        OpStatus Send(string msg);
+        /// <param name="msg">What to send. Null indicates a poll request.</param>
+        /// <returns>Operation status, response.</returns>
+        (OpStatus stat, string resp) Send(string? msg);
 
         /// <summary>Clean up.</summary>
         public new void Dispose();
     }
 
-
-    /// <summary>Serial port abstraction. Members defined in MS docs.</summary>
+    /// <summary>Serial port abstraction. Members defined as in MS docs.</summary>
     public interface ISerialPort : IDisposable
     {
         string PortName { get; set; }

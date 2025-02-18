@@ -13,13 +13,9 @@ using Ephemera.NBagOfTricks;
 namespace NTerm
 {
     /// <summary>Default comm.</summary>
-    public class DebugComm : IComm
+    public class ScriptComm : IComm
     {
         #region IComm implementation
-        public int ResponseTime { get; set; } = 500;
-        public int BufferSize { get; set; } = 4096;
-        public string Response { get; private set; } = "";
-
 // ArgumentException - The sum of offset and count is larger than the buffer length.
 // ArgumentNullException - buffer is null.
 // ArgumentOutOfRangeException - offset or count is negative.
@@ -27,19 +23,18 @@ namespace NTerm
 // NotSupportedException - The stream does not support reading.
 // ObjectDisposedException - Methods were called after the stream was closed.
 
-        public OpStatus Init(string args)
+        public (OpStatus stat, string resp) Init(Config config) // TODO1 - open scr file
         {
-            return OpStatus.Success;
+            return (OpStatus.Success, "");
         }
 
-        public OpStatus Send(string msg)
+        public (OpStatus stat, string resp) Send(string? msg) // TODO1 - WR/RD scr
         {
-            Response = $"TODO DebugComm send [{msg}] at {DateTime.Now}"; return OpStatus.Success;
+            var resp = $"ScriptComm send [{msg}] at {DateTime.Now}";
+            return (OpStatus.Success, resp);
         }
 
-        public void Dispose()
-        {
-        }
+        public void Dispose() { }
         #endregion
     }
 }

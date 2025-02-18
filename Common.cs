@@ -12,6 +12,20 @@ using Ephemera.NBagOfTricks;
 
 namespace NTerm
 {
+
+    public class Script //TODO1
+    {
+        public void Load(string fn)
+        {
+
+        }
+
+        public string Send(string msg)
+        {
+            return "";
+        }
+    }
+
     // /// <summary>Default comm.</summary>
     // public class EmuComm : IComm
     // {

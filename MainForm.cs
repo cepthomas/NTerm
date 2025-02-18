@@ -83,7 +83,7 @@ namespace NTerm
             var appDir = MiscUtils.GetAppDataDir("NTerm", "Ephemera");
             var logFileName = Path.Combine(appDir, "log.txt");
             LogManager.Run(logFileName, 50000);
-            LogManager.LogMessage += (object? sender, LogMessageEventArgs e) => Write(e.Message);
+            LogManager.LogMessage += (object? sender, LogMessageEventArgs e) => Print(e.Message);
 
             _settings = (UserSettings)SettingsCore.Load(appDir, typeof(UserSettings));
 
@@ -170,6 +170,18 @@ namespace NTerm
         {
             _running = true;
 
+            if (_config is null)
+            {
+                _logger.Warn($"Client is not selected - edit your settings");
+                return;
+            }
+
+            if (_comm is null)
+            {
+                _logger.Warn($"Comm is not initialized - edit your settings");
+                return;
+            }
+
             Task task = Task.Run(async () =>
             {
                 while (_running)
@@ -178,20 +190,16 @@ namespace NTerm
 
                     try
                     {
-                        while (_queue.TryDequeue(out CliInput? le))
+                        if (_queue.TryDequeue(out CliInput? le))
                         {
-                            // Do the work...
-
-                            //bool running = true;
+                            // Got one - do the work...
                             string? ucmd = null;
-                            OpStatus res;
-                            bool ok = true;
 
                             switch (le.Mod, le.Text)
                             {
                                 case (Modifier.None, _):
                                     // Normal line, send it.
-                                    _logger.Trace($">>> got line:{le.Text}");
+                                    //_logger.Trace($">>> got line:{le.Text}");
                                     ucmd = le.Text;
                                     break;
 
@@ -210,40 +218,66 @@ namespace NTerm
                                 //    break;
 
                                 case (Modifier.Alt, _):
-                                    ok = _hotKeys.TryGetValue(le.Text, out ucmd);
+                                    _hotKeys.TryGetValue(le.Text, out ucmd);
                                     break;
 
                                 default:
-                                    ok = false;
+                                    Print("Invalid command");
                                     break;
                             }
 
-                            if (!ok)
+                            if (ucmd is not null)
                             {
-                                Write("Invalid command");
+                                _logger.Debug($"SND:{ucmd}");
+                                var (stat, resp) = _comm.Send(ucmd);
+                                _logger.Debug($"RCV [{stat}]:{resp}");
+
+                                switch (stat)
+                                {
+                                    case OpStatus.Success:
+                                        Print(resp);
+                                        break;
+
+                                    case OpStatus.Timeout:
+                                        // Nothing to do.
+                                        break;
+
+                                    case OpStatus.NoResp:
+                                        // Nothing to do.
+                                        break;
+
+                                    case OpStatus.Error:
+                                        Print(resp);
+                                        break;
+                                }
+
                                 // WritePrompt();
                             }
-                            else if (ucmd is not null)
+                        }
+
+                        // Maybe poll.
+                        if (_config.CommMode == CommMode.Poll)
+                        {
+                            var (stat, resp) = _comm.Send(null);
+
+                            switch (stat)
                             {
-                                if (_comm is null)
-                                {
-                                    _logger.Warn($"Comm is not initialized - edit settings");
-                                }
-                                else
-                                {
-                                    _logger.Debug($"SND:{ucmd}");
-                                    res = _comm.Send(ucmd);
-                                    Write(_comm.Response);
-                                    // Show results.
-                                    _logger.Debug($"RCV:{res}: {_comm.Response}");
-                                }
-                                // WritePrompt();
+                                case OpStatus.Success:
+                                case OpStatus.Error:
+                                    Print(resp);
+                                    _logger.Debug($"RCV [{stat}]:{resp}");
+                                    break;
+
+                                case OpStatus.Timeout:
+                                case OpStatus.NoResp:
+                                    // Nothing to do.
+                                    break;
                             }
                         }
                     }
                     catch (Exception)
                     {
-                        // Do something or just leave it alone?
+                        // TODO Do something or just leave it alone?
                         throw;
                     }
 
@@ -276,17 +310,17 @@ namespace NTerm
         /// <param name="e"></param>
         void RtbIn_KeyDown(object? sender, KeyEventArgs e)
         {
-            Write($">>> RtbIn_KeyDown:[{e.KeyCode}]");
+            // Print($">>> RtbIn_KeyDown:[{e.KeyCode}]");
             ProcessKey(e);
             e.Handled = true;
         }
 
-        void RtbOut_KeyDown(object? sender, KeyEventArgs e)
-        {
-            Write($">>> RtbOut_KeyDown:[{e.KeyCode}]");
-            //ProcessKey(e);
-            //e.Handled = true;
-        }
+        // void RtbOut_KeyDown(object? sender, KeyEventArgs e)
+        // {
+        //     Print($">>> RtbOut_KeyDown:[{e.KeyCode}]");
+        //     //ProcessKey(e);
+        //     //e.Handled = true;
+        // }
 
         /// <summary>
         /// User wants to do something.
@@ -299,22 +333,6 @@ namespace NTerm
             var ch = KeyUtils.KeyToChar(e.KeyCode, e.Modifiers).ch;
             // if (ch > 0) { Debug.WriteLine($"char:{ch}"); }
             //ProcessKey(ActiveControl, e);
-
-            //if (ActiveControl == rtbOut)
-            //{
-            //    if (ch > 0)
-            //    {
-            //        rtbIn.Text += ch;
-            //    }
-            //}
-            //else if (ActiveControl == rtbIn)
-            //{
-            //    // something else
-            //}
-            //else
-            //{
-            //    throw new NotImplementedException();
-            //}
 
             switch (e.Control, e.Alt, e.KeyCode)
             {
@@ -374,7 +392,7 @@ namespace NTerm
         /// </summary>
         /// <param name="text"></param>
         /// <param name="nl"></param>
-        void Write(string text, bool nl = true)
+        void Print(string text) //, bool nl = true)
         {
             this.InvokeIfRequired(_ =>
             {
@@ -397,10 +415,10 @@ namespace NTerm
 
                 rtbOut.ScrollToCaret();
 
-                if (nl)
-                {
-                    rtbOut.AppendText(Environment.NewLine);
-                }
+                //if (nl)
+                //{
+                //    rtbOut.AppendText(Environment.NewLine);
+                //}
             });
         }
 
@@ -530,18 +548,16 @@ namespace NTerm
                 var c = _settings.Configs.FirstOrDefault(x => x.Name == _settings.CurrentConfig);
                 _config = c is null ? _settings.Configs[0] : c;
 
-                OpStatus stat = OpStatus.Success;
-
                 _comm = _config.CommType switch
                 {
                     CommType.Tcp => new TcpComm(),
                     CommType.Serial => new SerialComm(new RealSerialPort()),
-                    CommType.Debug => new DebugComm(),
+                    CommType.None => new DebugComm(),
                     _ => throw new NotImplementedException(),
                 };
 
                 // Init and check stat.
-                stat = _comm.Init(_config.Args);
+                var r = _comm.Init(_config);
 
                 // Init hotkeys.
                 _hotKeys.Clear();
@@ -691,14 +707,14 @@ namespace NTerm
             // Write("ctrl-q to exit");
             // Write("ctrl-h this here");
 
-            _hotKeys.ForEach(x => Write($"alt-{x.Key} sends: [{x.Value}]"));
+            _hotKeys.ForEach(x => Print($"alt-{x.Key} sends: [{x.Value}]"));
 
             var cc = _config is not null ? $"{_config.Name}({_config.CommType})" : "None";
-            Write($"current config: {cc}");
+            Print($"current config: {cc}");
 
-            Write("serial ports:");
+            Print("serial ports:");
             var sports = SerialPort.GetPortNames();
-            sports.ForEach(s => { Write($"   {s}"); });
+            sports.ForEach(s => { Print($"   {s}"); });
         }
         #endregion
     }

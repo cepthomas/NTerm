@@ -9,52 +9,16 @@ using Ephemera.NBagOfTricks;
 
 
 
-
-// Works:
-//AsyncUsingTcpClient();
-//StartServer(_config.Port);
-//var res = _comm.Send("djkdjsdfksdf;s");
-//Write($"{res}: {_comm.Response}");
-//var ser = new Serial();
-//var ports = ser.GetSerialPorts();
-
-
-///// <summary>
-///// 
-///// </summary>
-///// <param name="sender"></param>
-///// <param name="e"></param>
-//void BtnGo_Click(object? sender, EventArgs e)
-//{
-//    try
-//    {
-//        // Works:
-//        //AsyncUsingTcpClient();
-
-//        //StartServer(_config.Port);
-//        //var res = _prot.Send("djkdjsdfksdf;s");
-//        //tvOut.AppendLine(res);
-
-//    }
-//    catch (Exception ex)
-//    {
-//        _logger.Error($"Fatal error: {ex.Message}");
-//    }
-//}
-
-
-
-
 namespace NTerm
 {
     // a test tcp server
-    public class DebugServer
+    public class DebugServer // TODO1 SCR
     {
         public static void Run(int port)
         {
             Console.WriteLine($"Listening on {port}");
 
-            //// Start test server.
+            //// Start test server:
             //string uri = @"C:\Dev\repos\Apps\NTerm\bin\Debug\net8.0-windows\NTerm.exe";
             //var info = new ProcessStartInfo(uri) { UseShellExecute = true };
             //var proc = new Process() { StartInfo = info };
