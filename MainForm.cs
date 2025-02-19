@@ -93,14 +93,8 @@ namespace NTerm
 
             // Route all app key strokes through this form first.
             //KeyPreview = true;
-
-
-           // rtbOut.EnabledChanged += (_, _) => rtbOut.BackColor = Color.Pink;
-
-
             // Force all keystrokes to the cli input.
             //rtbOut.Enabled = false;
-
 
             // Init from previously loaded settings.
             InitFromSettings();
@@ -121,6 +115,11 @@ namespace NTerm
 
             _ansiForeColor = rtbOut.ForeColor;
             _ansiBackColor = rtbOut.BackColor;
+
+            //_logger.Trace($"=== Trace ===");
+            //_logger.Debug($"=== Debug ===");
+            //_logger.Info($"=== Info ===");
+            //_logger.Error($"=== Error ===");
         }
 
         /// <summary>
@@ -151,11 +150,12 @@ namespace NTerm
         }
 
         /// <summary>
-        /// 
+        /// Shut her down.
         /// </summary>
         /// <param name="e"></param>
         protected override void OnFormClosing(FormClosingEventArgs e)
         {
+            _tokenSource.Cancel();
             SaveSettings();
             base.OnFormClosing(e);
         }

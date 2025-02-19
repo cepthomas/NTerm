@@ -12,7 +12,7 @@ using Ephemera.NBagOfTricks;
 namespace NTerm
 {
     // a test tcp server
-    public class DebugServer // TODO lua version?
+    public class DebugServer
     {
         public static void Run(int port)
         {

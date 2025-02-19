@@ -12,6 +12,12 @@ using Ephemera.NBagOfTricks;
 
 namespace NTerm
 {
+    public class Defs
+    {
+        //public const byte TERM = 0;
+        public const byte POLL_REQ = 0;
+    }
+
     /// <summary>Supported flavors.</summary>
     public enum CommType
     {

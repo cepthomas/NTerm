@@ -73,7 +73,6 @@ namespace NTerm
         {
             OpStatus stat = OpStatus.Success;
             var resp = "";
-            msg ??= Defs.POLL_REQ; // check for poll
             _logger.Debug($"[Client] Writing request [{msg}]");
 
             try
@@ -96,7 +95,8 @@ namespace NTerm
                 /////// Send ////////
                 // TODO1 using var stream = client.GetStream();
                 using var stream = new ScriptStream();
-                byte[] bytes = Encoding.UTF8.GetBytes(msg);
+                // check for poll.
+                byte[] bytes = msg is null ? [Defs.POLL_REQ] : Encoding.UTF8.GetBytes(msg);
 
                 bool sendDone = false;
                 int num = bytes.Length;
@@ -116,7 +116,7 @@ namespace NTerm
                     sendDone = ind >= num;
                 }
 
-                /////// Receive ////////    
+                /////// Receive ////////
                 List<string> parts = [];
                 bool rcvDone = false;
 

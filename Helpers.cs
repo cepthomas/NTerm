@@ -12,14 +12,6 @@ using Ephemera.NBagOfTricks;
 
 namespace NTerm
 {
-
-    public class Defs
-    {
-        //public const byte TERM = 0;
-        public const byte POLL_REQ = 1;
-    }
-
-
     // a test mock TODO1 implement
     class ScriptStream : Stream
     {
@@ -67,7 +59,7 @@ namespace NTerm
 
         public override int Read(byte[] buffer, int offset, int count)
         {
-            // TODO1 script throw
+            // TODO1 script indicates throw
 // ArgumentNullException - The buffer passed is null.
 // InvalidOperationException - The specified port is not open.
 // ArgumentOutOfRangeException - The offset or count parameters are outside a valid region of the buffer being passed. Either offset or count is less than zero.
@@ -90,7 +82,7 @@ namespace NTerm
         {
 // InvalidOperationException - The specified port is not open.
 // TimeoutException - The operation did not complete before the time-out period ended.
-// -or-
+//    -or-
 // No byte was read.
 
             // Reads a byte from the stream and advances the position within the stream by one byte,
@@ -130,14 +122,14 @@ namespace NTerm
         #region IComm implementation
         public (OpStatus stat, string resp) Init(Config config)
         {
-            return (OpStatus.Success, $"Inited at {DateTime.Now}{Environment.NewLine}");
+            return (OpStatus.Success, $"NullComm Inited at {DateTime.Now}{Environment.NewLine}");
         }
 
         public (OpStatus stat, string resp) Send(string? msg)
         {
             if (msg != null)
             {
-                return (OpStatus.Success, $"You sent me [{msg}] at {DateTime.Now}{Environment.NewLine}");
+                return (OpStatus.Success, $"NullComm got [{msg}] at {DateTime.Now}{Environment.NewLine}");
             }
             else
             {
