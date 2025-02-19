@@ -551,7 +551,7 @@ namespace NTerm
                 _comm = _config.CommType switch
                 {
                     CommType.Tcp => new TcpComm(),
-                    CommType.Serial => new SerialComm(new RealSerialPort()),
+                    CommType.Serial => new SerialComm(),
                     CommType.None => new DebugComm(),
                     _ => throw new NotImplementedException(),
                 };
