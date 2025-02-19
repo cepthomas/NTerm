@@ -16,21 +16,25 @@ using Ephemera.NBagOfTricks.Slog;
 
 namespace NTerm
 {
-    public class SerialComm(ISerialPort? sport) : IComm // TODO needs debug.
+    // public class SerialComm(ISerialPort? sport) : IComm //  needs debug.
+    public class SerialComm : IComm // TODO needs debug.
     {
         #region Fields
         readonly Logger _logger = LogManager.CreateLogger("SerialComm");
-        readonly ISerialPort _serialPort = sport ?? new RealSerialPort();
+
         Config? _config;
+
+        readonly public SerialPort _serialPort = new();
+        // readonly ISerialPort _serialPort = sport ?? new RealSerialPort();
         #endregion
 
         #region IComm implementation
         public (OpStatus stat, string resp) Init(Config config)
         {
             _config = config;
-            var resp = "";
-
             OpStatus stat;
+            string resp = "";
+
             try
             {
                 // Parse the args. "COM1 9600 E|O|N 6|7|8 0|1|1.5"
@@ -73,6 +77,7 @@ namespace NTerm
                 _serialPort.WriteTimeout = _config.ResponseTime;
                 // Handshake
 
+                // Test args by creating client.
                 _serialPort.Open();
             }
             catch (Exception)
@@ -111,7 +116,9 @@ namespace NTerm
                     return (OpStatus.Error, "Serial port is not open");
                 }
 
-                using var stream = _serialPort.BaseStream;
+                // using var stream = StreamFactory.GetStream(this);
+                // TODO1 using var stream = _serialPort.BaseStream;
+                 using var stream = new ScriptStream();
 
                 /////// Send ////////
                 if (msg is not null) // check for poll
@@ -185,28 +192,5 @@ namespace NTerm
 
             return (stat, resp);
         }
-    }
-
-    /// <summary>Real serial port implementation.</summary>
-    public class RealSerialPort : ISerialPort
-    {
-        readonly SerialPort _serialPort = new();
-
-        #region ISerialPort implementation
-        public int ReadBufferSize { get => _serialPort.ReadBufferSize; set => _serialPort.ReadBufferSize = value; }
-        public int WriteBufferSize { get => _serialPort.WriteBufferSize; set => _serialPort.WriteBufferSize = value; }
-        public int ReadTimeout { get => _serialPort.ReadTimeout; set => _serialPort.ReadTimeout = value; }
-        public int WriteTimeout { get => _serialPort.WriteTimeout; set => _serialPort.WriteTimeout = value; }
-        public string PortName { get => _serialPort.PortName; set => _serialPort.PortName = value; }
-        public int BaudRate { get => _serialPort.BaudRate; set => _serialPort.BaudRate = value; }
-        public Parity Parity { get => _serialPort.Parity; set => _serialPort.Parity = value; }
-        public int DataBits { get => _serialPort.DataBits; set => _serialPort.DataBits = value; }
-        public StopBits StopBits { get => _serialPort.StopBits; set => _serialPort.StopBits = value; }
-        public bool IsOpen { get => _serialPort.IsOpen; }
-        public Stream BaseStream { get { return _serialPort.BaseStream; } }
-        public void Close() { _serialPort.Close(); }
-        public void Dispose() { _serialPort.Dispose(); }
-        public void Open() { _serialPort.Open(); }
-        #endregion
     }
 }

@@ -26,7 +26,6 @@ namespace NTerm
             btnDebug = new ToolStripButton();
             rtbOut = new RichTextBox();
             rtbIn = new RichTextBox();
-            rtbTest = new RichTextBox();
             toolStrip1.SuspendLayout();
             SuspendLayout();
             // 
@@ -94,7 +93,7 @@ namespace NTerm
             rtbOut.Location = new Point(22, 40);
             rtbOut.Name = "rtbOut";
             rtbOut.ReadOnly = true;
-            rtbOut.Size = new Size(756, 278);
+            rtbOut.Size = new Size(756, 397);
             rtbOut.TabIndex = 3;
             rtbOut.Text = "";
             // 
@@ -111,21 +110,11 @@ namespace NTerm
             rtbIn.TabIndex = 4;
             rtbIn.Text = "";
             // 
-            // rtbTest
-            // 
-            rtbTest.BackColor = Color.FromArgb(192, 255, 255);
-            rtbTest.Location = new Point(181, 334);
-            rtbTest.Name = "rtbTest";
-            rtbTest.Size = new Size(358, 89);
-            rtbTest.TabIndex = 5;
-            rtbTest.Text = "";
-            // 
             // MainForm
             // 
             AutoScaleDimensions = new SizeF(8F, 19F);
             AutoScaleMode = AutoScaleMode.Font;
             ClientSize = new Size(803, 493);
-            Controls.Add(rtbTest);
             Controls.Add(rtbIn);
             Controls.Add(rtbOut);
             Controls.Add(toolStrip1);
@@ -146,6 +135,5 @@ namespace NTerm
         private System.Windows.Forms.RichTextBox rtbOut;
         private System.Windows.Forms.RichTextBox rtbIn;
         private ToolStripButton btnDebug;
-        private RichTextBox rtbTest;
     }
 }

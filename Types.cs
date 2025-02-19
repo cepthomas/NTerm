@@ -20,7 +20,7 @@ namespace NTerm
         Serial
     }
 
-        /// <summary>Supported flavors.</summary>
+    /// <summary>Supported flavors.</summary>
     public enum CommMode
     {
         CmdResp,    // each command expects a response
@@ -64,12 +64,12 @@ namespace NTerm
     public record Matcher(string Text, bool WholeWord, bool WholeLine, Color? ForeColor, Color? BackColor);
 
     /// <summary>Comm type abstraction.</summary>
-    public interface IComm : IDisposable
+    interface IComm : IDisposable
     {
         /// <summary>Initialize the comm device.</summary>
         /// <param name="config">Setup info.</param>
         /// <returns>Operation status, response.</returns>
-        (OpStatus stat, string resp) Init(Config config);//string args);
+        (OpStatus stat, string resp) Init(Config config);
 
         /// <summary>Send a message to the server.</summary>
         /// <param name="msg">What to send. Null indicates a poll request.</param>
@@ -78,23 +78,5 @@ namespace NTerm
 
         /// <summary>Clean up.</summary>
         public new void Dispose();
-    }
-
-    /// <summary>Serial port abstraction. Members defined as in MS docs.</summary>
-    public interface ISerialPort : IDisposable
-    {
-        string PortName { get; set; }
-        int BaudRate { get; set; }
-        Parity Parity { get; set; }
-        int DataBits { get; set; }
-        StopBits StopBits { get; set; }
-        int ReadBufferSize { get; set; }
-        int WriteBufferSize { get; set; }
-        int ReadTimeout { get; set; }
-        int WriteTimeout { get; set; }
-        bool IsOpen { get; }
-        Stream BaseStream { get; }
-        void Open();
-        void Close();
     }
 }

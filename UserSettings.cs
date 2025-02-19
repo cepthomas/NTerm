@@ -31,10 +31,10 @@ namespace NTerm
         [Browsable(true)]
         public List<Config> Configs { get; set; } = [];
 
-        [DisplayName("Prompt")]
-        [Description("CLI prompt.")]
-        [Browsable(true)]
-        public string Prompt { get; set; } = ">";
+        //[DisplayName("Prompt")]
+        //[Description("CLI prompt.")]
+        //[Browsable(true)]
+        //public string Prompt { get; set; } = ">";
 
         [DisplayName("Color Mode")] // TODO probably per config later?
         [Description("Colorize Mode.")]

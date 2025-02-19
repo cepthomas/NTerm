@@ -54,9 +54,8 @@ namespace NTerm
         /// <summary>Current location in list.</summary>
         int _historyIndex = 0;
 
-        /// <summary>Limit the output size. TODO use lines</summary>
-        int _maxText = 10000;
-
+        /// <summary>Limit the output size.</summary>
+        int _maxLines = 200;
 
         /// <summary>Cli async event queue.</summary>
         readonly ConcurrentQueue<CliInput> _queue = new();
@@ -112,7 +111,7 @@ namespace NTerm
 
             // UI handlers.
             rtbIn.KeyDown += RtbIn_KeyDown;
-            rtbOut.KeyDown += RtbOut_KeyDown;
+            //rtbOut.KeyDown += RtbOut_KeyDown;
             //rtbIn.KeyPress += (object? sender, KeyPressEventArgs e) => Debug.WriteLine($"KeyPress:{e.KeyChar}");
             //rtbOut.KeyDown += (object? sender, KeyEventArgs e) => throw new NotImplementedException();
             btnSettings.Click += (_, _) => SettingsEditor.Edit(_settings, "User Settings", 500);
@@ -235,7 +234,7 @@ namespace NTerm
                                 switch (stat)
                                 {
                                     case OpStatus.Success:
-                                        Print(resp);
+                                        Print(resp, false); // let sender manage the line ends
                                         break;
 
                                     case OpStatus.Timeout:
@@ -263,9 +262,11 @@ namespace NTerm
                             switch (stat)
                             {
                                 case OpStatus.Success:
+                                    Print(resp, false); // let sender manage the line ends
+                                    break;
+
                                 case OpStatus.Error:
                                     Print(resp);
-                                    _logger.Debug($"RCV [{stat}]:{resp}");
                                     break;
 
                                 case OpStatus.Timeout:
@@ -310,14 +311,14 @@ namespace NTerm
         /// <param name="e"></param>
         void RtbIn_KeyDown(object? sender, KeyEventArgs e)
         {
-            // Print($">>> RtbIn_KeyDown:[{e.KeyCode}]");
+            // PrintLine($">>> RtbIn_KeyDown:[{e.KeyCode}]");
             ProcessKey(e);
             e.Handled = true;
         }
 
         // void RtbOut_KeyDown(object? sender, KeyEventArgs e)
         // {
-        //     Print($">>> RtbOut_KeyDown:[{e.KeyCode}]");
+        //     PrintLine($">>> RtbOut_KeyDown:[{e.KeyCode}]");
         //     //ProcessKey(e);
         //     //e.Handled = true;
         // }
@@ -346,13 +347,13 @@ namespace NTerm
                         CliInput la = new(Modifier.None, t);
                         _queue.Enqueue(la);
                         // Clear line.
-                        rtbIn.Text = $"{_settings.Prompt}";
+                        rtbIn.Text = "";// $"{_settings.Prompt}";
                     }
                     break;
 
                 case (false, false, Keys.Escape):
                     // Throw away current.
-                    rtbIn.Text = $"{_settings.Prompt}";
+                    rtbIn.Text = "";// $"{_settings.Prompt}";
                     break;
 
                 case (false, false, Keys.Up):
@@ -360,7 +361,8 @@ namespace NTerm
                     if (_historyIndex < _history.Count - 1)
                     {
                         _historyIndex++;
-                        rtbIn.Text = $"{_settings.Prompt}{_history[_historyIndex]}";
+                        //rtbIn.Text = $"{_settings.Prompt}{_history[_historyIndex]}";
+                        rtbIn.Text = _history[_historyIndex];
                     }
                     break;
 
@@ -369,7 +371,8 @@ namespace NTerm
                     if (_historyIndex > 0)
                     {
                         _historyIndex--;
-                        rtbIn.Text = $"{_settings.Prompt}{_history[_historyIndex]}";
+                        //rtbIn.Text = $"{_settings.Prompt}{_history[_historyIndex]}";
+                        rtbIn.Text = _history[_historyIndex];
                     }
                     break;
 
@@ -388,37 +391,41 @@ namespace NTerm
 
         #region Output text
         /// <summary>
-        /// Top level outputter. Takes care of UI thread.
+        /// Top level outputter. Takes care of UI thread. Doesn't add nl.
         /// </summary>
         /// <param name="text"></param>
         /// <param name="nl"></param>
-        void Print(string text) //, bool nl = true)
+        void Print(string text, bool nl = true)
         {
             this.InvokeIfRequired(_ =>
             {
                 // Trim buffer.
-                if (rtbOut.TextLength > _maxText)
+                int numLines = rtbOut.GetLineFromCharIndex(rtbOut.TextLength - 1);
+                //int overflowLines = rtbOut.GetLineFromCharIndex(rtbOut.TextLength - 1) - _maxLines;
+                if (numLines - _maxLines > 5)
                 {
-                    int end = _maxText / 5;
-                    while (rtbOut.Text[end] != (char)Keys.LineFeed) end++;
-                    rtbOut.Select(0, end);
+                    rtbOut.Select(0, rtbOut.GetFirstCharIndexFromLine(6));
                     rtbOut.SelectedText = "";
                 }
 
+                // Harmonize nx line endings.
+                text = text.Replace("\n", "\r\n").Replace("\r\r", "");
+
+                // Do it.
                 bool ok = _settings.ColorMode switch
                 {
-                    ColorMode.None => WritePlain(text),
-                    ColorMode.Ansi => WriteAnsi(text),
-                    ColorMode.Match => WriteMatch(text),
+                    ColorMode.None => PrintPlain(text),
+                    ColorMode.Ansi => PrintAnsi(text),
+                    ColorMode.Match => PrintMatch(text),
                     _ => false
                 };
 
-                rtbOut.ScrollToCaret();
+                if (nl)
+                {
+                    rtbOut.AppendText(Environment.NewLine);
+                }
 
-                //if (nl)
-                //{
-                //    rtbOut.AppendText(Environment.NewLine);
-                //}
+                rtbOut.ScrollToCaret();
             });
         }
 
@@ -426,7 +433,7 @@ namespace NTerm
         /// 
         /// </summary>
         /// <param name="text"></param>
-        bool WritePlain(string text)
+        bool PrintPlain(string text)
         {
             rtbOut.AppendText(text);
             return true;
@@ -436,7 +443,7 @@ namespace NTerm
         /// 
         /// </summary>
         /// <param name="text"></param>
-        bool WriteAnsi(string text)
+        bool PrintAnsi(string text)
         {
             int end = 0;
 
@@ -465,7 +472,7 @@ namespace NTerm
         /// Use simple matching.
         /// </summary>
         /// <param name="text"></param>
-        bool WriteMatch(string text)
+        bool PrintMatch(string text)
         {
             // This could use some clumsy regex. Eric Lippert says don't bother: https://stackoverflow.com/q/48294100.
 
@@ -552,7 +559,7 @@ namespace NTerm
                 {
                     CommType.Tcp => new TcpComm(),
                     CommType.Serial => new SerialComm(),
-                    CommType.None => new DebugComm(),
+                    CommType.None => new NullComm(),
                     _ => throw new NotImplementedException(),
                 };
 

@@ -13,10 +13,12 @@ using Ephemera.NBagOfTricks.Slog;
 
 namespace NTerm
 {
+    // internal class TcpComm(ITcpClient? tclient) : IComm
     internal class TcpComm : IComm
     {
         #region Fields
         readonly Logger _logger = LogManager.CreateLogger("TcpComm");
+        // readonly ITcpPort _tcpClient = tclient ?? new RealTcpClient();
         string _host = "???";
         int _port = 0;
         Config? _config;
@@ -26,9 +28,9 @@ namespace NTerm
         public (OpStatus stat, string resp) Init(Config config)
         {
             _config = config;
-            var resp = "";
-
             OpStatus stat;
+            string resp = "";
+
             try
             {
                 // Parse the args. "127.0.0.1 59120"
@@ -45,7 +47,6 @@ namespace NTerm
             }
             catch (Exception)
             {
-                //_logger.Error($"Invalid comm args");
                 resp = "Invalid comm args";
                 stat = OpStatus.Error;
             }
@@ -55,10 +56,15 @@ namespace NTerm
 
         public (OpStatus stat, string resp) Send(string? msg) { return WriteAsync(msg).Result; }
 
-        public void Dispose() { }
+        public void Dispose()
+        {
+            //_tcpClient?.Close();
+            //_tcpClient?.Dispose();
+            //_tcpClient = null;
+        }
         #endregion
 
-        /// <summary>
+         /// <summary>
         /// Does actual work of sending/receiving.
         /// </summary>
         /// <param name="msg"></param>
@@ -67,7 +73,7 @@ namespace NTerm
         {
             OpStatus stat = OpStatus.Success;
             var resp = "";
-            msg ??= "\0"; // check for poll TODO option?
+            msg ??= Defs.POLL_REQ; // check for poll
             _logger.Debug($"[Client] Writing request [{msg}]");
 
             try
@@ -88,7 +94,8 @@ namespace NTerm
                 _logger.Debug("[Client] Connected to server");
 
                 /////// Send ////////
-                using var stream = client.GetStream();
+                // TODO1 using var stream = client.GetStream();
+                using var stream = new ScriptStream();
                 byte[] bytes = Encoding.UTF8.GetBytes(msg);
 
                 bool sendDone = false;
@@ -109,7 +116,7 @@ namespace NTerm
                     sendDone = ind >= num;
                 }
 
-                /////// Receive ////////
+                /////// Receive ////////    
                 List<string> parts = [];
                 bool rcvDone = false;
 

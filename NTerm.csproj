@@ -29,6 +29,12 @@
 
   <ItemGroup>
     <Compile Remove="MainForm_1.cs" />
+    <Compile Remove="_work.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Remove="ansi.lua" />
+    <None Remove="_stuff.ntr" />
   </ItemGroup>
 
   <ItemGroup>
