@@ -22,6 +22,7 @@ namespace NTerm
         string _host = "???";
         int _port = 0;
         Config? _config;
+        const byte POLL_REQ = 0;
         #endregion
 
         #region IComm implementation
@@ -96,7 +97,7 @@ namespace NTerm
                 // TODO1 using var stream = client.GetStream();
                 using var stream = new ScriptStream();
                 // check for poll.
-                byte[] bytes = msg is null ? [Defs.POLL_REQ] : Encoding.UTF8.GetBytes(msg);
+                byte[] bytes = msg is null ? [POLL_REQ] : Encoding.UTF8.GetBytes(msg);
 
                 bool sendDone = false;
                 int num = bytes.Length;

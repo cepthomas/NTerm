@@ -82,7 +82,7 @@ namespace NTerm
             var appDir = MiscUtils.GetAppDataDir("NTerm", "Ephemera");
             var logFileName = Path.Combine(appDir, "log.txt");
             LogManager.Run(logFileName, 50000);
-            LogManager.LogMessage += (object? sender, LogMessageEventArgs e) => Print(e.Message);
+            LogManager.LogMessage += (object? sender, LogMessageEventArgs e) => Print(e.ShortMessage);
 
             _settings = (UserSettings)SettingsCore.Load(appDir, typeof(UserSettings));
 
@@ -234,7 +234,7 @@ namespace NTerm
                                 switch (stat)
                                 {
                                     case OpStatus.Success:
-                                        Print(resp, false); // let sender manage the line ends
+                                        Print(resp, false);
                                         break;
 
                                     case OpStatus.Timeout:
@@ -262,7 +262,7 @@ namespace NTerm
                             switch (stat)
                             {
                                 case OpStatus.Success:
-                                    Print(resp, false); // let sender manage the line ends
+                                    Print(resp, false);
                                     break;
 
                                 case OpStatus.Error:
@@ -391,10 +391,10 @@ namespace NTerm
 
         #region Output text
         /// <summary>
-        /// Top level outputter. Takes care of UI thread. Doesn't add nl.
+        /// Top level outputter. Takes care of UI thread.
         /// </summary>
-        /// <param name="text"></param>
-        /// <param name="nl"></param>
+        /// <param name="text">What to print</param>
+        /// <param name="nl">Default is to add a nl. Text from server is expected to supply them instead.</param>
         void Print(string text, bool nl = true)
         {
             this.InvokeIfRequired(_ =>
@@ -582,7 +582,7 @@ namespace NTerm
                     }
                 });
 
-                _logger.Info($"NTerm using {_config.Name}({_config.CommType})");
+                _logger.Info($"Using {_config.Name} ({_config.CommType})");
                 return;
             }
 
@@ -681,8 +681,10 @@ namespace NTerm
             static Color MakeStdColor(int id)
             {
                 (int r, int g, int b)[] std_colors = [
-                    (0, 0, 0), (127, 0, 0), (0, 127, 0), (127, 127, 0), (0, 0, 127), (127, 0, 127), (0, 127, 127), (191, 191, 191),
-                    (127, 127, 127), (0, 0, 0), (0, 255, 0), (255, 255, 0), (0, 0, 255), (255, 0, 255), (0, 255, 255), (255, 255, 255)];
+                    (0, 0, 0),       (127, 0, 0),   (0, 127, 0),   (127, 127, 0),
+                    (0, 0, 127),     (127, 0, 127), (0, 127, 127), (191, 191, 191),
+                    (127, 127, 127), (0, 0, 0),     (0, 255, 0),   (255, 255, 0),
+                    (0, 0, 255),     (255, 0, 255), (0, 255, 255), (255, 255, 255)];
                 return Color.FromArgb(std_colors[id].r, std_colors[id].g, std_colors[id].b);
             }
         }
