@@ -20,15 +20,13 @@ using Ephemera.NBagOfTricks.Slog;
 using Ephemera.NBagOfUis;
 
 
-// [assembly: InternalsVisibleTo("NTerm.Test")]
-
 namespace NTerm
 {
     public partial class MainForm : Form
     {
         #region Fields
         /// <summary>My logger</summary>
-        readonly Logger _logger = LogManager.CreateLogger("Main");
+        readonly Logger _logger = LogManager.CreateLogger("MAI");
 
         /// <summary>Settings</summary>
         readonly UserSettings _settings = new();

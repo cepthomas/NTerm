@@ -17,7 +17,7 @@ namespace NTerm
     internal class TcpComm : IComm
     {
         #region Fields
-        readonly Logger _logger = LogManager.CreateLogger("TcpComm");
+        readonly Logger _logger = LogManager.CreateLogger("TCP");
         // readonly ITcpPort _tcpClient = tclient ?? new RealTcpClient();
         string _host = "???";
         int _port = 0;

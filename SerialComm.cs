@@ -20,7 +20,7 @@ namespace NTerm
     public class SerialComm : IComm // TODO needs debug.
     {
         #region Fields
-        readonly Logger _logger = LogManager.CreateLogger("SerialComm");
+        readonly Logger _logger = LogManager.CreateLogger("SER");
 
         Config? _config;
 

@@ -15,47 +15,54 @@ namespace NTerm
     /// <summary>Supported flavors.</summary>
     public enum CommType
     {
-        None,       // aka Debug
+        /// <summary>TODO</summary>
+        None,
+        /// <summary>Standard TCP</summary>
         Tcp,
+        /// <summary>Standard serial port</summary>
         Serial
     }
 
-    /// <summary>Supported flavors.</summary>
+    /// <summary>Supported communicationn flavors.</summary>
     public enum CommMode
     {
-        CmdResp,    // each command expects a response
-        Poll        // check periodically for server msgs
+        /// <summary>each command expects a response</summary>
+        CmdResp,
+        /// <summary>check periodically for server msgs</summary>
+        Poll
     }
 
     /// <summary>How did operation turn out?</summary>
     public enum OpStatus
     {
-        Success,    // okeydokey
-        Timeout,    // try again
-        NoResp,     // poll no answer
-        Error       // it's dead jim
+        /// <summary>OK</summary>
+        Success,
+        /// <summary></summary>
+        Timeout,
+        /// <summary>poll no answer</summary>
+        NoResp,
+        /// <summary>it's dead jim</summary>
+        Error
     }
 
     /// <summary></summary>
     public enum ColorMode
     {
+        /// <summary>Black and white</summary>
         None,
+        /// <summary>Standard ANSI colot codes</summary>
         Ansi,
+        /// <summary>Simple text matching</summary>
         Match
     }
 
-    /// <summary>Internal version of core types.</summary>
-    enum Modifier
-    {
-        None,
-        Ctrl,
-        Alt
-    }
+    /// <summary>One keyboard event data.</summary>
+    /// <param name="Text">The content</param>
+    /// <param name="Ctrl">Control key is pressed</param>
+    /// <param name="Alt">Alt key is pressed</param>
+    record CliInput(string Text, bool Ctrl, bool Alt);
 
-    /// <summary>Internal data container.</summary>
-    record CliInput(Modifier Mod, string Text);
-
-    /// <summary>Spec for one match.</summary>
+    /// <summary>Spec for one phrase using ColorMode.Match.</summary>
     /// <param name="Text"></param>
     /// <param name="WholeWord"></param>
     /// <param name="WholeLine"></param>
@@ -72,7 +79,7 @@ namespace NTerm
         (OpStatus stat, string resp) Init(Config config);
 
         /// <summary>Send a message to the server.</summary>
-        /// <param name="msg">What to send. Null indicates a poll request.</param>
+        /// <param name="msg">What to send, null indicates a poll request</param>
         /// <returns>Operation status, response.</returns>
         (OpStatus stat, string resp) Send(string? msg);
 
