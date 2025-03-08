@@ -1,0 +1,3 @@
+[submodule "ScriptInterop/LBOT"]
+	path = ScriptInterop/LBOT
+	url = https://github.com/cepthomas/LuaBagOfTricks.git
