@@ -9,12 +9,6 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <Compile Remove="SerialPort_XXX.cs" />
-        <Compile Remove="SerialStream_XXX.cs" />
-        <Compile Remove="Stream_XXX.cs" />
-    </ItemGroup>
-
-    <ItemGroup>
         <Compile Include="..\Common.cs" Link="Common.cs" />
         <Compile Include="..\SerialComm.cs" Link="SerialComm.cs" />
         <Compile Include="..\TcpComm.cs" Link="TcpComm.cs" />
@@ -31,9 +25,9 @@
         <Reference Include="Ephemera.NBagOfTricks">
             <HintPath>..\lib\Ephemera.NBagOfTricks.dll</HintPath>
         </Reference>
-        <Reference Include="Ephemera.NBagOfUis">
+<!--         <Reference Include="Ephemera.NBagOfUis">
           <HintPath>..\lib\Ephemera.NBagOfUis.dll</HintPath>
         </Reference>
-    </ItemGroup>
+ -->    </ItemGroup>
 
 </Project>

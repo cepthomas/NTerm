@@ -5,7 +5,7 @@ VisualStudioVersion = 17.11.35431.28
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "NTerm", "NTerm.csproj", "{5C2F49B2-64AC-4B25-813C-18E7EB6C428C}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ScriptInterop", "ScriptInterop\Interop.vcxproj", "{953F3806-EB5D-444E-A500-09B455E35E53}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Script", "Script\Script.vcxproj", "{953F3806-EB5D-444E-A500-09B455E35E53}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

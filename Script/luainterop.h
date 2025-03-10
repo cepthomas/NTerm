@@ -1,5 +1,5 @@
 #pragma once
-///// Warning - this file is created by gen_interop.lua - do not edit. 2025-03-07 16:46:06 /////
+///// Warning - this file is created by gen_interop.lua - do not edit. 2025-03-10 10:06:57 /////
 
 #include <stdbool.h>
 
@@ -23,6 +23,13 @@ const char* luainterop_Send(lua_State* l, const char* msg);
 
 
 //============= Lua => C callback functions .h =============//
+
+// Script wants to log something.
+// @param[in] l Internal lua state.
+// @param[in] err Is error
+// @param[in] msg The message
+// @return Unused
+int luainteropcb_Log(lua_State* l, bool err, const char* msg);
 
 //============= Infrastructure .h =============//
 

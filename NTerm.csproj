@@ -47,7 +47,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="ScriptInterop\Interop.vcxproj" />
+    <ProjectReference Include="Script\Script.vcxproj" />
   </ItemGroup>
 
   <ItemGroup>

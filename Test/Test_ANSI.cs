@@ -7,6 +7,7 @@ using System.Text;
 using System.Text.RegularExpressions;
 using Ephemera.NBagOfTricks;
 using Ephemera.NBagOfTricks.PNUT;
+using NTerm;
 
 
 namespace NTerm.Test
@@ -74,7 +75,7 @@ namespace NTerm.Test
 
         }
 
-        void TestRegex()
+        void TestRegex()//TODO1 save this somewhere useful
         {
 
             // https://learn.microsoft.com/en-us/dotnet/api/system.text.regularexpressions.group.captures

@@ -2,20 +2,22 @@
 
 #include <windows.h>
 #include "luainterop.h"
-#include "HostInterop.h"
+#include "Interop.h"
 
 using namespace System;
 using namespace System::Collections::Generic;
-using namespace Interop;
+using namespace InteropCore;
+using namespace ScriptInterop;
+
 
 //============= C# => C functions .cpp =============//
 
 //--------------------------------------------------------//
-String^ HostInterop::Send(String^ msg)
+String^ Interop::Send(String^ msg)
 {
     LOCK();
-    String^ ret = ToManagedString(luainterop_Send(_l, ToCString(msg)));
-    _EvalLuaInteropStatus("Send()");
+    String^ ret = gcnew String(luainterop_Send(_l, ToCString(msg)));
+    _EvalLuaInteropStatus(luainterop_Error(), "Send()");
     return ret;
 }
 
@@ -23,10 +25,21 @@ String^ HostInterop::Send(String^ msg)
 //============= C => C# callback functions .cpp =============//
 
 
+//--------------------------------------------------------//
+
+int luainteropcb_Log(lua_State* l, bool err, const char* msg)
+{
+    LOCK();
+    LogArgs^ args = gcnew LogArgs(err, msg);
+    Interop::Notify(args);
+    return 0;
+}
+
+
 //============= Infrastructure .cpp =============//
 
 //--------------------------------------------------------//
-void HostInterop::Run(String^ scriptFn, List<String^>^ luaPath)
+void Interop::Run(String^ scriptFn, List<String^>^ luaPath)
 {
     InitLua(luaPath);
     // Load C host funcs into lua space.

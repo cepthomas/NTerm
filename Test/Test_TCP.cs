@@ -69,7 +69,7 @@ namespace NTerm.Test
 
 
     // a test tcp server
-    public class Server
+    public class Server//TODO1
     {
         public static void Run(int port)
         {

@@ -48,11 +48,35 @@ const char* luainterop_Send(lua_State* l, const char* msg)
 
 //============= Lua => C callback functions .c =============//
 
+//--------------------------------------------------------//
+// Script wants to log something.
+// @param[in] l Internal lua state.
+// @return Number of lua return values.
+// Lua arg: err Is error
+// Lua arg: msg The message
+// Lua return: int Unused
+static int luainterop_Log(lua_State* l)
+{
+    // Get arguments
+    bool err;
+    if (lua_isboolean(l, 1)) { err = lua_toboolean(l, 1); }
+    else { luaL_error(l, "Bad arg type for: err"); }
+    const char* msg;
+    if (lua_isstring(l, 2)) { msg = lua_tostring(l, 2); }
+    else { luaL_error(l, "Bad arg type for: msg"); }
+
+    // Do the work. One result.
+    int ret = luainteropcb_Log(l, err, msg);
+    lua_pushinteger(l, ret);
+    return 1;
+}
+
 
 //============= Infrastructure .c =============//
 
 static const luaL_Reg function_map[] =
 {
+    { "log", luainterop_Log },
     { NULL, NULL }
 };
 

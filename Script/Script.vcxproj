@@ -56,7 +56,7 @@
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
       <WarningLevel>Level3</WarningLevel>
       <PreprocessorDefinitions>_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>LBOT;ScriptInterop;LBOT\internal;LBOT\lua54\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>LBOT;Interop;LBOT\internal;LBOT\lua54\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <AdditionalDependencies>LBOT\lua54\lua54.lib;%(AdditionalDependencies)</AdditionalDependencies>
@@ -69,7 +69,7 @@
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
       <WarningLevel>Level3</WarningLevel>
       <PreprocessorDefinitions>NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>LBOT;ScriptInterop;LBOT\internal;LBOT\lua54\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>LBOT;Interop;LBOT\internal;LBOT\lua54\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <AdditionalDependencies>LBOT\lua54\lua54.lib;%(AdditionalDependencies)</AdditionalDependencies>

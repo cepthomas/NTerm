@@ -1,19 +1,35 @@
-///// Warning - this file is created by gen_interop.lua - do not edit. 2025-03-07 16:46:06 /////
+///// Warning - this file is created by gen_interop.lua - do not edit. 2025-03-10 10:06:57 /////
 
 #pragma once
-#include "Core.h"
+#include "InteropCore.h"
 
 using namespace System;
 using namespace System::Collections::Generic;
 
-namespace Interop
+namespace ScriptInterop
 {
 
 //============= C => C# callback payload .h =============//
 
+//--------------------------------------------------------//
+public ref class LogArgs : public EventArgs
+{
+public:
+    /// <summary>Is error</summary>
+    property bool err;
+    /// <summary>The message</summary>
+    property String^ msg;
+    /// <summary>Constructor.</summary>
+    LogArgs(bool err, const char* msg)
+    {
+        this->err = err;
+        this->msg = gcnew String(msg);
+    }
+};
+
 
 //----------------------------------------------------//
-public ref class HostInterop : Core
+public ref class Interop : InteropCore::Core
 {
 
 //============= C# => C functions .h =============//
@@ -26,6 +42,9 @@ public:
 
 //============= C => C# callback functions =============//
 public:
+    static event EventHandler<LogArgs^>^ Log;
+    static void Notify(LogArgs^ args) { Log(nullptr, args); }
+
 
 //============= Infrastructure .h =============//
 public:

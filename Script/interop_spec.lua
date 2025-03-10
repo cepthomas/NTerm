@@ -5,8 +5,8 @@ local M = {}
 M.config =
 {
     lua_lib_name = "luainterop",    -- for require
-    host_lib_name = "HostInterop",  -- host filenames
-    host_namespace = "Interop"      -- host namespace
+    class_name = "Interop",         -- host filenames
+    namespace = "ScriptInterop"     -- host namespace
 }
 
 ------------------------ Host => Script ------------------------
@@ -40,29 +40,17 @@ M.script_funcs =
 ------------------------ Script => Host ------------------------
 M.host_funcs =
 {
-    -- {
-    --     lua_func_name = "log",
-    --     host_func_name = "Log",
-    --     description = "Script wants to log something.",
-    --     args =
-    --     {
-    --         { name = "level", type = "I", description = "Log level" },
-    --         { name = "msg", type = "S", description = "Log message" },
-    --     },
-    --     ret = { type = "I", description = "Unused" }
-    -- },
-
-    -- {
-    --     lua_func_name = "notif",
-    --     host_func_name = "Notification",
-    --     description = "Script wants to say something.",
-    --     args =
-    --     {
-    --         { name = "num", type = "I", description = "A number" },
-    --         { name = "text", type = "S", description = "Some text" },
-    --     },
-    --     ret = { type = "I", description = "Unused" }
-    -- },
+    {
+        lua_func_name = "log",
+        host_func_name = "Log",
+        description = "Script wants to log something.",
+        args =
+        {
+            { name = "err", type = "B", description = "Is error" },
+            { name = "msg", type = "S", description = "The message" },
+        },
+        ret = { type = "I", description = "Unused" }
+    },
 }
 
 return M

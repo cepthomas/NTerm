@@ -7,6 +7,7 @@ using System.Numerics;
 using System.Text;
 using Ephemera.NBagOfTricks;
 using Ephemera.NBagOfTricks.PNUT;
+using NTerm;
 
 
 namespace NTerm.Test
@@ -28,7 +29,7 @@ namespace NTerm.Test
 
 
     // a test serial mock
-    public class SerialStreamEmu : Stream
+    public class SerialStreamEmu : Stream//TOODO1
     {
         long _length = 0;
         long _position = 0;

@@ -23,7 +23,7 @@ namespace NTerm
         Serial
     }
 
-    /// <summary>Supported communicationn flavors.</summary>
+    /// <summary>Supported communication flavors.</summary>
     public enum CommMode
     {
         /// <summary>each command expects a response</summary>
@@ -39,9 +39,9 @@ namespace NTerm
         Success,
         /// <summary></summary>
         Timeout,
-        /// <summary>poll no answer</summary>
+        /// <summary>Poll no answer</summary>
         NoResp,
-        /// <summary>it's dead jim</summary>
+        /// <summary>It's dead jim</summary>
         Error
     }
 
