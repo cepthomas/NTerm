@@ -15,7 +15,7 @@ namespace NTerm
     /// <summary>Supported flavors.</summary>
     public enum CommType
     {
-        /// <summary>TODO</summary>
+        /// <summary>TODO1</summary>
         None,
         /// <summary>Standard TCP</summary>
         Tcp,

@@ -22,19 +22,21 @@ namespace Script
         readonly Logger _logger = LogManager.CreateLogger("SCR");
 
         /// <summary>The interop.</summary>
-        protected ScriptInterop _interop = new();
+        protected Interop _interop = new();
+
+        int _sendCnt = 1;
         #endregion
 
         #region Lifecycle
         /// <summary>
         /// Constructor.
-        /// TODOF Support reload. Unload current modules so reload will be minty fresh. This may fail safely
+        /// TODOF Support reload. Unload current modules so reload will be minty fresh. This may fail safely.
         /// </summary>
         public Script(string scriptFn, List<string> luaPaths)
         {
             try
             {
-                Interop.Log += (object? sender, LogArgs args) => _logger.Log((LogLevel)level, args.msg);
+                Interop.Log += (object? sender, LogArgs args) => _logger.Log(args.err ? LogLevel.Error : LogLevel.Info, args.msg);
 
                 // Load script using specific lua script paths.
                 _interop.Run(scriptFn, luaPaths);
@@ -48,8 +50,9 @@ namespace Script
         public string Send(string msg)
         {
             // Execute script functions.
-            var resp = _interop.DoCommand("cmd", (i*2).ToString());
-            _logger.Info($"cmd {i} gave me {resp}");
+            var cmd = _interop.Send($"cmd{_sendCnt}");
+            var resp = _interop.Send(cmd);
+            _logger.Info($"sent:{cmd} rcv:{resp}");
             return resp;
         }
 

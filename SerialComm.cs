@@ -117,8 +117,8 @@ namespace NTerm
                 }
 
                 // using var stream = StreamFactory.GetStream(this);
-                // TODO1 using var stream = _serialPort.BaseStream;
-                 using var stream = new ScriptStream();
+                // using var stream = _serialPort.BaseStream;
+                 using var stream = new ScriptStream("TODO1", []);
 
                 /////// Send ////////
                 if (msg is not null) // check for poll

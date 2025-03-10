@@ -97,7 +97,7 @@ namespace NTerm
             // Init from previously loaded settings.
             InitFromSettings();
 
-            // TODO button images?
+            // button images?
             //btnSettings.DisplayStyle = ToolStripItemDisplayStyle.Text;
             //btnSettings.Image = Image.FromFile("C:\\Dev\\Apps\\NTerm\\Ramon.png");
 
@@ -192,9 +192,9 @@ namespace NTerm
                             // Got one - do the work...
                             string? ucmd = null;
 
-                            switch (le.Mod, le.Text)
+                            switch (le.Text, le.Ctrl, le.Alt)
                             {
-                                case (Modifier.None, _):
+                                case (_, true, false):
                                     // Normal line, send it.
                                     //_logger.Trace($">>> got line:{le.Text}");
                                     ucmd = le.Text;
@@ -214,7 +214,7 @@ namespace NTerm
                                 //    Help();
                                 //    break;
 
-                                case (Modifier.Alt, _):
+                                case (_, false, true):
                                     _hotKeys.TryGetValue(le.Text, out ucmd);
                                     break;
 
@@ -276,7 +276,7 @@ namespace NTerm
                     }
                     catch (Exception)
                     {
-                        // TODO Do something or just leave it alone?
+                        // TODO1 Do something or just leave it alone?
                         throw;
                     }
 
@@ -289,7 +289,7 @@ namespace NTerm
 
         #region Key handlers
         // /// <summary>
-        // /// Top level handler via KeyPreview. Send all keystrokes to the cli.  TODO
+        // /// Top level handler via KeyPreview. Send all keystrokes to the cli.  TODO?
         // /// </summary>
         // /// <param name="sender"></param>
         // /// <param name="e"></param>
@@ -342,7 +342,7 @@ namespace NTerm
                         var t = rtbIn.Text;
                         AddToHistory(t);
 
-                        CliInput la = new(Modifier.None, t);
+                        CliInput la = new(t, false, false);
                         _queue.Enqueue(la);
                         // Clear line.
                         rtbIn.Text = "";// $"{_settings.Prompt}";
@@ -376,12 +376,12 @@ namespace NTerm
 
                 case (true, false, _) when ch > 0:
                     // Hot key?
-                    _queue.Enqueue(new(Modifier.Ctrl, ch.ToString()));
+                    _queue.Enqueue(new(ch.ToString(), true, false));
                     break;
 
                 case (false, true, _) when ch > 0:
                     // Hot key?
-                    _queue.Enqueue(new(Modifier.Alt, ch.ToString()));
+                    _queue.Enqueue(new(ch.ToString(), false, true));
                     break;
             }
         }

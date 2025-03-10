@@ -16,7 +16,7 @@ namespace NTerm
 {
 
     // a test mock TODO1 implement
-    class ScriptStream : Stream
+    public class ScriptStream : Stream
     {
         // // What was last sent by the device.
         // public string WriteBuffer { get; private set; } = "";
@@ -24,7 +24,7 @@ namespace NTerm
         // // Set this to what the next read op gets.
         // public string ReadBuffer { get; private set; } = "";
 
-        protected Script _script;
+        Script.Script _script;
 
         public ScriptStream(string scriptFn, List<string> luaPaths)
         {
@@ -151,7 +151,7 @@ namespace NTerm
     public class ScriptComm : IComm
     {
         Config _config;
-        protected Script _script;
+        protected Script.Script _script;
 
         public ScriptComm(string scriptFn, List<string> luaPaths)
         {

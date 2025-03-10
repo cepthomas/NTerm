@@ -94,8 +94,8 @@ namespace NTerm
                 _logger.Debug("[Client] Connected to server");
 
                 /////// Send ////////
-                // TODO1 using var stream = client.GetStream();
-                using var stream = new ScriptStream();
+                //  using var stream = client.GetStream();
+                using var stream = new ScriptStream("TODO1", []);
                 // check for poll.
                 byte[] bytes = msg is null ? [POLL_REQ] : Encoding.UTF8.GetBytes(msg);
 
