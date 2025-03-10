@@ -36,12 +36,12 @@ namespace NTerm
         //[Browsable(true)]
         //public string Prompt { get; set; } = ">";
 
-        [DisplayName("Color Mode")] // TODO probably per config later?
+        [DisplayName("Color Mode")] // TODOF probably per config later?
         [Description("Colorize Mode.")]
         [Browsable(true)]
         public ColorMode ColorMode { get; set; } = ColorMode.None;
 
-        [DisplayName("Matchers")] // TODO probably per config later?
+        [DisplayName("Matchers")] // TODOF probably per config later?
         [Description("All the match specs.")]
         [Browsable(true)]
         public List<Matcher> Matchers { get; set; } = [];
@@ -56,7 +56,7 @@ namespace NTerm
         [Description("Select Monospace Font.")]
         [Browsable(true)]
         [JsonConverter(typeof(JsonFontConverter))]
-        [Editor(typeof(MonospaceFontEditor), typeof(UITypeEditor))] // TODO weird font sizes
+        [Editor(typeof(MonospaceFontEditor), typeof(UITypeEditor))] // TODO1 weird font sizes
         public Font Font { get; set; } = new("Cascadia Code", 8);
 
         [DisplayName("File Log Level")]

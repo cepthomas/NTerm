@@ -17,7 +17,7 @@ using Ephemera.NBagOfTricks.Slog;
 namespace NTerm
 {
     // public class SerialComm(ISerialPort? sport) : IComm //  needs debug.
-    public class SerialComm : IComm // TODO needs debug.
+    public class SerialComm : IComm // TODO1 needs debug.
     {
         #region Fields
         readonly Logger _logger = LogManager.CreateLogger("SER");
