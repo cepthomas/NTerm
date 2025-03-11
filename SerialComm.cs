@@ -16,8 +16,7 @@ using Ephemera.NBagOfTricks.Slog;
 
 namespace NTerm
 {
-    // public class SerialComm(ISerialPort? sport) : IComm //  needs debug.
-    public class SerialComm : IComm // TODO1 needs debug.
+    public class SerialComm : IComm // TODOF needs debug.
     {
         #region Fields
         readonly Logger _logger = LogManager.CreateLogger("SER");
@@ -29,11 +28,11 @@ namespace NTerm
         #endregion
 
         #region IComm implementation
-        public (OpStatus stat, string resp) Init(Config config)
+        public (OpStatus stat, string rx) Init(Config config)
         {
             _config = config;
             OpStatus stat;
-            string resp = "";
+            string rx = "";
 
             try
             {
@@ -82,14 +81,14 @@ namespace NTerm
             }
             catch (Exception)
             {
-                resp = "Invalid comm args";
+                rx = "Invalid comm args";
                 stat = OpStatus.Error;
             }
 
-            return (stat, resp);
+            return (stat, rx);
         }
 
-        public (OpStatus stat, string resp) Send(string? cmd) { return SendAsync(cmd).Result; }
+        public (OpStatus stat, string rx) Send(string? tx) { return SendAsync(tx).Result; }
 
         public void Dispose()
         {
@@ -101,12 +100,12 @@ namespace NTerm
         /// <summary>
         /// Does actual work of sending/receiving.
         /// </summary>
-        /// <param name="msg"></param>
+        /// <param name="tx"></param>
         /// <returns>OpStatus and Response populated.</returns>
-        public async Task<(OpStatus stat, string resp)> SendAsync(string? msg)
+        public async Task<(OpStatus stat, string rx)> SendAsync(string? tx)
         {
             OpStatus stat = OpStatus.Success;
-            var resp = "";
+            var rx = "";
 
             try
             {
@@ -116,15 +115,14 @@ namespace NTerm
                     return (OpStatus.Error, "Serial port is not open");
                 }
 
-                // using var stream = StreamFactory.GetStream(this);
-                // using var stream = _serialPort.BaseStream;
-                 using var stream = new ScriptStream("TODO1", []);
+                using var stream = _serialPort.BaseStream;
+                // using var stream = new ScriptStream("TODO1", []);
 
                 /////// Send ////////
-                if (msg is not null) // check for poll
+                if (tx is not null) // check for poll
                 {
-                    byte[] bytes = Encoding.UTF8.GetBytes(msg);
-                    _logger.Debug($"[Client] Writing request [{msg}]");
+                    byte[] bytes = Encoding.UTF8.GetBytes(tx);
+                    _logger.Debug($"[Client] Writing request [{tx}]");
 
                     bool sendDone = false;
                     int num = bytes.Length;
@@ -165,9 +163,9 @@ namespace NTerm
                     }
                 }
 
-                resp = string.Join("", parts);
+                rx = string.Join("", parts);
 
-                _logger.Debug($"[Client] Server response was [{resp}]");
+                _logger.Debug($"[Client] Server response was [{rx}]");
 
                 // if the serial port is unexpectedly closed, throw an exception
                 if (!_serialPort.IsOpen)
@@ -179,18 +177,18 @@ namespace NTerm
             {
                 // Ignore and retry later.
                 _logger.Debug($"{e.Message}: {e}");
-                resp = "Usually receive timeout.";
+                rx = "Usually receive timeout.";
                 stat = OpStatus.Timeout;
             }
             catch (Exception e)
             {
                 // Other errors are considered fatal.
                 _logger.Error($"Fatal error:{e}");
-                resp = $"Fatal error: {e.Message}";
+                rx = $"Fatal error: {e.Message}";
                 stat = OpStatus.Error;
             }
 
-            return (stat, resp);
+            return (stat, rx);
         }
     }
 }

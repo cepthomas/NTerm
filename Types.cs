@@ -15,20 +15,20 @@ namespace NTerm
     /// <summary>Supported flavors.</summary>
     public enum CommType
     {
-        /// <summary>TODO1</summary>
-        None,
         /// <summary>Standard TCP</summary>
         Tcp,
         /// <summary>Standard serial port</summary>
-        Serial
+        Serial,
+        /// <summary>Test comm that echoes sent string.</summary>
+        Null,
     }
 
     /// <summary>Supported communication flavors.</summary>
     public enum CommMode
     {
-        /// <summary>each command expects a response</summary>
+        /// <summary>Each command expects a response</summary>
         CmdResp,
-        /// <summary>check periodically for server msgs</summary>
+        /// <summary>Check periodically for server msgs</summary>
         Poll
     }
 
@@ -39,7 +39,7 @@ namespace NTerm
         Success,
         /// <summary></summary>
         Timeout,
-        /// <summary>Poll no answer</summary>
+        /// <summary>Poll with no answer</summary>
         NoResp,
         /// <summary>It's dead jim</summary>
         Error
@@ -76,12 +76,12 @@ namespace NTerm
         /// <summary>Initialize the comm device.</summary>
         /// <param name="config">Setup info.</param>
         /// <returns>Operation status, response.</returns>
-        (OpStatus stat, string resp) Init(Config config);
+        (OpStatus stat, string rx) Init(Config config);
 
         /// <summary>Send a message to the server.</summary>
-        /// <param name="msg">What to send, null indicates a poll request</param>
+        /// <param name="tx">What to send, null indicates a poll request</param>
         /// <returns>Operation status, response.</returns>
-        (OpStatus stat, string resp) Send(string? msg);
+        (OpStatus stat, string rx) Send(string? tx);
 
         /// <summary>Clean up.</summary>
         public new void Dispose();

@@ -28,26 +28,12 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Compile Remove="MainForm_1.cs" />
-    <Compile Remove="_work.cs" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <None Remove="ansi.lua" />
-    <None Remove="_stuff.ntr" />
-  </ItemGroup>
-
-  <ItemGroup>
     <Content Include="cucaracha.ico" />
   </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="System.IO.Ports" Version="9.0.0" />
     <PackageReference Include="System.Management" Version="9.0.0" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <ProjectReference Include="Script\Script.vcxproj" />
   </ItemGroup>
 
   <ItemGroup>

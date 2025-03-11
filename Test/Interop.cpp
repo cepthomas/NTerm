@@ -7,16 +7,16 @@
 using namespace System;
 using namespace System::Collections::Generic;
 using namespace InteropCore;
-using namespace ScriptInterop;
+using namespace Script;
 
 
 //============= C# => C functions .cpp =============//
 
 //--------------------------------------------------------//
-String^ Interop::Send(String^ msg)
+String^ Interop::Send(String^ tx)
 {
     LOCK();
-    String^ ret = gcnew String(luainterop_Send(_l, ToCString(msg)));
+    String^ ret = gcnew String(luainterop_Send(_l, ToCString(tx)));
     _EvalLuaInteropStatus(luainterop_Error(), "Send()");
     return ret;
 }

@@ -18,17 +18,18 @@ while run do
     client:settimeout(10)
 
     -- Receive the line.
-    local line, err = client:receive()
+    local rx, err = client:receive()
 
     if not err then
-        local resp = 'unknown command'
-        if line == '\0' then resp = 'Poll...'
-        elseif line == 's' then resp = 'Everything\'s not great in life, but we can still find beauty in it.'
-        elseif line == 'x' then resp = 'Stopping...'; run = false
+        local tx = 'unknown command'
+        -- if rx == '\0' then tx = 'Poll...'
+        if rx == 's' then tx = 'Everything\'s not great in life, but we can still find beauty in it.'
+        elseif rx == 'x' then tx = 'Stopping...'; run = false
         end
-        client:send(resp..'\n')
+        client:send(tx..'\n')
     else
-        print('Error! '..err.. ' '..line)
+        check for timeout
+        print('Error! '..err.. ' '..rx)
         run = false
     end
 

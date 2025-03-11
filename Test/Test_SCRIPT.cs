@@ -30,8 +30,8 @@ namespace NTerm.Test
 
             for (int i = 0; i < res; i++)
             {
-                var resp = scr.Send($"cmd:{(i*2)}");
-                UT_STR_EQUAL(resp, "BOOGA");
+                var rx = scr.Send($"tx:{(i*2)}");
+                UT_STR_EQUAL(rx, "BOOGA");
             }
         }
     }

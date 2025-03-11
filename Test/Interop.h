@@ -1,4 +1,4 @@
-///// Warning - this file is created by gen_interop.lua - do not edit. 2025-03-10 10:06:57 /////
+///// Warning - this file is created by gen_interop.lua - do not edit. 2025-03-11 08:29:01 /////
 
 #pragma once
 #include "InteropCore.h"
@@ -6,7 +6,7 @@
 using namespace System;
 using namespace System::Collections::Generic;
 
-namespace ScriptInterop
+namespace Script
 {
 
 //============= C => C# callback payload .h =============//
@@ -36,9 +36,9 @@ public ref class Interop : InteropCore::Core
 public:
 
     /// <summary>Send</summary>
-    /// <param name="msg">Specific message</param>
+    /// <param name="tx">String to send</param>
     /// <returns>Script return</returns>
-    String^ Send(String^ msg);
+    String^ Send(String^ tx);
 
 //============= C => C# callback functions =============//
 public:

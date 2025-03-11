@@ -1,5 +1,5 @@
 #pragma once
-///// Warning - this file is created by gen_interop.lua - do not edit. 2025-03-10 10:06:57 /////
+///// Warning - this file is created by gen_interop.lua - do not edit. 2025-03-11 08:29:01 /////
 
 #include <stdbool.h>
 
@@ -15,11 +15,11 @@ extern "C" {
 
 //============= C => Lua functions .h =============//
 
-// Send message and return response.
+// Send string and return response.
 // @param[in] l Internal lua state.
-// @param[in] msg Specific message
-// @return const char* Script response
-const char* luainterop_Send(lua_State* l, const char* msg);
+// @param[in] tx String to send
+// @return const char* Script rx
+const char* luainterop_Send(lua_State* l, const char* tx);
 
 
 //============= Lua => C callback functions .h =============//

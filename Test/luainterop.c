@@ -12,7 +12,7 @@ static const char* _error;
 //============= C => Lua functions .c =============//
 
 //--------------------------------------------------------//
-const char* luainterop_Send(lua_State* l, const char* msg)
+const char* luainterop_Send(lua_State* l, const char* tx)
 {
     _error = NULL;
     int stat = LUA_OK;
@@ -29,7 +29,7 @@ const char* luainterop_Send(lua_State* l, const char* msg)
     }
 
     // Push arguments. No error checking required.
-    lua_pushstring(l, msg);
+    lua_pushstring(l, tx);
     num_args++;
 
     // Do the protected call.

@@ -225,9 +225,9 @@ namespace NTerm
 
                             if (ucmd is not null)
                             {
-                                _logger.Debug($"SND:{ucmd}");
+                                _logger.Debug($"CMD:{ucmd}");
                                 var (stat, resp) = _comm.Send(ucmd);
-                                _logger.Debug($"RCV [{stat}]:{resp}");
+                                _logger.Debug($"RSP [{stat}]:{resp}");
 
                                 switch (stat)
                                 {
@@ -276,7 +276,7 @@ namespace NTerm
                     }
                     catch (Exception)
                     {
-                        // TODO1 Do something or just leave it alone?
+                        // Do something or just leave it alone?
                         throw;
                     }
 

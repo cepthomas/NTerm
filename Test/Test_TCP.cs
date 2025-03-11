@@ -69,7 +69,7 @@ namespace NTerm.Test
 
 
     // a test tcp server
-    public class Server//TODO1
+    public class Server
     {
         public static void Run(int port)
         {
@@ -93,30 +93,30 @@ namespace NTerm.Test
 
                 ////// Receive //////
                 using var stream = client.GetStream();
-                var buffer = new byte[4096];
+                var rx = new byte[4096];
                 Console.WriteLine("Start receive from client");
-                var byteCount = stream.Read(buffer, 0, buffer.Length);
-                var request = Encoding.UTF8.GetString(buffer, 0, byteCount);
+                var byteCount = stream.Read(rx, 0, rx.Length);
+                var request = Encoding.UTF8.GetString(rx, 0, byteCount);
                 Console.WriteLine($"Client said [{request}]");
 
                 ////// Reply /////
-                string resp = "resp???";
+                string tx = "tx???";
                 switch (request)
                 {
                     case "l": // large payload
-                        resp = File.ReadAllText(@"C:\Dev\repos\Apps\NTerm\ross.txt");
+                        tx = File.ReadAllText(@"C:\Dev\repos\Apps\NTerm\ross.txt");
                         break;
 
                     case "s": // small payload
-                        resp = "Everything's not great in life, but we can still find beauty in it.";
+                        tx = "Everything's not great in life, but we can still find beauty in it.";
                         break;
 
                     case "e": // echo
-                        resp = $"You said [{request}]";
+                        tx = $"You said [{request}]";
                         break;
 
                     case "c": // color
-                        resp = $"\033[91m red \033[92 green \033[94 blue \033[0m none";
+                        tx = $"\033[91m red \033[92 green \033[94 blue \033[0m none";
                         break;
 
                     case "x":
@@ -124,10 +124,10 @@ namespace NTerm.Test
                         break;
                 }
 
-                byte[] bytes = Encoding.UTF8.GetBytes(resp);
+                byte[] bytes = Encoding.UTF8.GetBytes(tx);
 
                 stream.Write(bytes, 0, bytes.Length);
-                Console.WriteLine($"Response {resp[..100]}");
+                Console.WriteLine($"Response {tx[..100]}");
             }
         }
     }

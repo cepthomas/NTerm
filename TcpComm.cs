@@ -26,11 +26,11 @@ namespace NTerm
         #endregion
 
         #region IComm implementation
-        public (OpStatus stat, string resp) Init(Config config)
+        public (OpStatus stat, string rx) Init(Config config)
         {
             _config = config;
             OpStatus stat;
-            string resp = "";
+            string rx = "";
 
             try
             {
@@ -48,14 +48,14 @@ namespace NTerm
             }
             catch (Exception)
             {
-                resp = "Invalid comm args";
+                rx = "Invalid comm args";
                 stat = OpStatus.Error;
             }
 
-            return (stat, resp);
+            return (stat, rx);
         }
 
-        public (OpStatus stat, string resp) Send(string? msg) { return WriteAsync(msg).Result; }
+        public (OpStatus stat, string rx) Send(string? tx) { return WriteAsync(tx).Result; }
 
         public void Dispose()
         {
@@ -68,13 +68,13 @@ namespace NTerm
          /// <summary>
         /// Does actual work of sending/receiving.
         /// </summary>
-        /// <param name="msg"></param>
+        /// <param name="tx"></param>
         /// <returns>OpStatus and Response populated.</returns>
-        public async Task<(OpStatus stat, string resp)> WriteAsync(string? msg)
+        public async Task<(OpStatus stat, string rx)> WriteAsync(string? tx)
         {
             OpStatus stat = OpStatus.Success;
-            var resp = "";
-            _logger.Debug($"[Client] Writing request [{msg}]");
+            var rx = "";
+            _logger.Debug($"[Client] Writing request [{tx}]");
 
             try
             {
@@ -94,10 +94,10 @@ namespace NTerm
                 _logger.Debug("[Client] Connected to server");
 
                 /////// Send ////////
-                //  using var stream = client.GetStream();
-                using var stream = new ScriptStream("TODO1", []);
+                using var stream = client.GetStream();
+                // using var stream = new ScriptStream("TODO1", []);
                 // check for poll.
-                byte[] bytes = msg is null ? [POLL_REQ] : Encoding.UTF8.GetBytes(msg);
+                byte[] bytes = tx is null ? [POLL_REQ] : Encoding.UTF8.GetBytes(tx);
 
                 bool sendDone = false;
                 int num = bytes.Length;
@@ -140,13 +140,13 @@ namespace NTerm
                     }
                 }
 
-                resp = string.Join("", parts);
+                rx = string.Join("", parts);
 
-                _logger.Debug($"[Client] Server response was [{resp}]");
+                _logger.Debug($"[Client] Server response was [{rx}]");
             }
             catch (OperationCanceledException e)
             {
-                resp = "Usually connect timeout.";
+                rx = "Usually connect timeout.";
                 stat = OpStatus.Timeout;
                 _logger.Debug($"{e.Message}: {e}");
             }
@@ -158,12 +158,12 @@ namespace NTerm
                 if (valid.Contains(e.NativeErrorCode))
                 {
                     // Ignore and retry later.
-                    resp = "Usually send timeout.";
+                    rx = "Usually send timeout.";
                     stat = OpStatus.Timeout;
                 }
                 else
                 {
-                    resp = $"Hard socket error: {e.Message}";
+                    rx = $"Hard socket error: {e.Message}";
                     stat = OpStatus.Error;
                 }
             }
@@ -172,18 +172,18 @@ namespace NTerm
                 // Usually receive timeout.
                 // Ignore and retry later.
                 _logger.Debug($"{e.Message}: {e}");
-                resp = "Usually receive timeout.";
+                rx = "Usually receive timeout.";
                 stat = OpStatus.Timeout;
             }
             catch (Exception e)
             {
                 // Other errors are considered fatal.
                 _logger.Error($"Fatal error:{e}");
-                resp = $"Fatal error: {e.Message}";
+                rx = $"Fatal error: {e.Message}";
                 stat = OpStatus.Error;
             }
 
-            return (stat, resp);
+            return (stat, rx);
         }
     }
 }

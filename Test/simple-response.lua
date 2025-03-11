@@ -14,14 +14,14 @@ local msg_count = 1
 
 
 -- Main worker.
-function send(msg)
-    local resp = '???'
+function send(tx)
+    local rx = '???'
 
     -- Decide what to respond.
-    -- if msg == 'aaaa' then resp = 'oooooo' end
+    -- if msg == 'aaaa' then rx = 'oooooo' end
 
-    resp = 'This is message '..msg_count
+    rx = 'This is message '..msg_count
     msg_count = msg_count + 1
 
-    return resp
+    return rx
 end

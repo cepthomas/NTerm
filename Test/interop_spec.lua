@@ -6,7 +6,7 @@ M.config =
 {
     lua_lib_name = "luainterop",    -- for require
     class_name = "Interop",         -- host filenames
-    namespace = "ScriptInterop"     -- host namespace
+    namespace = "Script"            -- host namespace
 }
 
 ------------------------ Host => Script ------------------------
@@ -28,12 +28,12 @@ M.script_funcs =
         lua_func_name = "send",
         host_func_name = "Send",
         required = "true",
-        description = "Send message and return response.",
+        description = "Send string and return response.",
         args =
         {
-            { name = "msg", type = "S", description = "Specific message" },
+            { name = "tx", type = "S", description = "String to send" },
         },
-        ret = { type = "S", description = "Script response" }
+        ret = { type = "S", description = "Script rx" }
     },
 }
 
