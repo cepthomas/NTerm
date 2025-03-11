@@ -6,10 +6,19 @@
         <ImplicitUsings>disable</ImplicitUsings>
         <UseWindowsForms>true</UseWindowsForms>
         <Nullable>enable</Nullable>
+        <Platforms>AnyCPU;x64</Platforms>
     </PropertyGroup>
 
     <ItemGroup>
-        <Compile Include="..\Common.cs" Link="Common.cs" />
+      <Compile Remove="ibin\**" />
+      <Compile Remove="iobj\**" />
+      <EmbeddedResource Remove="ibin\**" />
+      <EmbeddedResource Remove="iobj\**" />
+      <None Remove="ibin\**" />
+      <None Remove="iobj\**" />
+    </ItemGroup>
+
+    <ItemGroup>
         <Compile Include="..\SerialComm.cs" Link="SerialComm.cs" />
         <Compile Include="..\TcpComm.cs" Link="TcpComm.cs" />
         <Compile Include="..\Types.cs" Link="Types.cs" />
@@ -22,12 +31,16 @@
     </ItemGroup>
 
     <ItemGroup>
+      <ProjectReference Include="Script.vcxproj" />
+    </ItemGroup>
+
+    <ItemGroup>
         <Reference Include="Ephemera.NBagOfTricks">
             <HintPath>..\lib\Ephemera.NBagOfTricks.dll</HintPath>
         </Reference>
-<!--         <Reference Include="Ephemera.NBagOfUis">
+        <Reference Include="Ephemera.NBagOfUis">
           <HintPath>..\lib\Ephemera.NBagOfUis.dll</HintPath>
         </Reference>
- -->    </ItemGroup>
+    </ItemGroup>
 
 </Project>

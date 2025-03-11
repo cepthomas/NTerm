@@ -7,8 +7,6 @@ using System.IO;
 using System.IO.Ports;
 using System.Linq;
 using System.Reflection;
-using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
 using System.Text;
 using System.Text.Json;
 using System.Text.RegularExpressions;
@@ -53,13 +51,13 @@ namespace NTerm
         int _historyIndex = 0;
 
         /// <summary>Limit the output size.</summary>
-        int _maxLines = 200;
+        readonly int _maxLines = 500;
 
         /// <summary>Cli async event queue.</summary>
         readonly ConcurrentQueue<CliInput> _queue = new();
 
         /// <summary>Ansi regex.</summary>
-        string _ansiPattern = @"([^\u001B]+)\u001B\[([^m)]+)m";
+        readonly string _ansiPattern = @"([^\u001B]+)\u001B\[([^m)]+)m";
 
         /// <summary>Current ansi color.</summary>
         Color _ansiForeColor;
@@ -106,7 +104,7 @@ namespace NTerm
             //rtbOut.KeyDown += RtbOut_KeyDown;
             //rtbIn.KeyPress += (object? sender, KeyPressEventArgs e) => Debug.WriteLine($"KeyPress:{e.KeyChar}");
             //rtbOut.KeyDown += (object? sender, KeyEventArgs e) => throw new NotImplementedException();
-            btnSettings.Click += (_, _) => SettingsEditor.Edit(_settings, "User Settings", 500);
+            btnSettings.Click += (_, _) => { SettingsEditor.Edit(_settings, "User Settings", 500); InitFromSettings(); };
             btnClear.Click += (_, _) => rtbOut.Clear();
             btnWrap.Click += (_, _) => rtbOut.WordWrap = btnWrap.Checked;
             //btnDebug.Click += (_, _) => rtbOut.BackColor = Color.Pink;
@@ -288,20 +286,6 @@ namespace NTerm
         #endregion
 
         #region Key handlers
-        // /// <summary>
-        // /// Top level handler via KeyPreview. Send all keystrokes to the cli.  TODO?
-        // /// </summary>
-        // /// <param name="sender"></param>
-        // /// <param name="e"></param>
-        // protected override void OnKeyDown(KeyEventArgs e)
-        // {   
-        //     Write($">>> OnKeyDown:[{e.KeyCode}]");
-        //     // Route everything to cli control.
-        //     //ProcessKey(e);
-        //     //e.Handled = true;
-        //     base.OnKeyDown(e);
-        // }
-
         /// <summary>
         /// User wants to do something.
         /// </summary>
@@ -313,13 +297,6 @@ namespace NTerm
             ProcessKey(e);
             e.Handled = true;
         }
-
-        // void RtbOut_KeyDown(object? sender, KeyEventArgs e)
-        // {
-        //     PrintLine($">>> RtbOut_KeyDown:[{e.KeyCode}]");
-        //     //ProcessKey(e);
-        //     //e.Handled = true;
-        // }
 
         /// <summary>
         /// User wants to do something.
@@ -455,12 +432,12 @@ namespace NTerm
                 rtbOut.AppendText(match.Groups[1].Value);
 
                 // Update colors.
-                var clrs = ColorFromAnsi(match.Groups[2].Value);
-                _ansiBackColor = clrs.bg;
-                _ansiForeColor = clrs.fg;
+                var (fg, bg) = ColorFromAnsi(match.Groups[2].Value);
+                _ansiBackColor = bg;
+                _ansiForeColor = fg;
             }
 
-            var trailing = text.Substring(end);
+            var trailing = text[end..];
             rtbOut.AppendText(trailing);
 
             return true;
@@ -530,7 +507,7 @@ namespace NTerm
         /// <summary>
         /// Handle persisted settings.
         /// </summary>
-        /// <exception cref="ArgumentException"></exception>
+        /// <exception cref="NotImplementedException"></exception>
         void InitFromSettings()
         {
             // Reset.
@@ -538,10 +515,19 @@ namespace NTerm
             _comm?.Dispose();
             _comm = null;
 
-            rtbIn.BackColor = _settings.BackColor;
+            //// Fix the non-integer font size. Hmmm, probably not: https://stackoverflow.com/a/3605395.
+            //int size = (int)Math.Round(_settings.Font.SizeInPoints, MidpointRounding.AwayFromZero);
+            //Font newFont = new(_settings.Font.FontFamily, size, _settings.Font.Style);
+            //rtbIn.Font = newFont;
+            //rtbOut.Font = newFont;
+            //_settings.Font = newFont;
+
             rtbIn.Font = _settings.Font;
-            rtbOut.BackColor = _settings.BackColor;
             rtbOut.Font = _settings.Font;
+
+            // Other stuff.
+            rtbIn.BackColor = _settings.BackColor;
+            rtbOut.BackColor = _settings.BackColor;
 
             LogManager.MinLevelFile = _settings.FileLogLevel;
             LogManager.MinLevelNotif = _settings.NotifLogLevel;
@@ -557,12 +543,12 @@ namespace NTerm
                 {
                     CommType.Tcp => new TcpComm(),
                     CommType.Serial => new SerialComm(),
-                    CommType.None => new NullComm(),
+                    CommType.Null => new NullComm(),
                     _ => throw new NotImplementedException(),
                 };
 
                 // Init and check stat.
-                var r = _comm.Init(_config);
+                var (stat, rx) = _comm.Init(_config);
 
                 // Init hotkeys.
                 _hotKeys.Clear();

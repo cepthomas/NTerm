@@ -87,7 +87,7 @@ namespace NTerm.Test
     }
 
 
-    public class SerialPortEmu : ISerialPort
+    public class SerialPortEmu //: ISerialPort
     {
         SerialStreamEmu _stream = new();
 

@@ -16,23 +16,22 @@ using Ephemera.NBagOfTricks.Slog;
 
 namespace NTerm
 {
+    /// <summary>Serial port comm.</summary>
+    /// <see cref="IComm"/>
     public class SerialComm : IComm // TODOF needs debug.
     {
         #region Fields
         readonly Logger _logger = LogManager.CreateLogger("SER");
-
-        Config? _config;
-
+        Config _config = new();
         readonly public SerialPort _serialPort = new();
-        // readonly ISerialPort _serialPort = sport ?? new RealSerialPort();
         #endregion
 
         #region IComm implementation
-        public (OpStatus stat, string rx) Init(Config config)
+        public (OpStatus stat, string err) Init(Config config)
         {
             _config = config;
             OpStatus stat;
-            string rx = "";
+            string err = "";
 
             try
             {
@@ -81,14 +80,17 @@ namespace NTerm
             }
             catch (Exception)
             {
-                rx = "Invalid comm args";
+                err = "Invalid comm args";
                 stat = OpStatus.Error;
             }
 
-            return (stat, rx);
+            return (stat, err);
         }
 
-        public (OpStatus stat, string rx) Send(string? tx) { return SendAsync(tx).Result; }
+        public (OpStatus stat, string rx) Send(string? tx)
+        {
+            return SendAsync(tx).Result;
+        }
 
         public void Dispose()
         {

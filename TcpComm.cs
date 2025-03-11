@@ -13,24 +13,24 @@ using Ephemera.NBagOfTricks.Slog;
 
 namespace NTerm
 {
-    // internal class TcpComm(ITcpClient? tclient) : IComm
+    /// <summary>TCP comm.</summary>
+    /// <see cref="IComm"/>
     internal class TcpComm : IComm
     {
         #region Fields
         readonly Logger _logger = LogManager.CreateLogger("TCP");
-        // readonly ITcpPort _tcpClient = tclient ?? new RealTcpClient();
         string _host = "???";
         int _port = 0;
-        Config? _config;
+        Config _config = new();
         const byte POLL_REQ = 0;
         #endregion
 
         #region IComm implementation
-        public (OpStatus stat, string rx) Init(Config config)
+        public (OpStatus stat, string err) Init(Config config)
         {
             _config = config;
             OpStatus stat;
-            string rx = "";
+            string err = "";
 
             try
             {
@@ -48,14 +48,17 @@ namespace NTerm
             }
             catch (Exception)
             {
-                rx = "Invalid comm args";
+                err = "Invalid comm args";
                 stat = OpStatus.Error;
             }
 
-            return (stat, rx);
+            return (stat, err);
         }
 
-        public (OpStatus stat, string rx) Send(string? tx) { return WriteAsync(tx).Result; }
+        public (OpStatus stat, string rx) Send(string? tx)
+        {
+            return WriteAsync(tx).Result;
+        }
 
         public void Dispose()
         {

@@ -9,16 +9,14 @@ using System.Threading;
 using System.Threading.Tasks;
 using Ephemera.NBagOfTricks;
 using Ephemera.NBagOfTricks.Slog;
-//using Script;
 
 
 namespace NTerm
 {
-
-    /// <summary>Script flavor of comm.</summary>
+    /// <summary>Script flavor of IComm.</summary>
+    /// <see cref="IComm"/>
     public class ScriptComm : IComm
     {
-        #region Fields
         /// <summary>Script logger.</summary>
         readonly Logger _logger = LogManager.CreateLogger("SCR");
 
@@ -27,18 +25,15 @@ namespace NTerm
 
         /// <summary>The configuration.</summary>
         Config _config;
-        #endregion
-
 
         public ScriptComm(string scriptFn, List<string> luaPaths)
         {
-            Script.Interop.Log += (object? sender, LogArgs args) => _logger.Log(args.err ? LogLevel.Error : LogLevel.Info, args.msg);
+            Script.Interop.Log += (object? sender, Script.LogArgs args) => _logger.Log(args.err ? LogLevel.Error : LogLevel.Info, args.msg);
             _script.Run(scriptFn, luaPaths);
         }
 
-
         #region IComm implementation
-        public (OpStatus stat, string rx) Init(Config config)
+        public (OpStatus stat, string err) Init(Config config)
         {
             _config = config;
             return (OpStatus.Success, $"Mock Script inited at {DateTime.Now}{Environment.NewLine}");
@@ -62,55 +57,23 @@ namespace NTerm
     }
 
 
-
     /// <summary>Script flavor of stream.</summary>
+    /// <see cref="Stream"/>
     public class ScriptStream : Stream
     {
-        // // What was last sent by the device.
-        // public string WriteBuffer { get; private set; } = "";
-
-        // // Set this to what the next read op gets.
-        // public string ReadBuffer { get; private set; } = "";
-
         /// <summary>The script object.</summary>
-        protected Script.Interop _script = new();
-
-        public ScriptStream(string scriptFn, List<string> luaPaths)
-        {
-            _script.Run(scriptFn, luaPaths);
-        }
-
+        Script.Interop _script = new();
 
         /// <summary>Throw this exception on next call.</summary>
         public Exception? ThrowMe { get; set; } = null;
 
-///// Read(byte[] buffer,...) throw:
-// ArgumentNullException - The buffer passed is null.
-// InvalidOperationException - The specified port is not open.
-// ArgumentOutOfRangeException - The offset or count parameters are outside a valid region of the buffer being passed. Either offset or count is less than zero.
-// ArgumentException - offset plus count is greater than the length of the buffer.
-// TimeoutException - No bytes were available to read.
-///// ReadByte():
-// InvalidOperationException - The specified port is not open.
-// TimeoutException - The operation did not complete before the time-out period ended.
-//    -or-
-// No byte was read.
-///// Write(byte[] array, ...) :
-// InvalidOperationException - The specified port is not open.
-// ArgumentNullException - text is null.
-// TimeoutException - The operation did not complete before the time-out period ended.
-// or??
-// ArgumentException - The sum of offset and count is greater than the buffer length.
-// ArgumentNullException - buffer is null.
-// ArgumentOutOfRangeException - offset or count is negative.
-// IOException - An I/O error occurred, such as the specified file cannot be found.
-// NotSupportedException - The stream does not support writing.
-// ObjectDisposedException - Write(Byte[], Int32, Int32) was called after the stream was closed.
-///// WriteByte() ::
-// IOException - An I/O error occurs.
-// NotSupportedException - The stream does not support writing, or the stream is already closed.
-// ObjectDisposedException - Methods were called after the stream was closed.
-
+        /// <summary>Constructor.</summary>
+        /// <param name="scriptFn"></param>
+        /// <param name="luaPaths"></param>
+        public ScriptStream(string scriptFn, List<string> luaPaths)
+        {
+            _script.Run(scriptFn, luaPaths);
+        }
 
         #region Stream implementation
 
@@ -148,40 +111,38 @@ namespace NTerm
         #endregion
 
         #region Real work
-
         public override int Read(byte[] buffer, int offset, int count)
         {
             MaybeThrow();
+            // Check args.
 
             //zero-based byte offset in buffer at which to begin storing the data
             //maximum number of bytes to be read from the current stream.
 
-            // Check args.
-
-            int numRead = -1;
+            int i = 0;
 
             // Ask the script.
             var rx = _script.Send($"R{count}");
-            _logger.Info($"rx:{rx}");
 
-        //=>    copy rx[0..count] to buffer[offset]
+            int toCopy = Math.Min(count, rx.Length);
+            for (i = 0; i < toCopy && i < buffer.Length; i++)
+            {
+                buffer[offset + i] = (byte)rx[i];
+            }
 
-            return numRead;
+            return i;
         }
 
         public override int ReadByte()
         {
             MaybeThrow();
+            // Check args.
 
             // Reads a byte from the stream and advances the position within the stream by one byte,
             // or returns -1 if at the end of the stream.
 
-            // Check args.
-
             // Ask the script.
             var rx = _script.Send($"R1");
-            _logger.Info($"rx:{rx}");
-
             
             return rx.Length == 0 ? -1 : rx[0];
         }
@@ -189,30 +150,33 @@ namespace NTerm
         public override void Write(byte[] array, int offset, int count)
         {
             MaybeThrow();
-
             // Check args.
+
             // Copy from array starting at offset for count.
-            var tx = byte[];
+            int toSend = Math.Min(count, array.Length - offset);
+            byte[] buff = new byte[toSend]; 
+            
+            int i;
+            for (i = 0; i < toSend && i < array.Length - offset; i++)
+            {
+                buff[i] = array[offset + i];
+            }
 
-            var rx = _script.Send(tx);
-            _logger.Info($"rx:{rx} tx:{tx}");
-
+            var str = Encoding.Default.GetString(buff);
+            var rx = _script.Send(str);
         }
 
         public override void WriteByte(byte value)
         {
             MaybeThrow();
 
-            var rx = _script.Send([value]);
-            _logger.Info($"rx:{rx} tx:{tx}");
+            var s = ((char)value).ToString();
+            var rx = _script.Send(s);
         }
         #endregion
-
-
         #endregion
 
         #region Internals
-
         void MaybeThrow()
         {
             if (ThrowMe is not null)
@@ -223,6 +187,5 @@ namespace NTerm
             }
         }
         #endregion
-
     }
 }

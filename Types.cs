@@ -60,23 +60,23 @@ namespace NTerm
     /// <param name="Text">The content</param>
     /// <param name="Ctrl">Control key is pressed</param>
     /// <param name="Alt">Alt key is pressed</param>
-    record CliInput(string Text, bool Ctrl, bool Alt);
+    record CliInput(string Text, bool Ctrl = false, bool Alt = false);
 
     /// <summary>Spec for one phrase using ColorMode.Match.</summary>
     /// <param name="Text"></param>
-    /// <param name="WholeWord"></param>
-    /// <param name="WholeLine"></param>
-    /// <param name="ForeColor"></param>
-    /// <param name="BackColor"></param>
-    public record Matcher(string Text, bool WholeWord, bool WholeLine, Color? ForeColor, Color? BackColor);
+    /// <param name="WholeWord">Match whole word</param>
+    /// <param name="WholeLine">Color whole line or just word</param>
+    /// <param name="ForeColor">Optional color</param>
+    /// <param name="BackColor">Optional color</param>
+    public record Matcher(string Text, bool WholeWord, bool WholeLine, Color? ForeColor = null, Color? BackColor = null);
 
     /// <summary>Comm type abstraction.</summary>
     interface IComm : IDisposable
     {
         /// <summary>Initialize the comm device.</summary>
         /// <param name="config">Setup info.</param>
-        /// <returns>Operation status, response.</returns>
-        (OpStatus stat, string rx) Init(Config config);
+        /// <returns>Operation status, maybe error string.</returns>
+        (OpStatus stat, string err) Init(Config config);
 
         /// <summary>Send a message to the server.</summary>
         /// <param name="tx">What to send, null indicates a poll request</param>

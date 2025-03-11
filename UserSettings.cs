@@ -56,7 +56,7 @@ namespace NTerm
         [Description("Select Monospace Font.")]
         [Browsable(true)]
         [JsonConverter(typeof(JsonFontConverter))]
-        [Editor(typeof(MonospaceFontEditor), typeof(UITypeEditor))] // TODO1 weird font sizes
+        [Editor(typeof(MonospaceFontEditor), typeof(UITypeEditor))]
         public Font Font { get; set; } = new("Cascadia Code", 8);
 
         [DisplayName("File Log Level")]
@@ -88,18 +88,18 @@ namespace NTerm
         [Description("Talk like this.")]
         [JsonConverter(typeof(JsonStringEnumConverter))]
         [Browsable(true)]
-        public CommType CommType { get; set; } = CommType.None;
+        public CommType CommType { get; set; } = CommType.Null;
 
         [DisplayName("Communication Mode")]
         [Description("Block or poll.")]
         [JsonConverter(typeof(JsonStringEnumConverter))]
         [Browsable(true)]
-        public CommMode CommMode { get; set; } = CommMode.Poll;
+        public CommMode CommMode { get; set; } = CommMode.CmdResp;
 
         [DisplayName("Communication Arguments")]
         [Description("Type specific args. See README.md.")]
         [Browsable(true)]
-        public string Args { get; set; } = "???";
+        public string Args { get; set; } = "";
 
         [DisplayName("Hot Keys")]
         [Description("Hot key definitions. See README.md.")]

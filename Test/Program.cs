@@ -46,7 +46,7 @@ namespace NTermTest
 
             //Random rnd = new();
 
-            ss.Prompt = "!!!";
+            //ss.Prompt = "!!!";
 
             for (int i = 0; i < 5; i++)
             {
