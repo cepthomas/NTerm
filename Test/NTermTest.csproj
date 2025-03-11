@@ -1,12 +1,17 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
     <PropertyGroup>
+        <!-- TODO1 https://stackoverflow.com/a/70144716 -->
         <OutputType>Exe</OutputType>
+        <!-- <OutputType>WinExe</OutputType> -->
+        <SelfContained>false</SelfContained>
+        <RuntimeIdentifier>win-x64</RuntimeIdentifier>
+
         <TargetFramework>net8.0-windows</TargetFramework>
         <ImplicitUsings>disable</ImplicitUsings>
         <UseWindowsForms>true</UseWindowsForms>
         <Nullable>enable</Nullable>
-        <Platforms>AnyCPU;x64</Platforms>
+        <Platforms>x64</Platforms>
     </PropertyGroup>
 
     <ItemGroup>
