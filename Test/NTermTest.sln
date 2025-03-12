@@ -5,8 +5,6 @@ VisualStudioVersion = 17.11.35431.28
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "NTermTest", "NTermTest.csproj", "{7D069DF4-1C41-4FB7-99DF-EA70EB4DA813}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Script", "Script.vcxproj", "{953F3806-EB5D-444E-A500-09B455E35E53}"
-EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -23,14 +21,6 @@ Global
 		{7D069DF4-1C41-4FB7-99DF-EA70EB4DA813}.Release|Any CPU.Build.0 = Release|Any CPU
 		{7D069DF4-1C41-4FB7-99DF-EA70EB4DA813}.Release|x64.ActiveCfg = Release|x64
 		{7D069DF4-1C41-4FB7-99DF-EA70EB4DA813}.Release|x64.Build.0 = Release|x64
-		{953F3806-EB5D-444E-A500-09B455E35E53}.Debug|Any CPU.ActiveCfg = Debug|x64
-		{953F3806-EB5D-444E-A500-09B455E35E53}.Debug|Any CPU.Build.0 = Debug|x64
-		{953F3806-EB5D-444E-A500-09B455E35E53}.Debug|x64.ActiveCfg = Debug|x64
-		{953F3806-EB5D-444E-A500-09B455E35E53}.Debug|x64.Build.0 = Debug|x64
-		{953F3806-EB5D-444E-A500-09B455E35E53}.Release|Any CPU.ActiveCfg = Release|x64
-		{953F3806-EB5D-444E-A500-09B455E35E53}.Release|Any CPU.Build.0 = Release|x64
-		{953F3806-EB5D-444E-A500-09B455E35E53}.Release|x64.ActiveCfg = Release|x64
-		{953F3806-EB5D-444E-A500-09B455E35E53}.Release|x64.Build.0 = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

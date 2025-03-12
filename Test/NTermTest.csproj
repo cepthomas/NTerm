@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
     <PropertyGroup>
-        <!-- TODO1 https://stackoverflow.com/a/70144716 -->
+        <!-- https://stackoverflow.com/a/70144716 -->
         <OutputType>Exe</OutputType>
         <!-- <OutputType>WinExe</OutputType> -->
         <SelfContained>false</SelfContained>
@@ -17,10 +17,13 @@
     <ItemGroup>
       <Compile Remove="ibin\**" />
       <Compile Remove="iobj\**" />
+      <Compile Remove="_LBOT\**" />
       <EmbeddedResource Remove="ibin\**" />
       <EmbeddedResource Remove="iobj\**" />
+      <EmbeddedResource Remove="_LBOT\**" />
       <None Remove="ibin\**" />
       <None Remove="iobj\**" />
+      <None Remove="_LBOT\**" />
     </ItemGroup>
 
     <ItemGroup>
@@ -33,10 +36,6 @@
     <ItemGroup>
         <PackageReference Include="System.IO.Ports" Version="9.0.1" />
         <PackageReference Include="System.Management" Version="9.0.1" />
-    </ItemGroup>
-
-    <ItemGroup>
-      <ProjectReference Include="Script.vcxproj" />
     </ItemGroup>
 
     <ItemGroup>
