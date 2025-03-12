@@ -28,11 +28,11 @@ namespace NTerm
         public (OpStatus stat, string msg) Init(Config config)
         {
             _config = config;
-            //string scriptFn;
-            //List<string> luaPaths;
+            string scriptFn = _config.Args;
+            List<string> luaPaths = [];
 
-            //Interop.Log += (object? sender, LogArgs args) => _logger.Log(args.msg ? LogLevel.Error : LogLevel.Info, args.msg);
-            //_script.Run(scriptFn, luaPaths);
+            Interop.Log += (object? sender, LogArgs args) => _logger.Log(args.msg ? LogLevel.Error : LogLevel.Info, args.msg);
+            _script.Run(scriptFn, luaPaths);
 
             OpStatus stat = OpStatus.Success;
             string msg = $"ScriptComm inited at {DateTime.Now}{Environment.NewLine}";

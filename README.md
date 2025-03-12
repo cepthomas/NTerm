@@ -1,6 +1,7 @@
 # NTerm
 Minimalist cli for things like embedded systems.
 
+Script.zip contains the project used to build the interop code to a dll which is in lib.
 
 ## Config
 
