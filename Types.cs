@@ -15,12 +15,14 @@ namespace NTerm
     /// <summary>Supported flavors.</summary>
     public enum CommType
     {
+        /// <summary>Default comm that just echoes sent string.</summary>
+        Null,
         /// <summary>Standard TCP</summary>
         Tcp,
         /// <summary>Standard serial port</summary>
         Serial,
-        /// <summary>Test comm that echoes sent string.</summary>
-        Null,
+        /// <summary>Test comm that uses a script as the server.</summary>
+        Script,
     }
 
     /// <summary>Supported communication flavors.</summary>
@@ -75,8 +77,9 @@ namespace NTerm
     {
         /// <summary>Initialize the comm device.</summary>
         /// <param name="config">Setup info.</param>
+        /// <param name="msg">Status info.</param>
         /// <returns>Operation status, maybe error string.</returns>
-        (OpStatus stat, string err) Init(Config config);
+        (OpStatus stat, string msg) Init(Config config);
 
         /// <summary>Send a message to the server.</summary>
         /// <param name="tx">What to send, null indicates a poll request</param>

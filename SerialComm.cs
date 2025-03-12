@@ -27,11 +27,11 @@ namespace NTerm
         #endregion
 
         #region IComm implementation
-        public (OpStatus stat, string err) Init(Config config)
+        public (OpStatus stat, string msg) Init(Config config)
         {
             _config = config;
             OpStatus stat;
-            string err = "";
+            string msg = "";
 
             try
             {
@@ -80,11 +80,11 @@ namespace NTerm
             }
             catch (Exception)
             {
-                err = "Invalid comm args";
+                msg = "Invalid comm args";
                 stat = OpStatus.Error;
             }
 
-            return (stat, err);
+            return (stat, msg);
         }
 
         public (OpStatus stat, string rx) Send(string? tx)

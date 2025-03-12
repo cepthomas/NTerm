@@ -23,10 +23,13 @@
   <ItemGroup>
     <Compile Remove="lib\**" />
     <Compile Remove="Test\**" />
+    <Compile Remove="Script\**" />
     <EmbeddedResource Remove="lib\**" />
     <EmbeddedResource Remove="Test\**" />
+    <EmbeddedResource Remove="Script\**" />
     <None Remove="lib\**" />
     <None Remove="Test\**" />
+    <None Remove="Script\**" />
   </ItemGroup>
 
   <ItemGroup>
@@ -44,6 +47,9 @@
     </Reference>
     <Reference Include="Ephemera.NBagOfUis">
       <HintPath>lib\Ephemera.NBagOfUis.dll</HintPath>
+    </Reference>
+    <Reference Include="Script">
+      <HintPath>lib\Script.dll</HintPath>
     </Reference>
   </ItemGroup>
 

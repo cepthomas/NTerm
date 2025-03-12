@@ -14,7 +14,7 @@ namespace NTerm
     public class NullComm : IComm
     {
         #region IComm implementation
-        public (OpStatus stat, string err) Init(Config config)
+        public (OpStatus stat, string msg) Init(Config config)
         {
             return (OpStatus.Success, $"NullComm Inited at {DateTime.Now}{Environment.NewLine}");
         }

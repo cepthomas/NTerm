@@ -16,6 +16,18 @@ using System.Windows.Forms;
 using Ephemera.NBagOfTricks;
 using Ephemera.NBagOfTricks.Slog;
 using Ephemera.NBagOfUis;
+using NTerm;
+
+
+internal static class Program
+{
+    [STAThread]
+    static void Main()
+    {
+        ApplicationConfiguration.Initialize();
+        Application.Run(new MainForm());
+    }
+}
 
 
 namespace NTerm
@@ -541,9 +553,10 @@ namespace NTerm
 
                 _comm = _config.CommType switch
                 {
+                    CommType.Null => new NullComm(),
                     CommType.Tcp => new TcpComm(),
                     CommType.Serial => new SerialComm(),
-                    CommType.Null => new NullComm(),
+                    CommType.Script => new ScriptComm(),
                     _ => throw new NotImplementedException(),
                 };
 

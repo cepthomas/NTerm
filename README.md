@@ -5,10 +5,11 @@ Minimalist cli for things like embedded systems.
 ## Config
 
 - Name
-- CommType: Null, Tcp, Serial
+- CommType: Null, Tcp, Serial, Script
 - Args:
-  - Tcp: "127.0.0.1 59120
-  - Serial: "COM1 9600 E|O|N 6|7|8 0|1|1.5\"
+  - Tcp: "127.0.0.1 59120"
+  - Serial: "COM1 9600 E|O|N 6|7|8 0|1|1.5"
+  - Script: "script_file_name.lua"
 - HotKeys: like "k=do something"  "o=send me"
 - ... more
 
