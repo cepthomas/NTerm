@@ -31,7 +31,7 @@ namespace NTerm
             string scriptFn = _config.Args;
             List<string> luaPaths = [];
 
-            Interop.Log += (object? sender, LogArgs args) => _logger.Log(args.msg ? LogLevel.Error : LogLevel.Info, args.msg);
+            Interop.Log += (object? sender, LogArgs args) => _logger.Log(args.err ? LogLevel.Error : LogLevel.Info, args.msg);
             _script.Run(scriptFn, luaPaths);
 
             OpStatus stat = OpStatus.Success;
