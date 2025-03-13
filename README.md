@@ -8,14 +8,14 @@ Script.zip contains the project used to build the interop code to a dll which is
 - Name
 - CommType: Null, Tcp, Serial, Script
 - Args:
-  - Tcp: "127.0.0.1 59120"
-  - Serial: "COM1 9600 E|O|N 6|7|8 0|1|1.5"
-  - Script: "script_file_name.lua"
+  - Tcp: "127.0.0.1", "59120"
+  - Serial: "COM1", "9600", "E|O|N", "6|7|8", "0|1|1.5"
+  - Script: "script_file_name.lua", "my_lua_dir\?.lua;?.lua;;" (LUA_PATH)
 - HotKeys: like "k=do something"  "o=send me"
 - ... more
 
 
-set LUA_PATH=;;"%ODIR%\?.lua";?.lua;
+set LUA_PATH="my_lua_dir\?.lua;?.lua;;""
 Appending LUA_PATH's value with a double semi-colon will make Lua append the default path to the specified path.
 
 

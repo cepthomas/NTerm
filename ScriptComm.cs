@@ -11,6 +11,7 @@ using Ephemera.NBagOfTricks;
 using Ephemera.NBagOfTricks.Slog;
 using Script;
 
+
 namespace NTerm
 {
     /// <summary>Script flavor of IComm.</summary>
