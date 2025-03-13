@@ -14,6 +14,11 @@ Script.zip contains the project used to build the interop code to a dll which is
 - HotKeys: like "k=do something"  "o=send me"
 - ... more
 
+
+set LUA_PATH=;;"%ODIR%\?.lua";?.lua;
+Appending LUA_PATH's value with a double semi-colon will make Lua append the default path to the specified path.
+
+
 ## Keys
 
 KeyEventArgs:

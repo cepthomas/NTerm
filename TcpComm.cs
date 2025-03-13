@@ -35,7 +35,7 @@ namespace NTerm
             try
             {
                 // Parse the args. "127.0.0.1 59120"
-                var parts = _config.Args.SplitByToken(" ");
+                var parts = _config.Args;
                 stat = parts.Count == 2 ? OpStatus.Success : OpStatus.Error;
 
                 _host = parts[0];

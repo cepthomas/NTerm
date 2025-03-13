@@ -19,17 +19,6 @@ using Ephemera.NBagOfUis;
 using NTerm;
 
 
-internal static class Program
-{
-    [STAThread]
-    static void Main()
-    {
-        ApplicationConfiguration.Initialize();
-        Application.Run(new MainForm());
-    }
-}
-
-
 namespace NTerm
 {
     public partial class MainForm : Form
@@ -723,5 +712,17 @@ namespace NTerm
             sports.ForEach(s => { Print($"   {s}"); });
         }
         #endregion
+    }
+}
+
+
+////////////// Start here //////////////////
+internal static class Program
+{
+    [STAThread]
+    static void Main()
+    {
+        ApplicationConfiguration.Initialize();
+        Application.Run(new MainForm());
     }
 }

@@ -36,7 +36,7 @@ namespace NTerm
             try
             {
                 // Parse the args. "COM1 9600 E|O|N 6|7|8 0|1|1.5"
-                var parts = _config.Args.SplitByToken(" ");
+                var parts = _config.Args;
                 stat = parts.Count == 5 ? OpStatus.Success : OpStatus.Error;
 
                 var i = int.Parse(parts[0].Replace("COM", ""));

@@ -19,17 +19,17 @@ namespace NTerm
     public class ScriptStream : Stream
     {
         /// <summary>The script object.</summary>
-        Interop _script = new();
+        readonly Interop _script = new();
 
         /// <summary>Throw this exception on next call.</summary>
         public Exception? ThrowMe { get; set; } = null;
 
         /// <summary>Constructor.</summary>
         /// <param name="scriptFn"></param>
-        /// <param name="luaPaths"></param>
-        public ScriptStream(string scriptFn, List<string> luaPaths)
+        /// <param name="luaPath"></param>
+        public ScriptStream(string scriptFn, string luaPath)
         {
-            _script.Run(scriptFn, luaPaths);
+            _script.Run(scriptFn, luaPath);
         }
 
         #region Stream implementation
@@ -71,17 +71,17 @@ namespace NTerm
         public override int Read(byte[] buffer, int offset, int count)
         {
             MaybeThrow();
-            // Check args.
-
-            //zero-based byte offset in buffer at which to begin storing the data
-            //maximum number of bytes to be read from the current stream.
-
-            int i = 0;
 
             // Ask the script.
             var rx = _script.Send($"R{count}");
 
             int toCopy = Math.Min(count, rx.Length);
+            // Check args.
+
+            //zero-based byte offset in buffer at which to begin storing the data
+            //maximum number of bytes to be read from the current stream.
+
+            int i;
             for (i = 0; i < toCopy && i < buffer.Length; i++)
             {
                 buffer[offset + i] = (byte)rx[i];

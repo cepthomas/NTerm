@@ -99,7 +99,7 @@ namespace NTerm
         [DisplayName("Communication Arguments")]
         [Description("Type specific args. See README.md.")]
         [Browsable(true)]
-        public string Args { get; set; } = "";
+        public List<string> Args { get; set; } = [];
 
         [DisplayName("Hot Keys")]
         [Description("Hot key definitions. See README.md.")]
