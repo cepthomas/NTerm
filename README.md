@@ -1,8 +1,6 @@
 # NTerm
 Minimalist cli for things like embedded systems.
 
-Script.zip contains the project used to build the interop code to a dll which is in lib.
-
 ## Config
 
 - Name
@@ -47,3 +45,33 @@ How windows handles key presses. For example Shift+A produces:
 Note:
 - KeyPress converts to ascii and is not executed for non-ascii inputs e.g. Fkeys.
 - Windows steals TAB, RETURN, ESC, and arrow keys so they are not currently implemented.
+
+## Files
+
+```
+C:\DEV\APPS\NTERM
+|   *.cs etc - standard .NET/git application files
+|   Script.zip - see below
+|   ScriptComm.cs - ???
+|   SerialComm.cs - ???
+|   TcpComm.cs
+|   ScriptStream.cs - ???
+|   simple-response.lua - ???
+|   tcp-server.lua - ???
+|   
++---lib
+|       Ephemera.NBagOfTricks.dll
+|       Ephemera.NBagOfTricks.xml
+|       Ephemera.NBagOfUis.dll
+|       Ephemera.NBagOfUis.xml
+|       Script.dll
+|       lbot_utils.lua
+|       stringex.lua
+|       
+|               
+\---Test
+```
+
+# Building Script
+
+TODO1 - like C:\Dev\Apps\Nebulua\docs\tech_notes.md

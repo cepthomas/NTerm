@@ -11,7 +11,7 @@ using NTerm;
 using Ephemera.NBagOfTricks;
 
 
-namespace NTermTest
+namespace NTermTest // TODO1 fix all tests
 {
     static class Program
     {
