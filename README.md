@@ -8,13 +8,9 @@ Minimalist cli for things like embedded systems.
 - Args:
   - Tcp: "127.0.0.1", "59120"
   - Serial: "COM1", "9600", "E|O|N", "6|7|8", "0|1|1.5"
-  - Script: "script_file_name.lua", "my_lua_dir\?.lua;?.lua;;" (LUA_PATH)
+  - Script: "script_file_name.lua", "my_lua_dir\?.lua;?.lua;;" (standard LUA_PATH)
 - HotKeys: like "k=do something"  "o=send me"
 - ... more
-
-
-set LUA_PATH="my_lua_dir\?.lua;?.lua;;""
-Appending LUA_PATH's value with a double semi-colon will make Lua append the default path to the specified path.
 
 
 ## Keys
@@ -52,26 +48,22 @@ Note:
 C:\DEV\APPS\NTERM
 |   *.cs etc - standard .NET/git application files
 |   Script.zip - see below
-|   ScriptComm.cs - ???
-|   SerialComm.cs - ???
-|   TcpComm.cs
-|   ScriptStream.cs - ???
 |   simple-response.lua - ???
 |   tcp-server.lua - ???
-|   
-+---lib
-|       Ephemera.NBagOfTricks.dll
-|       Ephemera.NBagOfTricks.xml
-|       Ephemera.NBagOfUis.dll
-|       Ephemera.NBagOfUis.xml
-|       Script.dll
-|       lbot_utils.lua
-|       stringex.lua
-|       
-|               
++---lib - .NET dependencies
 \---Test
 ```
 
 # Building Script
 
-TODO1 - like C:\Dev\Apps\Nebulua\docs\tech_notes.md
+The Lua script interop should not need to be rebuilt after the api is finalized so the kind of ugly components
+used to build it are kept out of sight of the general public. If a change is required, do this:
+
+- Unzip `Script.zip` into a folder `...\Nterm\Script` and cd into it.
+- Create a folder named `LBOT` with the contents of [this](https://github.com/cepthomas/LuaBagOfTricks). This can
+  be done using a git submodule, a hard copy, or a symlink to this repo in another location on your machine.
+- Edit `interop_spec.lua` with new changes.
+- Execute 'gen_interop.cmd'. This generates the code files to support the interop.
+- Execute 'build_interop.cmd'. This also copies artifacts to where they need to be.
+- Open `Nterm.sln` and rebuild all.
+- When satisfied, zip the `Script` dir and replace the current `Script.zip` file.
