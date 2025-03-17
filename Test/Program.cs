@@ -11,7 +11,7 @@ using NTerm;
 using Ephemera.NBagOfTricks;
 
 
-namespace NTermTest // TODO1 fix all tests
+namespace NTermTest // TODOF fix all tests
 {
     static class Program
     {
@@ -27,12 +27,6 @@ namespace NTermTest // TODO1 fix all tests
             var cases = new[] { "ANSI", "SER", "TCP" };
             runner.RunSuites(cases);
             File.WriteAllLines(Path.Join(MiscUtils.GetSourcePath(), "test_out.txt"), runner.Context.OutputLines);
-
-            // // Run pnut tests from ui host.
-            // Application.SetHighDpiMode(HighDpiMode.SystemAware);
-            // Application.EnableVisualStyles();
-            // Application.SetCompatibleTextRenderingDefault(false);
-            // Application.Run(new TestHost());
         }
 
         static void FakeSettings()
