@@ -19,8 +19,6 @@ using Ephemera.NBagOfUis;
 using NTerm;
 
 
-oops - lib\*.lua not copied to output. nebl has a lua dir
-
 namespace NTerm
 {
     public partial class MainForm : Form
