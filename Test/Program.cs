@@ -23,10 +23,10 @@ namespace NTermTest // TODO1 fix all tests
         {
             // Run pnut tests from cmd line.
             TestRunner runner = new(OutputFormat.Readable);
-            var cases = new[] { "ANSI" };
-            //var cases = new[] { "ANSI", "SER", "TCP" };
+            //var cases = new[] { "ANSI" };
+            var cases = new[] { "ANSI", "SER", "TCP" };
             runner.RunSuites(cases);
-            File.WriteAllLines(@"..\..\out\test_out.txt", runner.Context.OutputLines);
+            File.WriteAllLines(Path.Join(MiscUtils.GetSourcePath(), "test_out.txt"), runner.Context.OutputLines);
 
             // // Run pnut tests from ui host.
             // Application.SetHighDpiMode(HighDpiMode.SystemAware);
@@ -53,7 +53,7 @@ namespace NTermTest // TODO1 fix all tests
                 var c = new Config()
                 {
                     Name = $"config{i}",
-                    Args = $"a{i} b{i} c{i}",
+                    Args = [$"a{i}", $"b{i}", $"c{i}"]
                 };
 
                 c.HotKeys.Add($"x=bla bla");

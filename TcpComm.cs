@@ -26,6 +26,8 @@ namespace NTerm
         #endregion
 
         #region IComm implementation
+        public Stream? AltStream { get; set; } = null;
+
         public (OpStatus stat, string msg) Init(Config config)
         {
             _config = config;
@@ -65,10 +67,12 @@ namespace NTerm
             //_tcpClient?.Close();
             //_tcpClient?.Dispose();
             //_tcpClient = null;
+            AltStream?.Dispose();
+            AltStream = null;
         }
         #endregion
 
-         /// <summary>
+        /// <summary>
         /// Does actual work of sending/receiving.
         /// </summary>
         /// <param name="tx"></param>
@@ -97,8 +101,7 @@ namespace NTerm
                 _logger.Debug("[Client] Connected to server");
 
                 /////// Send ////////
-                using var stream = client.GetStream();
-                // using var stream = new ScriptStream("TODO1", []);
+                using var stream = AltStream ?? client.GetStream();
                 // check for poll.
                 byte[] bytes = tx is null ? [POLL_REQ] : Encoding.UTF8.GetBytes(tx);
 

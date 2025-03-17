@@ -69,7 +69,7 @@ namespace NTerm.Test
     }
 
 
-    // a test tcp server
+    // a test tcp server - or use lua one?
     public class Server
     {
         public static void Run(int port)

@@ -60,11 +60,11 @@ namespace NTerm
         /// <summary>Ansi regex.</summary>
         readonly string _ansiPattern = @"([^\u001B]+)\u001B\[([^m)]+)m";
 
-        /// <summary>Current ansi color.</summary>
-        Color _ansiForeColor;
+        ///// <summary>Current ansi color.</summary>
+        //Color _ansiForeColor;
 
-        /// <summary>Current ansi color.</summary>
-        Color _ansiBackColor;
+        ///// <summary>Current ansi color.</summary>
+        //Color _ansiBackColor;
         #endregion
 
         #region Lifecycle
@@ -102,21 +102,13 @@ namespace NTerm
 
             // UI handlers.
             rtbIn.KeyDown += RtbIn_KeyDown;
-            //rtbOut.KeyDown += RtbOut_KeyDown;
-            //rtbIn.KeyPress += (object? sender, KeyPressEventArgs e) => Debug.WriteLine($"KeyPress:{e.KeyChar}");
-            //rtbOut.KeyDown += (object? sender, KeyEventArgs e) => throw new NotImplementedException();
             btnSettings.Click += (_, _) => { SettingsEditor.Edit(_settings, "User Settings", 500); InitFromSettings(); };
             btnClear.Click += (_, _) => rtbOut.Clear();
             btnWrap.Click += (_, _) => rtbOut.WordWrap = btnWrap.Checked;
             //btnDebug.Click += (_, _) => rtbOut.BackColor = Color.Pink;
 
-            _ansiForeColor = rtbOut.ForeColor;
-            _ansiBackColor = rtbOut.BackColor;
-
-            //_logger.Trace($"=== Trace ===");
-            //_logger.Debug($"=== Debug ===");
-            //_logger.Info($"=== Info ===");
-            //_logger.Error($"=== Error ===");
+            //_ansiForeColor = rtbOut.ForeColor;
+            //_ansiBackColor = rtbOut.BackColor;
         }
 
         /// <summary>
@@ -434,8 +426,10 @@ namespace NTerm
 
                 // Update colors.
                 var (fg, bg) = ColorFromAnsi(match.Groups[2].Value);
-                _ansiBackColor = bg;
-                _ansiForeColor = fg;
+                //_ansiBackColor = bg;
+                //_ansiForeColor = fg;
+                rtbOut.BackColor = bg;
+                rtbOut.ForeColor = fg;
             }
 
             var trailing = text[end..];
@@ -518,10 +512,6 @@ namespace NTerm
 
             //// Fix the non-integer font size. Hmmm, probably not: https://stackoverflow.com/a/3605395.
             //int size = (int)Math.Round(_settings.Font.SizeInPoints, MidpointRounding.AwayFromZero);
-            //Font newFont = new(_settings.Font.FontFamily, size, _settings.Font.Style);
-            //rtbIn.Font = newFont;
-            //rtbOut.Font = newFont;
-            //_settings.Font = newFont;
 
             rtbIn.Font = _settings.Font;
             rtbOut.Font = _settings.Font;
@@ -548,6 +538,9 @@ namespace NTerm
                     CommType.Script => new ScriptComm(),
                     _ => throw new NotImplementedException(),
                 };
+
+                // TODOF Maybe insert script for testing.
+                //_comm.AltStream = new ScriptStream("TODO_fn.lua", "TODO_LUA_PATH");
 
                 // Init and check stat.
                 var (stat, rx) = _comm.Init(_config);

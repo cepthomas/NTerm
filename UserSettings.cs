@@ -90,16 +90,16 @@ namespace NTerm
         [Browsable(true)]
         public CommType CommType { get; set; } = CommType.Null;
 
+        [DisplayName("Communication Arguments")]
+        [Description("Type specific args. See README.md.")]
+        [Browsable(true)]
+        public List<string> Args { get; set; } = [];
+
         [DisplayName("Communication Mode")]
         [Description("Block or poll.")]
         [JsonConverter(typeof(JsonStringEnumConverter))]
         [Browsable(true)]
         public CommMode CommMode { get; set; } = CommMode.CmdResp;
-
-        [DisplayName("Communication Arguments")]
-        [Description("Type specific args. See README.md.")]
-        [Browsable(true)]
-        public List<string> Args { get; set; } = [];
 
         [DisplayName("Hot Keys")]
         [Description("Hot key definitions. See README.md.")]

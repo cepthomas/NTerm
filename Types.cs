@@ -2,11 +2,8 @@
 using System.Collections.Generic;
 using System.Drawing;
 using System.IO;
-using System.IO.Ports;
 using System.Linq;
 using System.Text;
-using System.Threading;
-using System.Threading.Tasks;
 using Ephemera.NBagOfTricks;
 
 
@@ -75,6 +72,9 @@ namespace NTerm
     /// <summary>Comm type abstraction.</summary>
     interface IComm : IDisposable
     {
+        /// <summary>Alternate stream for debugging purposes.</summary>
+        Stream? AltStream { get; set; }
+
         /// <summary>Initialize the comm device.</summary>
         /// <param name="config">Setup info.</param>
         /// <param name="msg">Status info.</param>

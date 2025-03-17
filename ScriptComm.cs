@@ -25,6 +25,8 @@ namespace NTerm
         #endregion
 
         #region IComm implementation
+        public Stream? AltStream { get; set; } = null;
+
         public (OpStatus stat, string msg) Init(Config config)
         {
             _config = config;
@@ -56,6 +58,8 @@ namespace NTerm
         public void Dispose()
         {
             _script.Dispose();
+            AltStream?.Dispose();
+            AltStream = null;
         }
         #endregion
     }

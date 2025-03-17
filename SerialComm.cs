@@ -27,6 +27,8 @@ namespace NTerm
         #endregion
 
         #region IComm implementation
+        public Stream? AltStream { get; set; } = null;
+
         public (OpStatus stat, string msg) Init(Config config)
         {
             _config = config;
@@ -96,6 +98,8 @@ namespace NTerm
         {
             _serialPort?.Close();
             _serialPort?.Dispose();
+            AltStream?.Dispose();
+            AltStream = null;
         }
         #endregion
 
@@ -117,8 +121,7 @@ namespace NTerm
                     return (OpStatus.Error, "Serial port is not open");
                 }
 
-                using var stream = _serialPort.BaseStream;
-                // using var stream = new ScriptStream("TODO1", []);
+                using var stream = AltStream ?? _serialPort.BaseStream;
 
                 /////// Send ////////
                 if (tx is not null) // check for poll

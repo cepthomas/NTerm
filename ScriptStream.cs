@@ -18,6 +18,41 @@ namespace NTerm
     /// <see cref="Stream"/>
     public class ScriptStream : Stream
     {
+
+        //public (OpStatus stat, string msg) Init(Config config)
+        //{
+        //    _config = config;
+
+        //    if (_config.Args.Count != 2)
+        //    {
+        //        throw new ArgumentException($"Invalid config arguments");
+        //    }
+        //    string scriptFn = _config.Args[0];
+        //    string luaPath = _config.Args[1];
+
+        //    Interop.Log += (object? sender, LogArgs args) => _logger.Log(args.err ? LogLevel.Error : LogLevel.Info, args.msg);
+        //    _script.Run(scriptFn, luaPath);
+
+        //    OpStatus stat = OpStatus.Success;
+        //    string msg = $"ScriptComm inited at {DateTime.Now}{Environment.NewLine}";
+        //    return (stat, msg);
+        //}
+
+        //public (OpStatus stat, string rx) Send(string? tx)
+        //{
+        //    // Execute script functions.
+        //    var rx = _script.Send(tx ?? "P");
+        //    _logger.Info($"tx:{tx} rx:{rx}");
+
+        //    return (OpStatus.Success, rx); // OpStatus.NoResp?
+        //}
+
+
+
+
+
+
+
         /// <summary>The script object.</summary>
         readonly Interop _script = new();
 
@@ -131,6 +166,7 @@ namespace NTerm
             var rx = _script.Send(s);
         }
         #endregion
+
         #endregion
 
         #region Internals

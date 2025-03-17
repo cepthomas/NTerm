@@ -5,6 +5,7 @@ using System.IO.Ports;
 using System.Linq;
 using System.Text;
 using Ephemera.NBagOfTricks;
+using Ephemera.NBagOfTricks.Slog;
 
 
 namespace NTerm
@@ -13,10 +14,20 @@ namespace NTerm
     /// <see cref="IComm"/>
     public class NullComm : IComm
     {
+        #region Fields
+        readonly Logger _logger = LogManager.CreateLogger("NUL");
+        //protected Interop _script = new();
+        Config _config = new();
+        #endregion
+
         #region IComm implementation
+        public Stream? AltStream { get; set; } = null;
+
         public (OpStatus stat, string msg) Init(Config config)
         {
-            return (OpStatus.Success, $"NullComm Inited at {DateTime.Now}{Environment.NewLine}");
+            _config = config;
+            string msg = $"NullComm inited at {DateTime.Now}{Environment.NewLine}";
+            return (OpStatus.Success, $"NullComm inited at {DateTime.Now}{Environment.NewLine}");
         }
 
         public (OpStatus stat, string rx) Send(string? tx)
@@ -24,7 +35,11 @@ namespace NTerm
             return (OpStatus.Success, $"NullComm sent [{tx ?? "null"}] at {DateTime.Now}{Environment.NewLine}");
         }
 
-        public void Dispose() { }
+        public void Dispose()
+        {
+            AltStream?.Dispose();
+            AltStream = null;
+        }
         #endregion
     }
 }
