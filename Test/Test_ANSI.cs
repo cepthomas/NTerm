@@ -12,7 +12,7 @@ using NTerm;
 
 namespace NTermTest
 {
-    public class ANSI_COLOR : TestSuite // TODO1 expand to all Print() functions.
+    public class ANSI_COLOR : TestSuite // TODOF expand to all Print() functions.
     {
         public override void RunSuite()
         {

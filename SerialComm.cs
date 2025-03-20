@@ -19,7 +19,7 @@ namespace NTerm
 {
     /// <summary>Serial port comm.</summary>
     /// <see cref="IComm"/>
-    public class SerialComm : IComm // TODO1 needs debug.
+    public class SerialComm : IComm // TODOF needs debug with hardware.
     {
         #region Fields
         readonly Logger _logger = LogManager.CreateLogger("SER");
@@ -107,7 +107,7 @@ namespace NTerm
         /// <summary>
         /// Does actual work of sending/receiving.
         /// </summary>
-        /// <param name="tx">What to send.</param>
+        /// <param name="tx">What to send. If simple poll request, this will be empty.</param>
         /// <returns>OpStatus and Response populated.</returns>
         public async Task<(OpStatus stat, byte[] rx)> SendAsync(byte[] tx)
         {
@@ -125,7 +125,7 @@ namespace NTerm
                 using var stream = AltStream ?? _serialPort.BaseStream;
 
                 /////// Send ////////
-                if (tx is not null) // check for poll TODO1
+                if (tx.Length() > 0)
                 {
                     bool sendDone = false;
                     int num = tx.Length;
@@ -167,10 +167,16 @@ namespace NTerm
 
                 // Package return.
                 rx = new byte[totalRx];
-                Array.Copy(rx, 0, buffer, 0, totalRx);
 
-                _logger.Trace($"[Client] Server response was [{totalRx}]");
-
+                if (totalRx > 0)
+                {
+                    Array.Copy(rx, 0, buffer, 0, totalRx);
+                    _logger.Trace($"[Client] Server response was [{totalRx}]");
+                }
+                else
+                {
+                    stat = OpStatus.NoResp;
+                }
                 // if the serial port is unexpectedly closed, throw an exception
                 if (!_serialPort.IsOpen)
                 {

@@ -12,7 +12,7 @@ using NTerm;
 
 namespace NTermTest
 {
-    public class SERIAL_COMM : TestSuite // TODO1
+    public class SERIAL_COMM : TestSuite // TODOF
     {
         public override void RunSuite()
         {

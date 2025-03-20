@@ -89,7 +89,7 @@ namespace NTerm
 
     public class Utils
     {
-        public static string BytesToString(byte[] buff) // TODO1 Put in nbot.
+        public static string BytesToString(byte[] buff) // TODOF Put in nbot.
         {
             //var s = Encoding.Default.GetString(buff); // Use UTF8?
 

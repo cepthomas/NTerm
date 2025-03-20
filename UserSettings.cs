@@ -36,12 +36,12 @@ namespace NTerm
         //[Browsable(true)]
         //public string Prompt { get; set; } = ">";
 
-        [DisplayName("Color Mode")] // TODO1 probably per config
+        [DisplayName("Color Mode")] // TODOF probably per config
         [Description("Colorize Mode.")]
         [Browsable(true)]
         public ColorMode ColorMode { get; set; } = ColorMode.None;
 
-        [DisplayName("Matchers")] // TODO1 probably per config
+        [DisplayName("Matchers")] // TODOF probably per config
         [Description("All the match specs.")]
         [Browsable(true)]
         public List<Matcher> Matchers { get; set; } = [];

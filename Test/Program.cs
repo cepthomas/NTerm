@@ -7,11 +7,14 @@ using System.Diagnostics;
 using System.IO;
 using System.Windows.Forms;
 using Ephemera.NBagOfTricks.PNUT;
-using NTerm;
 using Ephemera.NBagOfTricks;
+using NTerm;
 
 
-namespace NTermTest // TODO1 fix all tests
+// TODOF fix all tests
+// TODOF test MainForm.Run() ??
+
+namespace NTermTest
 {
     static class Program
     {

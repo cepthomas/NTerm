@@ -151,7 +151,7 @@ namespace NTerm
         /// <summary>
         /// Main loop.
         /// </summary>
-        void Run() //TODO1 test??
+        void Run()
         {
             _running = true;
 
@@ -182,7 +182,7 @@ namespace NTerm
 
                             switch (le.Text, le.Ctrl, le.Alt)
                             {
-                                case (_, true, false):
+                                case (_, false, false):
                                     // Normal line, send it.
                                     //_logger.Trace($">>> got line:{le.Text}");
                                     ucmd = le.Text;
@@ -243,7 +243,7 @@ namespace NTerm
                         // Maybe poll.
                         if (_config.CommMode == CommMode.Poll)
                         {
-                            var (stat, resp) = _comm.Send(Utils.StringToBytes(""));
+                            var (stat, resp) = _comm.Send(new byte[0]);
 
                             switch (stat)
                             {

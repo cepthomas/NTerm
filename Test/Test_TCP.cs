@@ -48,7 +48,7 @@ using Ephemera.NBagOfTricks.PNUT;
 
 namespace NTermTest
 {
-    public class TCP_COMM : TestSuite // TODO1
+    public class TCP_COMM : TestSuite // TODOF
     {
         public override void RunSuite()
         {
@@ -69,7 +69,7 @@ namespace NTermTest
     }
 
 
-    // a test tcp server - or use lua one?
+    // a test tcp server
     public class Server
     {
         public static void Run(int port)
