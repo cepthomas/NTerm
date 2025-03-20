@@ -30,9 +30,16 @@ namespace NTerm
             return (OpStatus.Success, $"NullComm inited at {DateTime.Now}{Environment.NewLine}");
         }
 
-        public (OpStatus stat, string rx) Send(string? tx)
+        //public (OpStatus stat, string rx) Send(string? tx)
+        //{
+        //    return (OpStatus.Success, $"NullComm sent [{tx ?? "null"}] at {DateTime.Now}{Environment.NewLine}");
+        //}
+
+        public (OpStatus stat, byte[] rx) Send(byte[] tx)
         {
-            return (OpStatus.Success, $"NullComm sent [{tx ?? "null"}] at {DateTime.Now}{Environment.NewLine}");
+            var stx = Utils.BytesToString(tx);
+            var srx = Utils.StringToBytes($"NullComm sent [{stx}] at {DateTime.Now}{Environment.NewLine}");
+            return (OpStatus.Success, srx);
         }
 
         public void Dispose()

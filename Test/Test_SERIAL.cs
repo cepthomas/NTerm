@@ -10,9 +10,9 @@ using Ephemera.NBagOfTricks.PNUT;
 using NTerm;
 
 
-namespace NTerm.Test
+namespace NTermTest
 {
-    public class SERIAL_COMM : TestSuite
+    public class SERIAL_COMM : TestSuite // TODO1
     {
         public override void RunSuite()
         {
@@ -20,8 +20,12 @@ namespace NTerm.Test
 
             // Use ScriptStream as mock.
 
-            // UT_TRUE(invert);
-            // UT_EQUAL(color.Name, "ff7f007f");
+            MockStream ms = new();
+
+
+            var i = 99;
+            UT_TRUE(i == 99);
+            UT_EQUAL(i, 101);
 
 
         }

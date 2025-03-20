@@ -9,63 +9,26 @@ using System.Threading;
 using System.Threading.Tasks;
 using Ephemera.NBagOfTricks;
 using Ephemera.NBagOfTricks.Slog;
-using Script;
 
 
-namespace NTerm
+namespace NTermTest
 {
+    public class CommEventArgs : EventArgs
+    {
+        public byte[] TxBuff { get; set; } = new byte[0];
+        public byte[] RxBuff { get; set; } = new byte[0];
+    }
+
+
+
     /// <summary>Script flavor of stream.</summary>
     /// <see cref="Stream"/>
-    public class ScriptStream : Stream
+    public class MockStream : Stream
     {
-
-        //public (OpStatus stat, string msg) Init(Config config)
-        //{
-        //    _config = config;
-
-        //    if (_config.Args.Count != 2)
-        //    {
-        //        throw new ArgumentException($"Invalid config arguments");
-        //    }
-        //    string scriptFn = _config.Args[0];
-        //    string luaPath = _config.Args[1];
-
-        //    Interop.Log += (object? sender, LogArgs args) => _logger.Log(args.err ? LogLevel.Error : LogLevel.Info, args.msg);
-        //    _script.Run(scriptFn, luaPath);
-
-        //    OpStatus stat = OpStatus.Success;
-        //    string msg = $"ScriptComm inited at {DateTime.Now}{Environment.NewLine}";
-        //    return (stat, msg);
-        //}
-
-        //public (OpStatus stat, string rx) Send(string? tx)
-        //{
-        //    // Execute script functions.
-        //    var rx = _script.Send(tx ?? "P");
-        //    _logger.Info($"tx:{tx} rx:{rx}");
-
-        //    return (OpStatus.Success, rx); // OpStatus.NoResp?
-        //}
-
-
-
-
-
-
-
-        /// <summary>The script object.</summary>
-        readonly Interop _script = new();
-
         /// <summary>Throw this exception on next call.</summary>
         public Exception? ThrowMe { get; set; } = null;
 
-        /// <summary>Constructor.</summary>
-        /// <param name="scriptFn"></param>
-        /// <param name="luaPath"></param>
-        public ScriptStream(string scriptFn, string luaPath)
-        {
-            _script.Run(scriptFn, luaPath);
-        }
+        public event EventHandler<CommEventArgs>? CommEvent;
 
         #region Stream implementation
 
@@ -107,22 +70,22 @@ namespace NTerm
         {
             MaybeThrow();
 
-            // Ask the script.
-            var rx = _script.Send($"R{count}");
+            // Ask the host.
+            CommEvent?.Invoke(null, new());// { Category = cat, Message = msg });//
 
-            int toCopy = Math.Min(count, rx.Length);
+            //int toCopy = Math.Min(count, rx.Length);
             // Check args.
 
             //zero-based byte offset in buffer at which to begin storing the data
             //maximum number of bytes to be read from the current stream.
 
-            int i;
-            for (i = 0; i < toCopy && i < buffer.Length; i++)
-            {
-                buffer[offset + i] = (byte)rx[i];
-            }
+            //int i;
+            //for (i = 0; i < toCopy && i < buffer.Length; i++)
+            //{
+            //    buffer[offset + i] = (byte)rx[i];
+            //}
 
-            return i;
+            return 0;// i;
         }
 
         public override int ReadByte()
@@ -134,7 +97,7 @@ namespace NTerm
             // or returns -1 if at the end of the stream.
 
             // Ask the script.
-            var rx = _script.Send($"R1");
+            var rx = new byte[0];// _script.Send($"R1");
             
             return rx.Length == 0 ? -1 : rx[0];
         }
@@ -154,8 +117,8 @@ namespace NTerm
                 buff[i] = array[offset + i];
             }
 
-            var str = Encoding.Default.GetString(buff);
-            var rx = _script.Send(str);
+            var str = Utils.BytesToString(buff);
+            var rx = new byte[0];// _script.Send(str);
         }
 
         public override void WriteByte(byte value)
@@ -163,7 +126,7 @@ namespace NTerm
             MaybeThrow();
 
             var s = ((char)value).ToString();
-            var rx = _script.Send(s);
+            var rx = new byte[0];
         }
         #endregion
 

@@ -57,9 +57,9 @@ namespace NTerm
             return (stat, msg);
         }
 
-        public (OpStatus stat, string rx) Send(string? tx)
+        public (OpStatus stat, byte[] rx) Send(byte[] tx)
         {
-            return WriteAsync(tx).Result;
+            return SendAsync(tx).Result;
         }
 
         public void Dispose()
@@ -75,13 +75,12 @@ namespace NTerm
         /// <summary>
         /// Does actual work of sending/receiving.
         /// </summary>
-        /// <param name="tx"></param>
+        /// <param name="tx">What to send.</param>
         /// <returns>OpStatus and Response populated.</returns>
-        public async Task<(OpStatus stat, string rx)> WriteAsync(string? tx)
+        public async Task<(OpStatus stat, byte[] rx)> SendAsync(byte[] tx)
         {
             OpStatus stat = OpStatus.Success;
-            var rx = "";
-            _logger.Debug($"[Client] Writing request [{tx}]");
+            byte[] rx;
 
             try
             {
@@ -102,11 +101,9 @@ namespace NTerm
 
                 /////// Send ////////
                 using var stream = AltStream ?? client.GetStream();
-                // check for poll.
-                byte[] bytes = tx is null ? [POLL_REQ] : Encoding.UTF8.GetBytes(tx);
 
                 bool sendDone = false;
-                int num = bytes.Length;
+                int num = tx.Length;
                 int ind = 0;
                 
                 while (!sendDone)
@@ -117,42 +114,42 @@ namespace NTerm
                     _logger.Trace($"[Client] Sending [{tosend}]");
 
                     // If the send time-out expires, WriteAsync() throws SocketException.
-                    await stream.WriteAsync(bytes.AsMemory(ind, tosend));
+                    await stream.WriteAsync(tx);
 
                     ind += tosend;
                     sendDone = ind >= num;
                 }
 
                 /////// Receive ////////
-                List<string> parts = [];
                 bool rcvDone = false;
+                int totalRx = 0;
+                byte[] buffer = new byte[_config.BufferSize];
 
                 while (!rcvDone)
                 {
-                    // Get response.
-                    var buffer = new byte[client.ReceiveBufferSize];
+                    // Get response. If the read time-out expires, ReadAsync() throws IOException.
+                    int byteCount = await stream.ReadAsync(buffer, totalRx, _config.BufferSize - totalRx);
 
-                    // If the read time-out expires, ReadAsync() throws IOException.
-                    var byteCount = await stream.ReadAsync(buffer);
-
-                    if (byteCount > 0)
-                    {
-                        var s = Encoding.UTF8.GetString(buffer, 0, byteCount);
-                        parts.Add(s);
-                    }
-                    else
+                    if (byteCount == 0)
                     {
                         rcvDone = true;
                     }
+                    else if (totalRx >= _config.BufferSize)
+                    {
+                        rcvDone = true;
+                        _logger.Warn("TcpComm rx buffer overflow");
+                    }
                 }
 
-                rx = string.Join("", parts);
+                // Package return.
+                rx = new byte[totalRx];
+                Array.Copy(rx, 0, buffer, 0, totalRx);
 
-                _logger.Debug($"[Client] Server response was [{rx}]");
+                _logger.Trace($"[Client] Server response was [{totalRx}]");
             }
             catch (OperationCanceledException e)
             {
-                rx = "Usually connect timeout.";
+                rx = Utils.StringToBytes("Usually connect timeout.");
                 stat = OpStatus.Timeout;
                 _logger.Debug($"{e.Message}: {e}");
             }
@@ -164,12 +161,12 @@ namespace NTerm
                 if (valid.Contains(e.NativeErrorCode))
                 {
                     // Ignore and retry later.
-                    rx = "Usually send timeout.";
+                    rx = Utils.StringToBytes("Usually send timeout.");
                     stat = OpStatus.Timeout;
                 }
                 else
                 {
-                    rx = $"Hard socket error: {e.Message}";
+                    rx = Utils.StringToBytes($"Hard socket error: {e.Message}");
                     stat = OpStatus.Error;
                 }
             }
@@ -178,14 +175,14 @@ namespace NTerm
                 // Usually receive timeout.
                 // Ignore and retry later.
                 _logger.Debug($"{e.Message}: {e}");
-                rx = "Usually receive timeout.";
+                rx = Utils.StringToBytes("Usually receive timeout.");
                 stat = OpStatus.Timeout;
             }
             catch (Exception e)
             {
                 // Other errors are considered fatal.
                 _logger.Error($"Fatal error:{e}");
-                rx = $"Fatal error: {e.Message}";
+                rx = Utils.StringToBytes($"Fatal error: {e.Message}");
                 stat = OpStatus.Error;
             }
 

@@ -15,21 +15,9 @@
     </PropertyGroup>
 
     <ItemGroup>
-      <Compile Remove="ibin\**" />
-      <Compile Remove="iobj\**" />
-      <Compile Remove="_LBOT\**" />
-      <EmbeddedResource Remove="ibin\**" />
-      <EmbeddedResource Remove="iobj\**" />
-      <EmbeddedResource Remove="_LBOT\**" />
-      <None Remove="ibin\**" />
-      <None Remove="iobj\**" />
-      <None Remove="_LBOT\**" />
-    </ItemGroup>
-
-    <ItemGroup>
+        <Compile Include="..\Common.cs" Link="Common.cs" />
         <Compile Include="..\SerialComm.cs" Link="SerialComm.cs" />
         <Compile Include="..\TcpComm.cs" Link="TcpComm.cs" />
-        <Compile Include="..\Types.cs" Link="Types.cs" />
         <Compile Include="..\UserSettings.cs" Link="UserSettings.cs" />
     </ItemGroup>
 

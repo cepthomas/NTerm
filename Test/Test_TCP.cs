@@ -46,9 +46,9 @@ using Ephemera.NBagOfTricks.PNUT;
 
 
 
-namespace NTerm.Test
+namespace NTermTest
 {
-    public class TCP_COMM : TestSuite
+    public class TCP_COMM : TestSuite // TODO1
     {
         public override void RunSuite()
         {
@@ -97,7 +97,7 @@ namespace NTerm.Test
                 var rx = new byte[4096];
                 Console.WriteLine("Start receive from client");
                 var byteCount = stream.Read(rx, 0, rx.Length);
-                var request = Encoding.UTF8.GetString(rx, 0, byteCount);
+                var request = Utils.BytesToString(rx);//, 0, byteCount);
                 Console.WriteLine($"Client said [{request}]");
 
                 ////// Reply /////
@@ -125,7 +125,7 @@ namespace NTerm.Test
                         break;
                 }
 
-                byte[] bytes = Encoding.UTF8.GetBytes(tx);
+                byte[] bytes = Utils.StringToBytes(tx);
 
                 stream.Write(bytes, 0, bytes.Length);
                 Console.WriteLine($"Response {tx[..100]}");

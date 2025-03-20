@@ -16,7 +16,6 @@ using System.Windows.Forms;
 using Ephemera.NBagOfTricks;
 using Ephemera.NBagOfTricks.Slog;
 using Ephemera.NBagOfUis;
-using NTerm;
 
 
 namespace NTerm
@@ -59,12 +58,6 @@ namespace NTerm
 
         /// <summary>Ansi regex.</summary>
         readonly string _ansiPattern = @"([^\u001B]+)\u001B\[([^m)]+)m";
-
-        ///// <summary>Current ansi color.</summary>
-        //Color _ansiForeColor;
-
-        ///// <summary>Current ansi color.</summary>
-        //Color _ansiBackColor;
         #endregion
 
         #region Lifecycle
@@ -105,10 +98,14 @@ namespace NTerm
             btnSettings.Click += (_, _) => { SettingsEditor.Edit(_settings, "User Settings", 500); InitFromSettings(); };
             btnClear.Click += (_, _) => rtbOut.Clear();
             btnWrap.Click += (_, _) => rtbOut.WordWrap = btnWrap.Checked;
-            //btnDebug.Click += (_, _) => rtbOut.BackColor = Color.Pink;
+            btnDebug.Click += BtnDebug_Click;
+        }
 
-            //_ansiForeColor = rtbOut.ForeColor;
-            //_ansiBackColor = rtbOut.BackColor;
+        void BtnDebug_Click(object? sender, EventArgs e)
+        {
+            byte[] b = Utils.StringToBytes("first-line=\u001B[38mYou have freedom \u0000heart");
+            var s = Utils.BytesToString(b);
+            Print(s);
         }
 
         /// <summary>
@@ -154,7 +151,7 @@ namespace NTerm
         /// <summary>
         /// Main loop.
         /// </summary>
-        void Run()
+        void Run() //TODO1 test??
         {
             _running = true;
 
@@ -217,13 +214,13 @@ namespace NTerm
                             if (ucmd is not null)
                             {
                                 _logger.Debug($"CMD:{ucmd}");
-                                var (stat, resp) = _comm.Send(ucmd);
+                                var (stat, resp) = _comm.Send(Utils.StringToBytes(ucmd));
                                 _logger.Debug($"RSP [{stat}]:{resp}");
 
                                 switch (stat)
                                 {
                                     case OpStatus.Success:
-                                        Print(resp, false);
+                                        Print(Utils.BytesToString(resp), false);
                                         break;
 
                                     case OpStatus.Timeout:
@@ -235,7 +232,7 @@ namespace NTerm
                                         break;
 
                                     case OpStatus.Error:
-                                        Print(resp);
+                                        Print(Utils.BytesToString(resp));
                                         break;
                                 }
 
@@ -246,16 +243,16 @@ namespace NTerm
                         // Maybe poll.
                         if (_config.CommMode == CommMode.Poll)
                         {
-                            var (stat, resp) = _comm.Send(null);
+                            var (stat, resp) = _comm.Send(Utils.StringToBytes(""));
 
                             switch (stat)
                             {
                                 case OpStatus.Success:
-                                    Print(resp, false);
+                                    Print(Utils.BytesToString(resp), false);
                                     break;
 
                                 case OpStatus.Error:
-                                    Print(resp);
+                                    Print(Utils.BytesToString(resp));
                                     break;
 
                                 case OpStatus.Timeout:
@@ -426,8 +423,6 @@ namespace NTerm
 
                 // Update colors.
                 var (fg, bg) = ColorFromAnsi(match.Groups[2].Value);
-                //_ansiBackColor = bg;
-                //_ansiForeColor = fg;
                 rtbOut.BackColor = bg;
                 rtbOut.ForeColor = fg;
             }
@@ -535,12 +530,8 @@ namespace NTerm
                     CommType.Null => new NullComm(),
                     CommType.Tcp => new TcpComm(),
                     CommType.Serial => new SerialComm(),
-                    CommType.Script => new ScriptComm(),
                     _ => throw new NotImplementedException(),
                 };
-
-                // TODOF Maybe insert script for testing.
-                //_comm.AltStream = new ScriptStream("TODO_fn.lua", "TODO_LUA_PATH");
 
                 // Init and check stat.
                 var (stat, rx) = _comm.Init(_config);
@@ -709,13 +700,13 @@ namespace NTerm
 }
 
 
-////////////// Start here //////////////////
+/// <summary>Start here.</summary>
 internal static class Program
 {
     [STAThread]
     static void Main()
     {
         ApplicationConfiguration.Initialize();
-        Application.Run(new MainForm());
+        Application.Run(new NTerm.MainForm());
     }
 }

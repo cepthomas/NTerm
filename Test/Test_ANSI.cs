@@ -10,9 +10,9 @@ using Ephemera.NBagOfTricks.PNUT;
 using NTerm;
 
 
-namespace NTerm.Test
+namespace NTermTest
 {
-    public class ANSI_COLOR : TestSuite
+    public class ANSI_COLOR : TestSuite // TODO1 expand to all Print() functions.
     {
         public override void RunSuite()
         {

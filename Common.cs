@@ -12,14 +12,12 @@ namespace NTerm
     /// <summary>Supported flavors.</summary>
     public enum CommType
     {
-        /// <summary>Default comm that just echoes sent string.</summary>
+        /// <summary>Default comm that echoes sent string.</summary>
         Null,
         /// <summary>Standard TCP</summary>
         Tcp,
         /// <summary>Standard serial port</summary>
         Serial,
-        /// <summary>Test comm that uses a script as the server.</summary>
-        Script,
     }
 
     /// <summary>Supported communication flavors.</summary>
@@ -77,16 +75,34 @@ namespace NTerm
 
         /// <summary>Initialize the comm device.</summary>
         /// <param name="config">Setup info.</param>
-        /// <param name="msg">Status info.</param>
         /// <returns>Operation status, maybe error string.</returns>
         (OpStatus stat, string msg) Init(Config config);
 
-        /// <summary>Send a message to the server.</summary>
-        /// <param name="tx">What to send, null indicates a poll request</param>
+        /// <summary>Send bytes to the server.</summary>
+        /// <param name="tx">What to send, empty indicates a poll request</param>
         /// <returns>Operation status, response.</returns>
-        (OpStatus stat, string rx) Send(string? tx);
+        (OpStatus stat, byte[] rx) Send(byte[] tx);
 
         /// <summary>Clean up.</summary>
         public new void Dispose();
+    }
+
+    public class Utils
+    {
+        public static string BytesToString(byte[] buff) // TODO1 Put in nbot.
+        {
+            //var s = Encoding.Default.GetString(buff); // Use UTF8?
+
+            List<string> list = [];
+            buff.ForEach(c => { list.Add(c.IsReadable() ? ((char)c).ToString() : $"<{c:X}>"); });
+            return string.Join("", list);
+        }
+
+        public static byte[] StringToBytes(string s)
+        {
+            // Valid strings are always convertible.
+            var buff = Encoding.Default.GetBytes(s);
+            return buff;
+        }
     }
 }
