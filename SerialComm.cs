@@ -125,7 +125,7 @@ namespace NTerm
                 using var stream = AltStream ?? _serialPort.BaseStream;
 
                 /////// Send ////////
-                if (tx.Length() > 0)
+                if (tx.Length > 0)
                 {
                     bool sendDone = false;
                     int num = tx.Length;

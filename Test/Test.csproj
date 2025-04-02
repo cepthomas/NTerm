@@ -11,7 +11,7 @@
         <ImplicitUsings>disable</ImplicitUsings>
         <UseWindowsForms>true</UseWindowsForms>
         <Nullable>enable</Nullable>
-        <Platforms>x64</Platforms>
+        <!-- <Platforms>x64</Platforms> -->
     </PropertyGroup>
 
     <ItemGroup>

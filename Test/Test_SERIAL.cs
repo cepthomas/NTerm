@@ -10,7 +10,7 @@ using Ephemera.NBagOfTricks.PNUT;
 using NTerm;
 
 
-namespace NTermTest
+namespace Test
 {
     public class SERIAL_COMM : TestSuite // TODOF
     {

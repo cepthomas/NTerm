@@ -7,7 +7,7 @@ using System.Numerics;
 using System.Text;
 using Ephemera.NBagOfTricks;
 using Ephemera.NBagOfTricks.PNUT;
-
+using NTerm;
 
 
 
@@ -44,9 +44,7 @@ using Ephemera.NBagOfTricks.PNUT;
 //}
 
 
-
-
-namespace NTermTest
+namespace Test
 {
     public class TCP_COMM : TestSuite // TODOF
     {
@@ -57,14 +55,11 @@ namespace NTermTest
             // UT_TRUE(invert);
             // UT_EQUAL(color.Name, "ff7f007f");
 
-
             // if (int.TryParse(args[1], out int result))
             // {
             //     ok = true;
             //     Server.Run(result);
             // }
-
-
         }
     }
 

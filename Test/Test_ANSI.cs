@@ -10,7 +10,7 @@ using Ephemera.NBagOfTricks.PNUT;
 using NTerm;
 
 
-namespace NTermTest
+namespace Test
 {
     public class ANSI_COLOR : TestSuite // TODOF expand to all Print() functions.
     {

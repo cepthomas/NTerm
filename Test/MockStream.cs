@@ -9,17 +9,16 @@ using System.Threading;
 using System.Threading.Tasks;
 using Ephemera.NBagOfTricks;
 using Ephemera.NBagOfTricks.Slog;
+using NTerm;
 
 
-namespace NTermTest
+namespace Test
 {
     public class CommEventArgs : EventArgs
     {
-        public byte[] TxBuff { get; set; } = new byte[0];
-        public byte[] RxBuff { get; set; } = new byte[0];
+        public byte[] TxBuff { get; set; } = [];
+        public byte[] RxBuff { get; set; } = [];
     }
-
-
 
     /// <summary>Script flavor of stream.</summary>
     /// <see cref="Stream"/>
@@ -97,7 +96,7 @@ namespace NTermTest
             // or returns -1 if at the end of the stream.
 
             // Ask the script.
-            var rx = new byte[0];// _script.Send($"R1");
+            var rx = Array.Empty<byte>();// _script.Send($"R1");
             
             return rx.Length == 0 ? -1 : rx[0];
         }
@@ -109,7 +108,7 @@ namespace NTermTest
 
             // Copy from array starting at offset for count.
             int toSend = Math.Min(count, array.Length - offset);
-            byte[] buff = new byte[toSend]; 
+            byte[] buff = new byte[toSend];
             
             int i;
             for (i = 0; i < toSend && i < array.Length - offset; i++)
@@ -118,7 +117,7 @@ namespace NTermTest
             }
 
             var str = Utils.BytesToString(buff);
-            var rx = new byte[0];// _script.Send(str);
+            byte[] rx = [];// _script.Send(str);
         }
 
         public override void WriteByte(byte value)
@@ -126,7 +125,7 @@ namespace NTermTest
             MaybeThrow();
 
             var s = ((char)value).ToString();
-            var rx = new byte[0];
+            byte[] rx = [];
         }
         #endregion
 

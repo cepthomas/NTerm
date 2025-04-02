@@ -14,7 +14,7 @@ using NTerm;
 // TODOF fix all tests
 // TODOF test MainForm.Run() ??
 
-namespace NTermTest
+namespace Test
 {
     static class Program
     {
