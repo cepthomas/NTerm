@@ -28,22 +28,20 @@ namespace NTerm
         readonly SerialPort _serialPort;
         #endregion
 
-        #region IComm implementation
-        public Stream? AltStream { get; set; } = null;
-
-        //public (OpStatus stat, string msg) Init(Config config)
+        #region Lifecycle
         public SerialComm(Config config)
         {
             _config = config;
             _serialPort = new();
-            OpStatus stat;
-            string msg = "";
 
             try
             {
                 // Parse the args. "COM1 9600 E|O|N 6|7|8 0|1|1.5"
                 var parts = _config.Args;
-                stat = parts.Count == 5 ? OpStatus.Success : OpStatus.Error;
+                if (parts.Count != 5)
+                {
+                    throw new ArgumentException($"Invalid args");
+                }
 
                 var i = int.Parse(parts[0].Replace("COM", ""));
                 _serialPort.PortName = $"COM{i}";
@@ -86,13 +84,26 @@ namespace NTerm
             }
             catch (Exception e)
             {
-                msg = $"Invalid comm args - {e.Message}";
-                stat = OpStatus.Error;
+                var  msg = $"Invalid comm args - {e.Message}";
                 throw new ArgumentException(msg);
             }
-
-        //    return (stat, msg);
         }
+
+        //// if the serial port is unexpectedly closed, throw an exception
+        //if (!_serialPort.IsOpen)
+        //{
+        //    throw new IOException();
+        //}
+
+        public void Dispose()
+        {
+            _serialPort.Close();
+            _serialPort.Dispose();
+        }
+        #endregion
+
+        #region IComm implementation
+        public Stream? AltStream { get; set; } = null;
 
         public (OpStatus stat, string msg) Send(string data)
         {
@@ -140,12 +151,6 @@ namespace NTerm
                 var rx = new byte[_config!.BufferSize];
                 int byteCount = stream.Read(rx, 0, _config.BufferSize);
                 data = Utils.BytesToString(rx);
-
-                //// if the serial port is unexpectedly closed, throw an exception
-                //if (!_serialPort.IsOpen)
-                //{
-                //    throw new IOException();
-                //}
             }
             catch (Exception e)
             {
@@ -160,14 +165,7 @@ namespace NTerm
 
         public void Reset()
         {
-
         }        
-
-        public void Dispose()
-        {
-            _serialPort.Close();
-            _serialPort.Dispose();
-        }
         #endregion
     }
 }

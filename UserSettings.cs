@@ -57,9 +57,6 @@ namespace NTerm
         [Browsable(true)]
         [JsonConverter(typeof(JsonStringEnumConverter))]
         public LogLevel NotifLogLevel { get; set; } = LogLevel.Info;
-
-        #region Properties - internal
-        #endregion
     }
 
     /// <summary>What are we doing today?</summary>
@@ -98,21 +95,10 @@ namespace NTerm
         [Editor(typeof(StringListEditor), typeof(UITypeEditor))]
         public List<string> HotKeys { get; set; } = [];
 
-        //[DisplayName("Color Mode")]
-        //[Description("Colorize Mode.")]
-        //[Browsable(true)]
-        //[JsonConverter(typeof(JsonStringEnumConverter))]
-        //public ColorMode ColorMode { get; set; } = ColorMode.None;
-
         [DisplayName("Matchers")]
         [Description("All the match specs.")]
         [Browsable(true)]
         public List<Matcher> Matchers { get; set; } = [];
-
-        #region Properties - internal
-        [Browsable(false)]
-        public uint Id { get; private set; } = (uint)Guid.NewGuid().GetHashCode();
-        #endregion
     }
 
     /// <summary>Spec for one phrase match.</summary>
@@ -138,13 +124,13 @@ namespace NTerm
         [Description("Optional color")]
         [Browsable(true)]
         [JsonConverter(typeof(JsonStringEnumConverter))]
-        public ConsoleColor ForeColor { get; set; } = ConsoleColor.White; // TODO support default/none - special editor, maybe color.
+        public ConsoleColorEx ForeColor { get; set; } = ConsoleColorEx.None;
 
         [DisplayName("Back Color")]
         [Description("Optional color")]
         [Browsable(true)]
         [JsonConverter(typeof(JsonStringEnumConverter))]
-        public ConsoleColor BackColor { get; set; } = ConsoleColor.Black;
+        public ConsoleColorEx BackColor { get; set; } = ConsoleColorEx.None;
     }
 
     /// <summary>Converter for providing property options.</summary>

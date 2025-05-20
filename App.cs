@@ -45,6 +45,13 @@ namespace NTerm
         readonly ConcurrentQueue<string> _qCommRead = new();
         #endregion
 
+        // Human polling time in msec.
+        readonly int loop_time = 50;
+        // Server must reply to client in msec or it's considered dead.
+        readonly int server_response_time = 200;  // 100?
+        // Last command time. Non zero implies waiting for a response.
+        long sendts = 0;
+
         #region Lifecycle
         /// <summary>
         /// Build me one.
@@ -81,16 +88,6 @@ namespace NTerm
             _comm = null;
         }
         #endregion
-
-
-        // Human polling time in msec.
-        int loop_time = 50;
-        // Server must reply to client in msec or it's considered dead.
-        int server_response_time = 200;  // 100?
-        // Last command time. Non zero implies waiting for a response.
-        long sendts = 0;
-
-
 
         #region Main loop
         /// <summary>
@@ -129,7 +126,7 @@ namespace NTerm
                                 InitFromSettings();
                                 break;
 
-                            case "h":
+                            case "?":
                                 Help();
                                 break;
 
@@ -141,8 +138,8 @@ namespace NTerm
                     else
                     {
                         // Measure round trip for timeout.
-                        sendts = get_current_msec();
-                        var res = _comm.Send(le.Text); // do something?
+                        sendts = GetCurrentMsec();
+                        var (stat, msg) = _comm.Send(le.Text); // do something?
                     }
                 }
 
@@ -172,10 +169,10 @@ namespace NTerm
                     except TimeoutError:
                         # Nothing to read.
                         timed_out = True
-                        self.reset()
+                        Reset()
                     except ConnectionError:
                         # Server disconnected.
-                        self.reset()
+                        Reset()
                     except Exception as e:
                         # Other unexpected errors.
                         self.do_error(e)
@@ -187,7 +184,7 @@ namespace NTerm
                 //    dur = get_current_msec() - self.sendts
                 //    if dur > self.server_response_time:
                 //        self.do_info('Server not listening')
-                //        self.reset()
+                //        Reset()
 
                 // ##### If there was no timeout, delay a bit. #####
                 int slp = timed_out ? loop_time : 0;
@@ -201,14 +198,14 @@ namespace NTerm
         }
         #endregion
 
-        long get_current_msec()
+        long GetCurrentMsec()
         {
             long tick = Stopwatch.GetTimestamp();
             long msec = 1000 * tick / Stopwatch.Frequency;
             return msec;
         }
 
-        void reset()
+        void Reset()
         {
             _comm?.Reset();
 
@@ -307,8 +304,6 @@ namespace NTerm
             }
         }
 
-
-
         #region Output text
         /// <summary>
         /// Write to console.
@@ -358,37 +353,14 @@ namespace NTerm
             }
 
             // Local function.
-            void DoOneMatch(Matcher m)
+            static void DoOneMatch(Matcher m)
             {
-                //if (m.ForeColor is not null) { Console.ForegroundColor = (ConsoleColor)m.ForeColor; }
-                //if (m.BackColor is not null) { Console.BackgroundColor = (ConsoleColor)m.BackColor; }
-                Console.ForegroundColor = m.ForeColor;
-                Console.BackgroundColor = m.BackColor;
+                if (m.ForeColor is not ConsoleColorEx.None) { Console.ForegroundColor = (ConsoleColor)m.ForeColor; }
+                if (m.BackColor is not ConsoleColorEx.None) { Console.BackgroundColor = (ConsoleColor)m.BackColor; }
                 Console.Write(m.Text);
                 Console.ResetColor();
            }
         }
-
-        // /// <summary>
-        // /// 
-        // /// </summary>
-        // /// <param name="text"></param>
-        // bool WritePlain(string text)
-        // {
-        //     Console.Write(text);
-        //     return true;
-        // }
-
-        // /// <summary>
-        // /// 
-        // /// </summary>
-        // /// <param name="text"></param>
-        // bool WriteAnsi(string text)
-        // {
-        //     Console.Write(text);
-        //     return true;
-        // }
-
         #endregion
 
         #region Settings
@@ -430,7 +402,6 @@ namespace NTerm
                     //stat = OpStatus.Error;
                     //throw new ArgumentException(msg);
                 }
-
 
                 // Init and check stat.
                 //var (stat, msg) = _comm.Init(_config); // do something...
@@ -486,25 +457,6 @@ namespace NTerm
             }
 
             return match;
-
-            // switch (_config.HotKeyMod,
-            //     (key.Modifiers & ConsoleModifiers.Control) != ConsoleModifiers.Control,
-            //     (key.Modifiers & ConsoleModifiers.Alt) != ConsoleModifiers.Alt,
-            //     (key.Modifiers & ConsoleModifiers.Shift) != ConsoleModifiers.Shift)
-            // {
-            //     case (KeyMod.Ctrl, true, false, false):
-            //     case (KeyMod.Alt, false, true, false):
-            //     case (KeyMod.Shift, false, false, true):
-            //         _qCli.Enqueue(new(_hotKeys[key.KeyChar]));
-            //         break;
-
-            //     default:
-            //         // Get the rest - blocks.
-            //         var rest = Console.ReadLine();
-            //         _qCli.Enqueue(new(key + rest));
-            //         break;
-            // }
-
         }
 
         void Help()

@@ -16,19 +16,21 @@ namespace NTerm
     public class NullComm : IComm
     {
         #region Fields
-        //readonly Logger _logger = LogManager.CreateLogger("NUL");
-        //Config _config = new();
         int _count = 0;
         #endregion
 
-        #region IComm implementation
-        public Stream? AltStream { get; set; } = null;
+        public void Dispose()
+        {
+        }
 
-        public NullComm(Config config)
         //public (OpStatus stat, string msg) Init(Config config)
+        public NullComm(Config config)
         {
             //return (OpStatus.Success, $"NullComm inited at {DateTime.Now}");
         }
+
+        #region IComm implementation
+        public Stream? AltStream { get; set; } = null;
 
         public (OpStatus stat, string msg) Send(string data)
         {
@@ -45,12 +47,7 @@ namespace NTerm
 
         public void Reset()
         {
-
         }        
-
-        public void Dispose()
-        {
-        }
         #endregion
     }
 }

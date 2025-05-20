@@ -19,23 +19,15 @@ namespace NTerm
     {
         #region Fields
         readonly Logger _logger = LogManager.CreateLogger("TCP");
-        Config _config = new();// = null;
-        TcpClient _client = new();// = null;
-        string _host = "???";
-        int _port = 0;
+        Config _config;
+        TcpClient _client;
+        string _host;
+        int _port;
         #endregion
 
-
-
-        #region IComm implementation
-        public Stream? AltStream { get; set; } = null;
-
-        //public (OpStatus stat, string msg) Init(Config config)
+        #region Lifecycle
         public TcpComm(Config config)
         {
-            OpStatus stat;
-            string msg = "";
-
             try
             {
                 _config = config;
@@ -44,35 +36,16 @@ namespace NTerm
 
                 // Parse the args. "127.0.0.1 59120"
                 var parts = _config.Args;
-                stat = parts.Count == 2 ? OpStatus.Success : OpStatus.Error;
+                if (parts.Count != 2)
+                {
+                    throw new ArgumentException($"Invalid args");
+                }
 
                 _host = parts[0];
                 _port = int.Parse(parts[1]);
 
                 IPEndPoint ipEndPoint = new(IPAddress.Parse(_host), _port);
 
-                //TcpClient()
-                //This constructor creates a new TcpClient and allows the underlying service provider to assign the most
-                //appropriate local IP address and port number. You must first call the Connect method before sending
-                //and receiving data.
-
-                //TcpClient(IPEndPoint)
-                //This constructor creates a new TcpClient and binds it to the IPEndPoint specified by the localEP parameter.
-                //Before you call this constructor, you must create an IPEndPoint using the IP address and port number from which
-                //you intend to send and receive data. You do not need to specify a local IP address and port number
-                //before connecting and communicating. If you create a TcpClient using any other constructor, the underlying
-                //service provider will assign the most appropriate local IP address and port number.
-                //You must call the Connect method before sending and receiving data.
-
-                //TcpClient(String, Int32)
-                //This constructor creates a new TcpClient and makes a synchronous connection attempt to the provided
-                //host name and port number. The underlying service provider will assign the most appropriate local
-                //IP address and port number. TcpClient will block until it either connects or fails. This constructor
-                //allows you to initialize, resolve the DNS host name, and connect in one convenient step.
-
-
-                //_client = new TcpClient(ipEndPoint)
-                //_client = new TcpClient(_host, _port)
                 _client = new TcpClient()
                 {
                     // Set some properties.
@@ -84,83 +57,21 @@ namespace NTerm
             }
             catch (Exception e)
             {
-                msg = $"Invalid comm args - {e.Message}";
-                stat = OpStatus.Error;
+                var msg = $"Invalid comm args - {e.Message}";
                 throw new ArgumentException(msg);
             }
-
-            //return (stat, msg);
         }
 
-        // public (OpStatus stat, string msg) Init(Config config)
-        // {
-        //     _config = config;
-        //     OpStatus stat;
-        //     string msg = "";
-        //     // Just in case.
-        //     Dispose();
+        public void Dispose()
+        {
+            _client?.Close();
+            _client?.Dispose();
+            _client = null;
+        }
+        #endregion
 
-        //     try
-        //     {
-        //         // Parse the args. "127.0.0.1 59120"
-        //         var parts = _config.Args;
-        //         stat = parts.Count == 2 ? OpStatus.Success : OpStatus.Error;
-
-        //         _host = parts[0];
-        //         _port = int.Parse(parts[11]);
-
-        //         IPEndPoint ipEndPoint = new(IPAddress.Parse(_host), _port);
-
-        //         //TcpClient()
-        //         //This constructor creates a new TcpClient and allows the underlying service provider to assign the most
-        //         //appropriate local IP address and port number. You must first call the Connect method before sending
-        //         //and receiving data.
-
-        //         //TcpClient(IPEndPoint)
-        //         //This constructor creates a new TcpClient and binds it to the IPEndPoint specified by the localEP parameter.
-        //         //Before you call this constructor, you must create an IPEndPoint using the IP address and port number from which
-        //         //you intend to send and receive data. You do not need to specify a local IP address and port number
-        //         //before connecting and communicating. If you create a TcpClient using any other constructor, the underlying
-        //         //service provider will assign the most appropriate local IP address and port number.
-        //         //You must call the Connect method before sending and receiving data.
-
-        //         //TcpClient(String, Int32)
-        //         //This constructor creates a new TcpClient and makes a synchronous connection attempt to the provided
-        //         //host name and port number. The underlying service provider will assign the most appropriate local
-        //         //IP address and port number. TcpClient will block until it either connects or fails. This constructor
-        //         //allows you to initialize, resolve the DNS host name, and connect in one convenient step.
-
-        //         _client = new TcpClient()
-        //         //_client = new TcpClient(ipEndPoint)
-        //         //_client = new TcpClient(_host, _port)
-        //         {
-        //             // Set some properties.
-        //             SendTimeout = _config.ResponseTime,
-        //             ReceiveTimeout = _config.ResponseTime,
-        //             SendBufferSize = _config.BufferSize,
-        //             ReceiveBufferSize = _config.BufferSize
-        //         };
-
-        //         //_logger.Debug("[Client] Try connecting to server");
-        //         //_client.Connect(_host, _port);
-        //         ////var cts = new CancellationTokenSource(TimeSpan.FromMilliseconds(_config.ResponseTime));
-        //         ////await client.ConnectAsync(_host, _port, cts.Token);
-        //         //_logger.Debug("[Client] Connected to server");
-        //     }
-        //     catch (Exception ex)
-        //     {
-        //         //var t = ex.GetType();
-        //         //msg = $"{ex.Message}  --- Invalid comm args";
-        //         //stat = OpStatus.Error;
-        //         //Dispose();
-
-        //         var res = ProcessException(ex);
-        //         msg = res.msg;
-        //         stat = res.stat;
-        //     }
-
-        //     return (stat, msg);
-        // }
+        #region IComm implementation
+        public Stream? AltStream { get; set; } = null;
 
         public (OpStatus stat, string msg) Send(string data)
         {
@@ -260,7 +171,7 @@ namespace NTerm
             return (stat, msg, data);
         }
 
-        void Reset()
+        public void Reset()
         {
             // Reset comms, resource management.
             _client.Close();
@@ -269,10 +180,10 @@ namespace NTerm
             // // # Clear queue.
             // while not _qCli.empty():
             //     _qCli.get()
-        }        
+        }
         #endregion
 
-
+        #region Private stuff
         OpStatus EnsureConnect()
         {
             var stat = OpStatus.Success;
@@ -359,18 +270,7 @@ namespace NTerm
 
             return stat;
         }
-
-        public void Dispose()
-        {
-            _client?.Close();
-            _client?.Dispose();
-            _client = null;
-        }
-
-        void IComm.Reset()
-        {
-            Reset();
-        }
+        #endregion
     }
 }
 

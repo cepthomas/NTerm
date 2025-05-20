@@ -30,6 +30,11 @@
   </ItemGroup>
 
   <ItemGroup>
+    <None Remove="logic.py" />
+    <None Remove="NTerm.zip" />
+  </ItemGroup>
+
+  <ItemGroup>
     <Content Include="cucaracha.ico" />
   </ItemGroup>
 
