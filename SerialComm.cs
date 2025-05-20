@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.IO;
 using System.IO.Ports;
 using System.Linq;
@@ -19,20 +20,22 @@ namespace NTerm
 {
     /// <summary>Serial port comm.</summary>
     /// <see cref="IComm"/>
-    public class SerialComm : IComm // TODOF needs debug with hardware.
+    public class SerialComm : IComm // TODO needs debug with hardware.
     {
         #region Fields
         readonly Logger _logger = LogManager.CreateLogger("SER");
-        Config _config = new();
-        readonly public SerialPort _serialPort = new();
+        Config _config;
+        readonly SerialPort _serialPort;
         #endregion
 
         #region IComm implementation
         public Stream? AltStream { get; set; } = null;
 
-        public (OpStatus stat, string msg) Init(Config config)
+        //public (OpStatus stat, string msg) Init(Config config)
+        public SerialComm(Config config)
         {
             _config = config;
+            _serialPort = new();
             OpStatus stat;
             string msg = "";
 
@@ -76,129 +79,95 @@ namespace NTerm
                 _serialPort.WriteBufferSize = _config.BufferSize;
                 _serialPort.ReadTimeout = _config.ResponseTime;
                 _serialPort.WriteTimeout = _config.ResponseTime;
-                // Handshake
+                // _serialPort.Handshake
 
-                // Test args by creating client.
+                // Test args by opening.
                 _serialPort.Open();
             }
-            catch (Exception)
+            catch (Exception e)
             {
-                msg = "Invalid comm args";
+                msg = $"Invalid comm args - {e.Message}";
+                stat = OpStatus.Error;
+                throw new ArgumentException(msg);
+            }
+
+        //    return (stat, msg);
+        }
+
+        public (OpStatus stat, string msg) Send(string data)
+        {
+            OpStatus stat = OpStatus.Success;
+            string msg = "";
+
+            try
+            {
+                if (!_serialPort.IsOpen)
+                {
+                    throw new InvalidOperationException("Serial port is not open");
+                }
+
+                using var stream = AltStream ?? _serialPort.BaseStream;
+                _logger.Debug($"[Client] Sending [{data.Length}]");
+                stream.Write(Utils.StringToBytes(data));
+                msg = "SerialComm sent";
+            }
+            catch (Exception e)
+            {
+                _logger.Error($"Fatal error:{e}");
+                msg = $"Fatal error: {e.Message}";
                 stat = OpStatus.Error;
             }
 
             return (stat, msg);
         }
 
-        public (OpStatus stat, byte[] rx) Send(byte[] tx)
-        {
-            return SendAsync(tx).Result;
-        }
-
-        public void Dispose()
-        {
-            _serialPort?.Close();
-            _serialPort?.Dispose();
-            AltStream?.Dispose();
-            AltStream = null;
-        }
-        #endregion
-
-        /// <summary>
-        /// Does actual work of sending/receiving.
-        /// </summary>
-        /// <param name="tx">What to send. If simple poll request, this will be empty.</param>
-        /// <returns>OpStatus and Response populated.</returns>
-        public async Task<(OpStatus stat, byte[] rx)> SendAsync(byte[] tx)
+        public (OpStatus stat, string msg, string data) Receive()
         {
             OpStatus stat = OpStatus.Success;
-            byte[] rx;
+            string msg = "";
+            string data = "";
 
             try
             {
-                if (_serialPort is null)
+                if (!_serialPort.IsOpen)
                 {
-                    //_logger.Error($"Serial port is not open");
-                    return (OpStatus.Error, Utils.StringToBytes("Serial port is not open"));
+                    throw new InvalidOperationException("Serial port is not open");
                 }
 
                 using var stream = AltStream ?? _serialPort.BaseStream;
 
-                /////// Send ////////
-                if (tx.Length > 0)
-                {
-                    bool sendDone = false;
-                    int num = tx.Length;
-                    int ind = 0;
+                // Get response.
+                var rx = new byte[_config!.BufferSize];
+                int byteCount = stream.Read(rx, 0, _config.BufferSize);
+                data = Utils.BytesToString(rx);
 
-                    while (!sendDone)
-                    {
-                        // Do a chunk.
-                        int tosend = num - ind >= _serialPort.WriteBufferSize ? _serialPort.WriteBufferSize : num - ind;
-                        _logger.Debug($"[Client] Sending [{tosend}]");
-
-                        await stream.WriteAsync(tx);
-
-                        ind += tosend;
-                        sendDone = ind >= num;
-                    }
-                }
-
-                /////// Receive ////////
-                bool rcvDone = false;
-                int totalRx = 0;
-                byte[] buffer = new byte[_config.BufferSize];
-
-                while (!rcvDone)
-                {
-                    // Get response.
-                    int byteCount = await stream.ReadAsync(buffer, totalRx, _config.BufferSize - totalRx);
-
-                    if (byteCount == 0)
-                    {
-                        rcvDone = true;
-                    }
-                    else if (totalRx >= _config.BufferSize)
-                    {
-                        rcvDone = true;
-                        _logger.Warn("SerialComm rx buffer overflow");
-                    }
-                }
-
-                // Package return.
-                rx = new byte[totalRx];
-
-                if (totalRx > 0)
-                {
-                    Array.Copy(rx, 0, buffer, 0, totalRx);
-                    _logger.Trace($"[Client] Server response was [{totalRx}]");
-                }
-                else
-                {
-                    stat = OpStatus.NoResp;
-                }
-                // if the serial port is unexpectedly closed, throw an exception
-                if (!_serialPort.IsOpen)
-                {
-                    throw new IOException();
-                }
-            }
-            catch (TimeoutException e)
-            {
-                // Ignore and retry later.
-                _logger.Debug($"{e.Message}: {e}");
-                rx = Utils.StringToBytes("Usually receive timeout.");
-                stat = OpStatus.Timeout;
+                //// if the serial port is unexpectedly closed, throw an exception
+                //if (!_serialPort.IsOpen)
+                //{
+                //    throw new IOException();
+                //}
             }
             catch (Exception e)
             {
-                // Other errors are considered fatal.
+                // Other errors are considered fatal. ?? IOException
                 _logger.Error($"Fatal error:{e}");
-                rx = Utils.StringToBytes($"Fatal error: {e.Message}");
+                msg = $"Fatal error: {e.Message}";
                 stat = OpStatus.Error;
             }
 
-            return (stat, rx);
+            return (stat, msg, data);
         }
+
+        public void Reset()
+        {
+
+        }        
+
+        public void Dispose()
+        {
+            _serialPort.Close();
+            _serialPort.Dispose();
+        }
+        #endregion
     }
 }

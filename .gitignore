@@ -404,3 +404,4 @@ ibin/
 iobj/
 /Script
 test_out.txt
+/Test/*.json

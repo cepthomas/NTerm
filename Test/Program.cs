@@ -9,62 +9,54 @@ using System.Windows.Forms;
 using Ephemera.NBagOfTricks.PNUT;
 using Ephemera.NBagOfTricks;
 using NTerm;
+using Ephemera.NBagOfUis;
 
 
-// TODOF fix all tests
-// TODOF test MainForm.Run() ??
+// TODO fix all tests
+
 
 namespace Test
 {
     static class Program
     {
-        /// <summary>
-        /// The main entry point for the application.
-        /// </summary>
-        [STAThread]
-        static void Main(string[] _)
+        static void Main(string[] args)
         {
-            // Run pnut tests from cmd line.
-            TestRunner runner = new(OutputFormat.Readable);
-            //var cases = new[] { "ANSI" };
-            var cases = new[] { "ANSI", "SER", "TCP" };
-            runner.RunSuites(cases);
-            File.WriteAllLines(Path.Join(MiscUtils.GetSourcePath(), "test_out.txt"), runner.Context.OutputLines);
+            UserSettings ss = (UserSettings)SettingsCore.Load(MiscUtils.GetSourcePath(), typeof(UserSettings), "fake_settings.json");
+
+            Console.WriteLine("Hello, Test!");
+
+            //FakeSettings();
+
+            Server.Run(int.Parse(ss.Configs[0].Args[1]));
         }
+
 
         static void FakeSettings()
         {
-            UserSettings ss = (UserSettings)SettingsCore.Load(".", typeof(UserSettings), "fake_settings.json");
-            ss.Configs.Clear();
+            //UserSettings ss = (UserSettings)SettingsCore.Load(MiscUtils.GetSourcePath(), typeof(UserSettings), "fake_settings.json");
+            //ss.Configs.Clear();
 
-            //var appDir = MiscUtils.GetAppDataDir("NTerm", "Ephemera");
-            //_settings = (UserSettings)SettingsCore.Load(appDir, typeof(UserSettings));
-            //public static object Load(string dir, Type t, string fn = "settings.json")
+            //ss.Prompt = ">>>";
 
-            //Random rnd = new();
+            //for (int i = 0; i < 5; i++)
+            //{
+            //    var c = new Config()
+            //    {
+            //        Name = $"config{i}",
+            //        Args = [$"a{i}", $"b{i}", $"c{i}"]
+            //    };
 
-            //ss.Prompt = "!!!";
+            //    c.HotKeys.Add($"x=bla bla");
+            //    c.HotKeys.Add($"y=foo bar");
+            //    c.HotKeys.Add($"z=bleep bloop blop");
 
-            for (int i = 0; i < 5; i++)
-            {
-                var c = new Config()
-                {
-                    Name = $"config{i}",
-                    Args = [$"a{i}", $"b{i}", $"c{i}"]
-                };
+            //    ss.Configs.Add(c);
+            //}
 
-                c.HotKeys.Add($"x=bla bla");
-                c.HotKeys.Add($"y=foo bar");
-                c.HotKeys.Add($"z=bleep bloop blop");
+            //ss.CurrentConfig = "";
 
-                ss.Configs.Add(c);
-            }
-
-            ss.CurrentConfig = "";
-            //var ed = new Editor() { Settings = ss };
-            //ed.ShowDialog();
-            ss.Save();
-            //LoadSettings();
+            //var eds = SettingsEditor.Edit(ss, "Fake", 500);
+            //ss.Save();
         }
     }
 }
