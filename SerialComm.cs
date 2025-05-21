@@ -16,6 +16,9 @@ using Ephemera.NBagOfTricks;
 using Ephemera.NBagOfTricks.Slog;
 
 
+// https://learn.microsoft.com/en-us/dotnet/api/system.io.ports.serialport
+
+
 namespace NTerm
 {
     /// <summary>Serial port comm.</summary>
@@ -36,12 +39,8 @@ namespace NTerm
 
             try
             {
-                // Parse the args. "COM1 9600 E|O|N 6|7|8 0|1|1.5"
+                // Parse the args: "COM1 9600 E|O|N 6|7|8 0|1|1.5"
                 var parts = _config.Args;
-                if (parts.Count != 5)
-                {
-                    throw new ArgumentException($"Invalid args");
-                }
 
                 var i = int.Parse(parts[0].Replace("COM", ""));
                 _serialPort.PortName = $"COM{i}";
@@ -77,23 +76,14 @@ namespace NTerm
                 _serialPort.WriteBufferSize = _config.BufferSize;
                 _serialPort.ReadTimeout = _config.ResponseTime;
                 _serialPort.WriteTimeout = _config.ResponseTime;
-                // _serialPort.Handshake
-
-                // Test args by opening.
-                _serialPort.Open();
+                // _serialPort.Handshake?
             }
             catch (Exception e)
             {
-                var  msg = $"Invalid comm args - {e.Message}";
+                var msg = $"Invalid args: {e.Message}";
                 throw new ArgumentException(msg);
             }
         }
-
-        //// if the serial port is unexpectedly closed, throw an exception
-        //if (!_serialPort.IsOpen)
-        //{
-        //    throw new IOException();
-        //}
 
         public void Dispose()
         {
@@ -112,21 +102,19 @@ namespace NTerm
 
             try
             {
-                if (!_serialPort.IsOpen)
-                {
-                    throw new InvalidOperationException("Serial port is not open");
-                }
+                stat = EnsureConnect();
 
-                using var stream = AltStream ?? _serialPort.BaseStream;
-                _logger.Debug($"[Client] Sending [{data.Length}]");
-                stream.Write(Utils.StringToBytes(data));
-                msg = "SerialComm sent";
+                if (stat == OpStatus.Success)
+                {
+                    using var stream = AltStream ?? _serialPort.BaseStream;
+                    _logger.Debug($"[Client] Sending [{data.Length}]");
+                    stream.Write(Utils.StringToBytes(data));
+                    msg = "SerialComm sent";
+                }
             }
             catch (Exception e)
             {
-                _logger.Error($"Fatal error:{e}");
-                msg = $"Fatal error: {e.Message}";
-                stat = OpStatus.Error;
+                stat = ProcessException(e);
             }
 
             return (stat, msg);
@@ -140,24 +128,21 @@ namespace NTerm
 
             try
             {
-                if (!_serialPort.IsOpen)
+                stat = EnsureConnect();
+
+                if (stat == OpStatus.Success)
                 {
-                    throw new InvalidOperationException("Serial port is not open");
+                    using var stream = AltStream ?? _serialPort.BaseStream;
+
+                    // Get response.
+                    var rx = new byte[_config!.BufferSize];
+                    int byteCount = stream.Read(rx, 0, _config.BufferSize);
+                    data = Utils.BytesToString(rx);
                 }
-
-                using var stream = AltStream ?? _serialPort.BaseStream;
-
-                // Get response.
-                var rx = new byte[_config!.BufferSize];
-                int byteCount = stream.Read(rx, 0, _config.BufferSize);
-                data = Utils.BytesToString(rx);
             }
             catch (Exception e)
             {
-                // Other errors are considered fatal. ?? IOException
-                _logger.Error($"Fatal error:{e}");
-                msg = $"Fatal error: {e.Message}";
-                stat = OpStatus.Error;
+                stat = ProcessException(e);
             }
 
             return (stat, msg, data);
@@ -166,6 +151,42 @@ namespace NTerm
         public void Reset()
         {
         }        
+        #endregion
+
+
+        #region Private stuff
+        OpStatus EnsureConnect()
+        {
+            var stat = OpStatus.Success;
+            if (!_serialPort.IsOpen)
+            {
+                try
+                {
+                    _serialPort.Open();
+                }
+                catch (Exception e)
+                {
+                    stat = ProcessException(e);
+                }
+            }
+
+            return stat;
+        }
+
+        OpStatus ProcessException(Exception e)
+        {
+            OpStatus stat;
+            switch (e)
+            {
+                default:
+                    // Other errors are considered fatal.
+                    stat = OpStatus.Error;
+                    _logger.Error($"Fatal exception: {e}");
+                    break;
+            }
+
+            return stat;
+        }
         #endregion
     }
 }

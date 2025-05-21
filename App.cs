@@ -41,36 +41,40 @@ namespace NTerm
         /// <summary>Cli event queue.</summary>
         readonly ConcurrentQueue<CliInput> _qCli = new();
 
-        /// <summary>Comm read queue.</summary>
-        readonly ConcurrentQueue<string> _qCommRead = new();
+        /// <summary>For timing measurements.</summary>
+        long _startMsec;
         #endregion
 
-        // Human polling time in msec.
-        readonly int loop_time = 50;
-        // Server must reply to client in msec or it's considered dead.
-        readonly int server_response_time = 200;  // 100?
-        // Last command time. Non zero implies waiting for a response.
-        long sendts = 0;
+
+
+
+        // // Human polling time in msec.
+        // readonly int loop_time = 50;
+        // // Server must reply to client in msec or it's considered dead.
+        // readonly int server_response_time = 200;  // 100?
+        // // Last command time. Non zero implies waiting for a response.
+        // long sendts = 0;
+
+
 
         #region Lifecycle
-        /// <summary>
-        /// Build me one.
-        /// </summary>
+        /// <summary>Build me one.</summary>
         public App()
         {
+            GetCurrentMsec(true);
+
             // Set up log first.
             var appDir = MiscUtils.GetAppDataDir("NTerm", "Ephemera");
             var logFileName = Path.Combine(appDir, "log.txt");
             LogManager.Run(logFileName, 50000);
             LogManager.LogMessage += (object? sender, LogMessageEventArgs e) => Write($"{e.Message}");
-            // LogManager.LogMessage += (object? sender, LogMessageEventArgs e) => Write($"{e.Level} {e.Message}");
             _settings = (UserSettings)SettingsCore.Load(appDir, typeof(UserSettings));
 
             InitFromSettings();
 
             if (_config is not null)
             {
-                Run();
+                Run(); // forever
             }
 
             // All done.
@@ -98,14 +102,14 @@ namespace NTerm
             // TODO write prompt somewhere/when?
 
             // TODO sanity check.
-            Write(">>>[38;2;204;39;187mYou have freedom here[0m.\n<NL> The only guide\r\n<CR><NL> is your heart.");
+            Write(">>>[38;2;204;39;187mYou have freedom here[0m.\n<NL>The only guide\r\n<CR><NL>is your heart.");
 
             CancellationTokenSource ts = new();
 
             Task taskKeyboard = Task.Run(() => DoKeyboard(ts.Token));
-            Task taskRead = Task.Run(() => DoRead(ts.Token));
+            // Task taskRead = Task.Run(() => DoRead(ts.Token));
 
-            bool timed_out = false;
+            bool timedOut = false;
 
             while (!ts.Token.IsCancellationRequested)
             {
@@ -122,7 +126,8 @@ namespace NTerm
                                 break;
 
                             case "s":
-                                var res = SettingsEditor.Edit(_settings, "NTerm", 120);
+                                /*var eds =*/
+                                SettingsEditor.Edit(_settings, "NTerm", 120);
                                 InitFromSettings();
                                 break;
 
@@ -138,18 +143,53 @@ namespace NTerm
                     else
                     {
                         // Measure round trip for timeout.
-                        sendts = GetCurrentMsec();
-                        var (stat, msg) = _comm.Send(le.Text); // do something?
+                        //sendts = GetCurrentMsec();
+                        var sres = _comm.Send(le.Text); // do something?
+                        switch (sres.stat)
+                        {
+                            case OpStatus.Success:
+                                break;
+
+                            case OpStatus.Error:
+                                _logger.Error($"Comm.Send() error [{sres.msg}]");
+                                break;
+
+                            case OpStatus.Timeout:
+                                timedOut = true;
+                                break;
+                        }
+
                     }
                 }
 
                 //=========== Comm input? ============//
-                if (_qCommRead.TryDequeue(out string data))
+                var rres = _comm.Receive();
+
+                switch (rres.stat)
                 {
-                    // TODO Fix line endings??
-                    // data = data.Replace("\n", "\r\n").Replace("\r\r", "");
-                    Write(data);
+                    case OpStatus.Success:
+                        Write(rres.data);
+                        break;
+
+                    case OpStatus.Error:
+                        _logger.Error($"Comm.Receive() error [{rres.msg}]");
+                        break;
+
+                    case OpStatus.Timeout:
+                        timedOut = true;
+                        break;
                 }
+
+
+
+
+                // if (_qCommRead.TryDequeue(out string data))
+                // {
+                //     // TODO Fix line endings??
+                //     // data = data.Replace("\n", "\r\n").Replace("\r\r", "");
+                //     Write(data);
+                // }
+
                 /*/ ##### Get any server responses. #####
                 if self.commif is not None:
                     try:
@@ -179,38 +219,44 @@ namespace NTerm
                 */
 
 
-                //// ##### Check for server not responding but still connected. #####
+                // Check for server not responding but still connected.
                 //if self.commif is not None and self.sendts > 0:
                 //    dur = get_current_msec() - self.sendts
                 //    if dur > self.server_response_time:
                 //        self.do_info('Server not listening')
                 //        Reset()
 
-                // ##### If there was no timeout, delay a bit. #####
-                int slp = timed_out ? loop_time : 0;
-                Thread.Sleep(slp);
+                // If there was no timeout, delay a bit.
+                Thread.Sleep(10);
+                //if (!timedOut) Thread.Sleep(10);
             }
 
             // All done.
             ts.Dispose();
             taskKeyboard.Dispose();
-            taskRead.Dispose();
+            //taskRead.Dispose();
         }
         #endregion
 
-        long GetCurrentMsec()
+        int GetCurrentMsec(bool init = false)
         {
-            long tick = Stopwatch.GetTimestamp();
-            long msec = 1000 * tick / Stopwatch.Frequency;
-            return msec;
+            if (init)
+            {
+                _startMsec = Stopwatch.GetTimestamp();
+                return 0;
+            }
+            else
+            {
+                return (int)(1000 * Stopwatch.GetTimestamp() / Stopwatch.Frequency);
+            }
         }
 
         void Reset()
         {
             _comm?.Reset();
 
-            // # Reset watchdog.
-            sendts = 0;
+            // Reset watchdog.
+            //sendts = 0;
 
             // # Clear queue.
             _qCli.Clear();
@@ -220,7 +266,7 @@ namespace NTerm
         //// https://stackoverflow.com/questions/22664392/await-console-readline
         //async Task<CliInput> GetInputAsync() //CancellationToken token
         //{
-        //    //Wouldn't that be return await Task.Run(() => Console.ReadLine());
+        //    // Wouldn't that be return await Task.Run(() => Console.ReadLine());
         //    return Task.Run(() => 
         //    {
         //        // Check for something to do.
@@ -275,34 +321,34 @@ namespace NTerm
             }
         }
 
-        /// <summary>
-        /// Service the comm read.
-        /// </summary>
-        /// <param name="token"></param>
-        void DoRead(CancellationToken token)
-        {
-            while (!token.IsCancellationRequested)
-            {
-               var (stat, msg, data) = _comm.Receive();
+        ///// <summary>
+        ///// Service the comm read.
+        ///// </summary>
+        ///// <param name="token"></param>
+        //void DoRead(CancellationToken token)
+        //{
+        //    while (!token.IsCancellationRequested)
+        //    {
+        //       var (stat, msg, data) = _comm.Receive();
 
-               switch (stat)
-               {
-                   case OpStatus.Success:
-                        _qCommRead.Enqueue(data);
-                       break;
+        //       switch (stat)
+        //       {
+        //           case OpStatus.Success:
+        //                _qCommRead.Enqueue(data);
+        //               break;
 
-                   case OpStatus.Error:
-                       _logger.Error($"Comm error: {msg}");
-                       break;
+        //           case OpStatus.Error:
+        //               _logger.Error($"Comm error: {msg}");
+        //               break;
 
-                   default: // Timeout is ok
-                       break;
-               }
+        //           default: // Timeout is ok
+        //               break;
+        //       }
 
-               // Don't be greedy.
-               Thread.Sleep(20);
-            }
-        }
+        //       // Don't be greedy.
+        //       Thread.Sleep(20);
+        //    }
+        //}
 
         #region Output text
         /// <summary>
@@ -312,54 +358,29 @@ namespace NTerm
         /// <param name="nl">Default is to add a nl.</param>
         void Write(string text, bool nl = true)
         {
-            // Do it.
-           foreach (Matcher m in _config.Matchers)
-           {
-               int pos = 0;
-
-               do
-               {
-                   pos = text.IndexOf(m.Text, pos);
-                   if (pos >= 0)
-                   {
-                       if (m.WholeWord)
-                       {
-                           // Check neighbors.
-                           bool leftww = pos == 0 || !char.IsAsciiLetterOrDigit(text[pos - 1]);
-                           bool rightww = pos + m.Text.Length >= text.Length || !char.IsAsciiLetterOrDigit(text[pos + 1]);
-
-                           if (leftww && rightww)
-                           {
-                               DoOneMatch(m);
-                           }
-                           else
-                           {
-                                Console.Write(m.Text);
-                           }
-                       }
-                       else
-                       {
-                           DoOneMatch(m);
-                       }
-                    }
+            bool hasMatch = false;
+            foreach (Matcher m in _config.Matchers)
+            {
+                if (text.Contains(m.Text))
+                {
+                    if (m.ForeColor is not ConsoleColorEx.None) { Console.ForegroundColor = (ConsoleColor)m.ForeColor; }
+                    if (m.BackColor is not ConsoleColorEx.None) { Console.BackgroundColor = (ConsoleColor)m.BackColor; }
+                    Console.Write(m.Text);
+                    Console.ResetColor();
+                    hasMatch = true;
+                    break;
                 }
-                while (pos >= 0);
             }
 
+            if (!hasMatch)
+            {
+                Console.Write(text);
+            }
 
             if (nl)
             {
                 Console.Write(Environment.NewLine);
             }
-
-            // Local function.
-            static void DoOneMatch(Matcher m)
-            {
-                if (m.ForeColor is not ConsoleColorEx.None) { Console.ForegroundColor = (ConsoleColor)m.ForeColor; }
-                if (m.BackColor is not ConsoleColorEx.None) { Console.BackgroundColor = (ConsoleColor)m.BackColor; }
-                Console.Write(m.Text);
-                Console.ResetColor();
-           }
         }
         #endregion
 

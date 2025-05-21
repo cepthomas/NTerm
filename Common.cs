@@ -54,8 +54,8 @@ namespace NTerm
         Success,
         /// <summary>Not connected</summary>
         Timeout,
-        /// <summary>Connected but not responding</summary>
-        Ignoring,
+// /// <summary>Connected but not responding</summary>
+// Ignoring,
         /// <summary>It's dead jim</summary>
         Error
     }

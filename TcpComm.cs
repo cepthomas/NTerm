@@ -11,6 +11,9 @@ using Ephemera.NBagOfTricks;
 using Ephemera.NBagOfTricks.Slog;
 
 
+// https://learn.microsoft.com/en-us/dotnet/api/system.net.sockets.tcpclient
+
+
 namespace NTerm
 {
     /// <summary>TCP comm.</summary>
@@ -19,10 +22,10 @@ namespace NTerm
     {
         #region Fields
         readonly Logger _logger = LogManager.CreateLogger("TCP");
-        Config _config;
+        readonly Config _config;
         TcpClient _client;
-        string _host;
-        int _port;
+        readonly string _host;
+        readonly int _port;
         #endregion
 
         #region Lifecycle
@@ -31,20 +34,14 @@ namespace NTerm
             try
             {
                 _config = config;
-                // Just in case.
-                //Dispose();
 
-                // Parse the args. "127.0.0.1 59120"
+                // Parse the args: "127.0.0.1 59120"
                 var parts = _config.Args;
-                if (parts.Count != 2)
-                {
-                    throw new ArgumentException($"Invalid args");
-                }
 
                 _host = parts[0];
                 _port = int.Parse(parts[1]);
 
-                IPEndPoint ipEndPoint = new(IPAddress.Parse(_host), _port);
+                // IPEndPoint ipEndPoint = new(IPAddress.Parse(_host), _port);
 
                 _client = new TcpClient()
                 {
@@ -57,7 +54,7 @@ namespace NTerm
             }
             catch (Exception e)
             {
-                var msg = $"Invalid comm args - {e.Message}";
+                var msg = $"Invalid args: {e.Message}";
                 throw new ArgumentException(msg);
             }
         }
@@ -75,39 +72,33 @@ namespace NTerm
 
         public (OpStatus stat, string msg) Send(string data)
         {
-            OpStatus stat = OpStatus.Success;
+            OpStatus stat;
             string msg = "";
 
             try
             {
                 stat = EnsureConnect();
-                // if (!_client.Connected)
-                // {
-                //     _logger.Debug("[Client] Try reconnecting to server");
-                //     _client.Connect(_host, _port);
-                //     // await _client.ConnectAsync(_host, _port);
-                //     _logger.Debug("[Client] Reconnected to server");
-                // }
 
-                using var stream = AltStream ?? _client!.GetStream();
-
-                bool done = false;
-                var tx = Utils.StringToBytes(data);
-                int num = tx.Count();
-                int ind = 0;
-                
-                while (!done)
+                if (stat == OpStatus.Success)
                 {
-                    // Do a chunk.
-                    int tosend = num - ind >= _client!.SendBufferSize ? _client.SendBufferSize : num - ind;
+                    using var stream = AltStream ?? _client!.GetStream();
 
-                    _logger.Trace($"[Client] Sending [{tosend}]");
+                    bool done = false;
+                    var tx = Utils.StringToBytes(data);
+                    int num = tx.Length;
+                    int ind = 0;
+                    
+                    while (!done)
+                    {
+                        // Do a chunk.
+                        int tosend = num - ind >= _client!.SendBufferSize ? _client.SendBufferSize : num - ind;
 
-                    // If the send time-out expires, Write() throws SocketException.
-                    stream.Write(tx, ind, tosend);
+                        // If the send time-out expires, Write() throws SocketException.
+                        stream.Write(tx, ind, tosend);
 
-                    ind += tosend;
-                    done = ind >= num;
+                        ind += tosend;
+                        done = ind >= num;
+                    }
                 }
             }
             catch (Exception e)
@@ -120,52 +111,46 @@ namespace NTerm
 
         public (OpStatus stat, string msg, string data) Receive()
         {
-            OpStatus stat = OpStatus.Success;
+            OpStatus stat;
             string msg = "";
             string data = "";
 
             try
             {
                 stat = EnsureConnect();
-                // if (!_client.Connected)
-                // {
-                //     _logger.Debug("[Client] Try reconnecting to server");
-                //     _client.Connect(_host, _port);
-                //     // await _client.ConnectAsync(_host, _port);
-                //     _logger.Debug("[Client] Reconnected to server");
-                // }
 
-                bool rcvDone = false;
-                int totalRx = 0;
-                byte[] rx = new byte[_config!.BufferSize];
-
-                using var stream = AltStream ?? _client.GetStream();
-
-                while (!rcvDone)
+                if (stat == OpStatus.Success)
                 {
-                    // Get response. If the read time-out expires, Read() throws IOException.
-                    int byteCount = stream.Read(rx, totalRx, _config!.BufferSize - totalRx);
+                    bool rcvDone = false;
+                    int totalRx = 0;
+                    byte[] rx = new byte[_config!.BufferSize];
 
-                    if (byteCount == 0)
+                    using var stream = AltStream ?? _client.GetStream();
+
+                    while (!rcvDone)
                     {
-                        rcvDone = true;
-                    }
-                    else if (totalRx >= _config.BufferSize)
-                    {
-                        rcvDone = true;
-                        _logger.Warn("TcpComm rx buffer overflow");
-                    }
-                    else
-                    {
-                        data = Utils.BytesToString(rx);
+                        // Get response. If the read time-out expires, Read() throws IOException.
+                        int byteCount = stream.Read(rx, totalRx, _config!.BufferSize - totalRx);
+
+                        if (byteCount == 0)
+                        {
+                            rcvDone = true;
+                        }
+                        else if (totalRx >= _config.BufferSize)
+                        {
+                            rcvDone = true;
+                            _logger.Warn("TcpComm rx buffer overflow");
+                        }
+                        else
+                        {
+                            data = Utils.BytesToString(rx);
+                        }
                     }
                 }
-
-                _logger.Trace($"[Client] Server response was [{totalRx}]");
             }
             catch (Exception e)
             {
-                var res = ProcessException(e);
+                stat = ProcessException(e);
             }
 
             return (stat, msg, data);
@@ -175,11 +160,6 @@ namespace NTerm
         {
             // Reset comms, resource management.
             _client.Close();
-            // # Reset watchdog.
-            //sendts = 0
-            // // # Clear queue.
-            // while not _qCli.empty():
-            //     _qCli.get()
         }
         #endregion
 
@@ -192,17 +172,11 @@ namespace NTerm
             {
                 try
                 {
-                    _logger.Debug("[Client] Try connecting to server");
-                    _client.Connect(_host, _port);
-                    //var cts = new CancellationTokenSource(TimeSpan.FromMilliseconds(_config.ResponseTime));
-                    //await client.ConnectAsync(_host, _port, cts.Token);
-                    _logger.Debug("[Client] Connected to server");
+                    _client.Connect(_host, _port);  // await client.ConnectAsync(_host, _port, cts.Token);
                 }
                 catch (Exception e)
                 {
                     stat = ProcessException(e);
-                    //msg = res.msg;
-                    //stat = res.stat;
                 }
             }
 
@@ -211,35 +185,17 @@ namespace NTerm
 
         OpStatus ProcessException(Exception e)
         {
-            // ArgumentNullException - The buffers parameter was null.
-            // ArgumentException - An argument was invalid. The Buffer or BufferList properties on the e parameter must reference valid buffers. One or the other of these properties may be set, but not both at the same time.
-            // InvalidOperationException - A socket operation was already in progress using the SocketAsyncEventArgs object specified in the e parameter.
-
-            // SocketException - An error occurred when attempting to access the socket. 
-            //     or  The Socket is not yet connected or was not obtained via an Accept(), AcceptAsync(SocketAsyncEventArgs),or BeginAccept, method.
-                    // Some are expected and recoverable.
-                        // stat = OpStatus.Timeout;
-                        // stat = OpStatus.Error;
-
-            // OperationCanceledException - The cancellation token was canceled. This exception is stored into the returned task.
-                    // Usually connect timeout. Ignore and retry later.
-
-            // IOException
-                    // Usually receive timeout. Ignore and retry later.
-
-            // ObjectDisposedException - The Socket has been closed.
-
-            OpStatus stat = OpStatus.Success;
+            OpStatus stat;
 
             switch (e)
             {
-                case (OperationCanceledException ex):
+                case OperationCanceledException ex:
                     // Usually connect timeout. Ignore and retry later.
                     stat = OpStatus.Timeout;
                     _logger.Debug($"OperationCanceledException: Timeout: {ex.Message}");
                     break;
 
-                case (SocketException ex):
+                case SocketException ex:
                     // Some are expected and recoverable. https://learn.microsoft.com/en-us/windows/win32/winsock/windows-sockets-error-codes-2
                     int[] valid = [10053, 10054, 10060, 10061, 10064];
                     if (valid.Contains(ex.NativeErrorCode))
@@ -255,10 +211,15 @@ namespace NTerm
                     }
                     break;
 
-                case (IOException ex):
+                case IOException ex:
                     // Usually receive timeout. Ignore and retry later.
                     stat = OpStatus.Timeout;
                     _logger.Debug($"IOException: Timeout: {ex.Message}");
+                    break;
+
+                case ObjectDisposedException ex:
+                    stat = OpStatus.Error;
+                    _logger.Error($"ObjectDisposedException: {ex.Message}");
                     break;
 
                 default:

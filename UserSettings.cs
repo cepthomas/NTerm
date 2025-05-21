@@ -110,16 +110,6 @@ namespace NTerm
         [Browsable(true)]
         public string Text { get; set; } = "";
 
-        [DisplayName("Whole Word")]
-        [Description("Match whole word")]
-        [Browsable(true)]
-        public bool WholeWord { get; set; } = false;
-
-        [DisplayName("Whole Line")]
-        [Description("Color whole line or just word")]
-        [Browsable(true)]
-        public bool WholeLine { get; set; } = true;
-
         [DisplayName("Fore Color")]
         [Description("Optional color")]
         [Browsable(true)]
