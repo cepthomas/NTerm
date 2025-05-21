@@ -149,6 +149,39 @@ namespace NTerm
             return (stat, msg);
         }
 
+
+        //You can use TcpClient.ConnectAsync Method to control the timeout period.
+        //if (!client.ConnectAsync("remotehost", remotePort).Wait(1000))
+        //{
+        //    // connection failure
+        //}
+
+
+
+
+        //https://learn.microsoft.com/en-us/dotnet/fundamentals/networking/sockets/socket-services#create-a-socket-client
+
+        async public Task<(OpStatus stat, string msg, string data)> Receive_Async()
+        {
+            OpStatus stat = OpStatus.Success;
+            string msg = "";
+            string data = "";
+
+            // var ipEndPoint = new IPEndPoint(ipAddress, 13);
+            using TcpClient client = new();
+            await client.ConnectAsync(_host, _port);
+            await using NetworkStream stream = client.GetStream();
+
+            var buffer = new byte[1_024];
+            int received = await stream.ReadAsync(buffer);
+
+            var message = Encoding.UTF8.GetString(buffer, 0, received);
+            Console.WriteLine($"Message received: \"{message}\"");
+            // Sample output:
+
+            return (stat, msg, data);
+        }
+
         public (OpStatus stat, string msg, string data) Receive()
         {
             OpStatus stat = OpStatus.Success;
