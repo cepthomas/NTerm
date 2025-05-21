@@ -93,7 +93,7 @@ namespace NTerm
         #endregion
 
         #region IComm implementation
-        public Stream? AltStream { get; set; } = null;
+       // public Stream? AltStream { get; set; } = null;
 
         public (OpStatus stat, string msg) Send(string data)
         {
@@ -106,7 +106,7 @@ namespace NTerm
 
                 if (stat == OpStatus.Success)
                 {
-                    using var stream = AltStream ?? _serialPort.BaseStream;
+                    using var stream = _serialPort.BaseStream;
                     _logger.Debug($"[Client] Sending [{data.Length}]");
                     stream.Write(Utils.StringToBytes(data));
                     msg = "SerialComm sent";
@@ -132,7 +132,7 @@ namespace NTerm
 
                 if (stat == OpStatus.Success)
                 {
-                    using var stream = AltStream ?? _serialPort.BaseStream;
+                    using var stream = _serialPort.BaseStream;
 
                     // Get response.
                     var rx = new byte[_config!.BufferSize];

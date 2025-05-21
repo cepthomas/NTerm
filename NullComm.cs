@@ -30,7 +30,7 @@ namespace NTerm
         }
 
         #region IComm implementation
-        public Stream? AltStream { get; set; } = null;
+        //public Stream? AltStream { get; set; } = null;
 
         public (OpStatus stat, string msg) Send(string data)
         {

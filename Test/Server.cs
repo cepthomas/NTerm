@@ -17,66 +17,91 @@ namespace Test
     {
         public static void Run(int port)
         {
-            Console.WriteLine($"Listening on {port}");
-            var listener = TcpListener.Create(port);
-            listener.Start();
-
             bool done = false;
 
             while (!done)
             {
-                using var client = listener.AcceptTcpClient();
-                Console.WriteLine("Client has connected");
-
-                ////// Receive //////
-                using var stream = client.GetStream();
-                var rx = new byte[4096];
-                Console.WriteLine("Start receive from client");
-                var byteCount = stream.Read(rx, 0, rx.Length);
-
-                if (byteCount > 0)
+                try
                 {
-                    var request = Utils.BytesToString(rx[..byteCount]);
-                    Console.WriteLine($"Client said [{request}]");
+                    Console.WriteLine($"Listening on {port}");
+                    using var listener = TcpListener.Create(port);
 
-                    ////// Reply /////
-                    string response = "tx???";
-                    switch (request)
+                    listener.Start();
+
+                    using var client = listener.AcceptTcpClient();
+                    Console.WriteLine("Client has connected");
+
+                    ////// Receive //////
+                    using var stream = client.GetStream();
+                    var rx = new byte[4096];
+                    Console.WriteLine("Start receive from client");
+                    var byteCount = stream.Read(rx, 0, rx.Length);
+
+                    if (byteCount > 0)
                     {
-                        case "L": // large payload
-                            response = File.ReadAllText(@"C:\Dev\repos\Apps\NTerm\ross.txt");
-                            break;
+                        var request = Utils.BytesToString(rx[..byteCount]);
+                        Console.WriteLine($"Client sent [{request}]");
 
-                        case "S": // small payload
-                            response = "Everything's not great in life, but we can still find beauty in it.";
-                            break;
+                        ////// Reply /////
+                        string response = "";
+                        switch (request)
+                        {
+                            case "L": // large payload
+                                response = File.ReadAllText(@"C:\Dev\repos\Apps\NTerm\ross.txt");
+                                break;
 
-                        case "E": // echo
-                            response = $"You said [{request}]";
-                            break;
+                            case "S": // small payload
+                                response = "Everything's not great in life, but we can still find beauty in it.";
+                                break;
 
-                        case "C": // color
-                            response = $"\033[91m red \033[92 green \033[94 blue \033[0m none";
-                            break;
+                            case "E": // echo
+                                response = $"You said [{request}]";
+                                break;
 
-                        case "X":
-                            done = true;
-                            break;
+                            case "C": // color
+                                response = $"\033[91m red \033[92 green \033[94 blue \033[0m none";
+                                break;
 
-                        default:
-                            response = $"Unknown request: {request}";
-                            break;
+                            case "X":
+                                done = true;
+                                break;
+
+                            default:
+                                response = $"Unknown request: {request}";
+                                break;
+                        }
+
+                        byte[] bytes = Utils.StringToBytes(response);
+
+                        stream.Write(bytes, 0, bytes.Length);
+                        Console.WriteLine($"Response: [{response}]");
                     }
-
-                    byte[] bytes = Utils.StringToBytes(response);
-
-                    stream.Write(bytes, 0, bytes.Length);
-                    Console.WriteLine($"Response: [{response}]");
+                    else
+                    {
+                        System.Threading.Thread.Sleep(10);
+                    }
                 }
-                else
+                catch (SocketException e)
                 {
-                    System.Threading.Thread.Sleep(10);
+                    Console.WriteLine("SocketException: {0}", e);
                 }
+                catch (IOException e)
+                {
+                    Console.WriteLine("IOException: {0}", e);
+                }
+                catch (Exception e)
+                {
+                    Console.WriteLine("!!! Other Exception: {0}", e);
+                    done = true;
+                }
+
+                //Other Exception: System.IO.IOException: Unable to read data from the transport connection: An existing connection was forcibly closed by the remote host..
+                // ---> System.Net.Sockets.SocketException (10054): An existing connection was forcibly closed by the remote host.
+                //   at System.Net.Sockets.NetworkStream.Read(Byte[] buffer, Int32 offset, Int32 count)
+                //   --- End of inner exception stack trace ---
+                //   at System.Net.Sockets.NetworkStream.Read(Byte[] buffer, Int32 offset, Int32 count)
+                //   at Test.Server.Run(Int32 port) in C:\Dev\Apps\NTerm\Test\Server.cs:line 37
+
             }
         }
     }

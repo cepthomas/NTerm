@@ -72,7 +72,7 @@ namespace NTerm
     interface IComm : IDisposable
     {
         /// <summary>Alternate stream for debugging purposes. TODO</summary>
-        Stream? AltStream { get; set; }
+        //Stream? AltStream { get; set; }
 
         /// <summary>Reset comms, resource management.</summary>
         void Reset();

@@ -30,6 +30,10 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Compile Remove="TcpComm_1.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
     <None Remove="logic.py" />
     <None Remove="NTerm.zip" />
   </ItemGroup>

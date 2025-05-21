@@ -42,7 +42,7 @@ namespace NTerm
         readonly ConcurrentQueue<CliInput> _qCli = new();
 
         /// <summary>For timing measurements.</summary>
-        long _startMsec;
+        double _startMsec;
         #endregion
 
 
@@ -104,15 +104,17 @@ namespace NTerm
             // TODO sanity check.
             Write(">>>[38;2;204;39;187mYou have freedom here[0m.\n<NL>The only guide\r\n<CR><NL>is your heart.");
 
-            CancellationTokenSource ts = new();
+            using CancellationTokenSource ts = new();
 
-            Task taskKeyboard = Task.Run(() => DoKeyboard(ts.Token));
+            using Task taskKeyboard = Task.Run(() => DoKeyboard(ts.Token));
             // Task taskRead = Task.Run(() => DoRead(ts.Token));
 
             bool timedOut = false;
 
             while (!ts.Token.IsCancellationRequested)
             {
+                timedOut = false;
+
                 //=========== CLI input? ============//
                 if (_qCli.TryDequeue(out CliInput? le))
                 {
@@ -143,15 +145,16 @@ namespace NTerm
                     else
                     {
                         // Measure round trip for timeout.
-                        //sendts = GetCurrentMsec();
-                        var sres = _comm.Send(le.Text); // do something?
-                        switch (sres.stat)
+                        var start = GetCurrentMsec();
+                        var res = _comm.Send(le.Text); // do something?
+                        _logger.Debug($"Send took {GetCurrentMsec() - start}");
+                        switch (res.stat)
                         {
                             case OpStatus.Success:
                                 break;
 
                             case OpStatus.Error:
-                                _logger.Error($"Comm.Send() error [{sres.msg}]");
+                                _logger.Error($"Comm.Send() error [{res.msg}]");
                                 break;
 
                             case OpStatus.Timeout:
@@ -163,21 +166,25 @@ namespace NTerm
                 }
 
                 //=========== Comm input? ============//
-                var rres = _comm.Receive();
-
-                switch (rres.stat)
                 {
-                    case OpStatus.Success:
-                        Write(rres.data);
-                        break;
+                    var start = GetCurrentMsec();
+                    var res = _comm.Receive();
+                    _logger.Debug($"Receive took {GetCurrentMsec() - start}");
 
-                    case OpStatus.Error:
-                        _logger.Error($"Comm.Receive() error [{rres.msg}]");
-                        break;
+                    switch (res.stat)
+                    {
+                        case OpStatus.Success:
+                            Write(res.data);
+                            break;
 
-                    case OpStatus.Timeout:
-                        timedOut = true;
-                        break;
+                        case OpStatus.Error:
+                            _logger.Error($"Comm.Receive() error [{res.msg}]");
+                            break;
+
+                        case OpStatus.Timeout:
+                            timedOut = true;
+                            break;
+                    }
                 }
 
 
@@ -226,19 +233,24 @@ namespace NTerm
                 //        self.do_info('Server not listening')
                 //        Reset()
 
-                // If there was no timeout, delay a bit.
-                Thread.Sleep(10);
-                //if (!timedOut) Thread.Sleep(10);
+                // If there was no timeout, delay a bit. TODO
+                //read.Sleep(10);
+                if (!timedOut) Thread.Sleep(50);
             }
 
             // All done.
-            ts.Dispose();
-            taskKeyboard.Dispose();
+            //ts.Dispose();
+            //taskKeyboard.Dispose();
             //taskRead.Dispose();
         }
         #endregion
 
-        int GetCurrentMsec(bool init = false)
+        /// <summary>
+        /// For timing measurements.
+        /// </summary>
+        /// <param name="init">Makes all subsequent calls relative.</param>
+        /// <returns></returns>
+        double GetCurrentMsec(bool init = false)
         {
             if (init)
             {
@@ -247,7 +259,7 @@ namespace NTerm
             }
             else
             {
-                return (int)(1000 * Stopwatch.GetTimestamp() / Stopwatch.Frequency);
+                return (double)(1000.0 * Stopwatch.GetTimestamp() / Stopwatch.Frequency);
             }
         }
 
