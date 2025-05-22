@@ -42,7 +42,7 @@ namespace NTerm
         readonly ConcurrentQueue<CliInput> _qCli = new();
 
         /// <summary>For timing measurements.</summary>
-        double _startMsec;
+        readonly double _startMsec;
         #endregion
 
         /// <summary>Build me one.</summary>
@@ -58,6 +58,7 @@ namespace NTerm
             _settings = (UserSettings)SettingsCore.Load(appDir, typeof(UserSettings));
 
             var ok = InitFromSettings();
+            //SettingsEditor.Edit(_settings, "NTerm", 120);
 
             if (ok && _config is not null)
             {
@@ -102,41 +103,41 @@ namespace NTerm
                 if (_qCli.TryDequeue(out CliInput? le))
                 {
                     // Check meta key.
-                    if (MatchMods(_settings.MetaKeyMod, le.Modifiers))
+                    if (le.Text.Length > 1 && le.Text.StartsWith(_settings.MetaMarker))
                     {
-                        switch (le.Text)
+                        switch (le.Text[1])
                         {
-                            case "q":
+                            case 'q':
                                 ts.Cancel();
                                 break;
 
-                            case "s":
-                                SettingsEditor.Edit(_settings, "NTerm", 120);
+                            case 's':
+                                SettingsEditor.Edit(_settings, "NTerm", 500);
                                 InitFromSettings();
                                 break;
 
-                            case "?":
+                            case '?':
                                 Help();
                                 break;
 
                             default:
-                                _logger.Warn($"Unknown meta key: {le.Text}");
+                                _logger.Warn($"Unknown meta key: {le.Text[1]}");
                                 break;
                         }
                     }
                     else
                     {
                         // var start = Utils.GetCurrentMsec();
-                        var res = _comm.Send(le.Text); // do something?
+                        var (stat, msg) = _comm.Send(le.Text); // do something?
                         // _logger.Debug($"Send took {Utils.GetCurrentMsec() - start}");
 
-                        switch (res.stat)
+                        switch (stat)
                         {
                             case OpStatus.Success:
                                 break;
 
                             case OpStatus.Error:
-                                _logger.Error($"Comm.Send() error [{res.msg}]");
+                                _logger.Error($"Comm.Send() error [{msg}]");
                                 break;
 
                             case OpStatus.Timeout:
@@ -150,17 +151,17 @@ namespace NTerm
                 //=========== Comm input? ============//
                 {
                     // var start = Utils.GetCurrentMsec();
-                    var res = _comm.Receive();
+                    var (stat, msg, data) = _comm.Receive();
                     // _logger.Debug($"Receive took {Utils.GetCurrentMsec() - start}");
 
-                    switch (res.stat)
+                    switch (stat)
                     {
                         case OpStatus.Success:
-                            Print(res.data);
+                            Print(data);
                             break;
 
                         case OpStatus.Error:
-                            _logger.Error($"Comm.Receive() error [{res.msg}]");
+                            _logger.Error($"Comm.Receive() error [{msg}]");
                             break;
 
                         case OpStatus.Timeout:
@@ -197,7 +198,7 @@ namespace NTerm
                     else // Ordinary, get the rest - blocks.
                     {
                         var rest = Console.ReadLine();
-                        _qCli.Enqueue(new((char)conkey.Key + rest, conkey.Modifiers));
+                        _qCli.Enqueue(new(key + rest, conkey.Modifiers));
                     }
                 }
 
@@ -337,7 +338,7 @@ namespace NTerm
         void Help()
         {
             var cc = _config is not null ? $"{_config.Name}({_config.CommType})" : "None";
-            Print($"current config: {cc}");
+            Print($"TODO current config: {cc}");
 
             _hotKeys.ForEach(x => Print($"alt-{x.Key} sends: [{x.Value}]"));
 

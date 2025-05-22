@@ -12,7 +12,6 @@ using NTerm;
 
 namespace Test
 {
-    // a test tcp server
     public class Server
     {
         public static void Run(int port)
@@ -23,7 +22,7 @@ namespace Test
             {
                 try
                 {
-                    Console.WriteLine($"Listening on {port}");
+                    //Console.WriteLine($"Listening on {port}");
                     using var listener = TcpListener.Create(port);
 
                     listener.Start();
@@ -47,7 +46,7 @@ namespace Test
                         switch (request)
                         {
                             case "l": // large payload
-                                response = File.ReadAllText(@"C:\Dev\repos\Apps\NTerm\ross.txt");
+                                response = File.ReadAllText(@"C:\Dev\Apps\NTerm\Test\ross.txt");
                                 break;
 
                             case "s": // small payload

@@ -131,7 +131,7 @@ namespace NTerm
 
                 if (task.Wait(CONNECT_TIME))
                 {
-                    _logger.Debug($"Receive/connect took {Utils.GetCurrentMsec() - start}");
+                    //_logger.Debug($"Receive/connect took {Utils.GetCurrentMsec() - start}");
 
                     // Connected.
                     using var stream = client.GetStream();
@@ -191,7 +191,7 @@ namespace NTerm
             // Async ops carry the original exception here.
             if (e is AggregateException)
             {
-                e = e.InnerException;
+                e = e.InnerException ?? e;
             }
 
             switch (e)
