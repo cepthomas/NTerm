@@ -29,40 +29,40 @@ namespace Test
                     listener.Start();
 
                     using var client = listener.AcceptTcpClient();
-                    Console.WriteLine("Client has connected");
+                    //Console.WriteLine("Client has connected");
 
                     ////// Receive //////
                     using var stream = client.GetStream();
                     var rx = new byte[4096];
-                    Console.WriteLine("Start receive from client");
+                    //Console.WriteLine("Start receive from client");
                     var byteCount = stream.Read(rx, 0, rx.Length);
 
                     if (byteCount > 0)
                     {
                         var request = Utils.BytesToString(rx[..byteCount]);
-                        Console.WriteLine($"Client sent [{request}]");
+                        Console.WriteLine($"Client request [{request}]");
 
                         ////// Reply /////
                         string response = "";
                         switch (request)
                         {
-                            case "L": // large payload
+                            case "l": // large payload
                                 response = File.ReadAllText(@"C:\Dev\repos\Apps\NTerm\ross.txt");
                                 break;
 
-                            case "S": // small payload
+                            case "s": // small payload
                                 response = "Everything's not great in life, but we can still find beauty in it.";
                                 break;
 
-                            case "E": // echo
+                            case "e": // echo
                                 response = $"You said [{request}]";
                                 break;
 
-                            case "C": // color
+                            case "c": // color
                                 response = $"\033[91m red \033[92 green \033[94 blue \033[0m none";
                                 break;
 
-                            case "X":
+                            case "x":
                                 done = true;
                                 break;
 
@@ -74,7 +74,7 @@ namespace Test
                         byte[] bytes = Utils.StringToBytes(response);
 
                         stream.Write(bytes, 0, bytes.Length);
-                        Console.WriteLine($"Response: [{response}]");
+                        Console.WriteLine($"Server response: [{response}]");
                     }
                     else
                     {
@@ -101,7 +101,6 @@ namespace Test
                 //   --- End of inner exception stack trace ---
                 //   at System.Net.Sockets.NetworkStream.Read(Byte[] buffer, Int32 offset, Int32 count)
                 //   at Test.Server.Run(Int32 port) in C:\Dev\Apps\NTerm\Test\Server.cs:line 37
-
             }
         }
     }

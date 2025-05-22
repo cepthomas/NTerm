@@ -26,12 +26,17 @@ namespace NTerm
         // TcpClient _client;
         readonly string _host;
         readonly int _port;
+
+        const int CONNECT_TIME = 50;
+        const int RESPONSE_TIME = 10;
+        const int BUFFER_SIZE = 4096;
         #endregion
 
-        /// <summary>Measurer.</summary>
-        //readonly TimingAnalyzer _tan = new();
-
-        #region Lifecycle
+        /// <summary>
+        /// Make me one.
+        /// </summary>
+        /// <param name="config"></param>
+        /// <exception cref="ArgumentException"></exception>
         public TcpComm(Config config)
         {
             try
@@ -43,17 +48,6 @@ namespace NTerm
 
                 _host = parts[0];
                 _port = int.Parse(parts[1]);
-
-                // IPEndPoint ipEndPoint = new(IPAddress.Parse(_host), _port);
-
-                // _client = new TcpClient()
-                // {
-                //     // Set some properties.
-                //     SendTimeout = _config.ResponseTime,
-                //     ReceiveTimeout = _config.ResponseTime,
-                //     SendBufferSize = _config.BufferSize,
-                //     ReceiveBufferSize = _config.BufferSize
-                // };
             }
             catch (Exception e)
             {
@@ -62,17 +56,15 @@ namespace NTerm
             }
         }
 
+        /// <summary>
+        /// Clean up.
+        /// </summary>
         public void Dispose()
         {
-            // _client?.Close();
-            // _client?.Dispose();
-            // _client = null;
         }
-        #endregion
 
-        #region IComm implementation
-        //public Stream? AltStream { get; set; } = null;
-
+        /// <summary>IComm implementation.</summary>
+        /// <see cref="IComm"/>
         public (OpStatus stat, string msg) Send(string data)
         {
             OpStatus stat = OpStatus.Success;
@@ -80,66 +72,36 @@ namespace NTerm
 
             try
             {
-                //_tan.Arm();
-
-                using var client = new TcpClient(_host, _port);
-                client.SendTimeout = _config.ResponseTime;
-                client.SendBufferSize = _config.BufferSize;
-
-                //     // Set some properties.
-                //     SendTimeout = _config.ResponseT4ime,
-                //     SendBufferSize = _config.BufferSize,
-
-                using var stream = client.GetStream();
-
-                bool done = false;
-                var tx = Utils.StringToBytes(data);
-                int num = tx.Length;
-                int ind = 0;
-                
-                while (!done)
+                using var client = new TcpClient();
+                client.SendTimeout = RESPONSE_TIME;
+                client.SendBufferSize = BUFFER_SIZE;
+                var task = client.ConnectAsync(_host, _port);
+                if (task.Wait(CONNECT_TIME))
                 {
-                    // Do a chunk.
-                    int tosend = num - ind >= client!.SendBufferSize ? client.SendBufferSize : num - ind;
+                    // Connected.
+                    using var stream = client.GetStream();
 
-                    // If the send time-out expires, Write() throws SocketException.
-                    stream.Write(tx, ind, tosend);
+                    bool done = false;
+                    var tx = Utils.StringToBytes(data);
+                    int num = tx.Length;
+                    int ind = 0;
 
-                    ind += tosend;
-                    done = ind >= num;
+                    while (!done)
+                    {
+                        // Do a chunk.
+                        int tosend = num - ind >= client!.SendBufferSize ? client.SendBufferSize : num - ind;
+
+                        // If the send time-out expires, Write() throws SocketException.
+                        stream.Write(tx, ind, tosend);
+
+                        ind += tosend;
+                        done = ind >= num;
+                    }
                 }
-
-                //if (_tan.Grab())
-                //{
-                //    _logger.Info($"Send(): {_tan.Dump()}");
-                //    _tan.Stop();
-                //}
-
-
-                // stat = EnsureConnect();
-
-                // if (stat == OpStatus.Success)
-                // {
-                //     using var stream = AltStream ?? _client!.GetStream();
-
-                //     bool done = false;
-                //     var tx = Utils.StringToBytes(data);
-                //     int num = tx.Length;
-                //     int ind = 0;
-                    
-                //     while (!done)
-                //     {
-                //         // Do a chunk.
-                //         int tosend = num - ind >= _client!.SendBufferSize ? _client.SendBufferSize : num - ind;
-
-                //         // If the send time-out expires, Write() throws SocketException.
-                //         stream.Write(tx, ind, tosend);
-
-                //         ind += tosend;
-                //         done = ind >= num;
-                //     }
-                // }
-
+                else
+                {
+                    stat = OpStatus.Timeout;
+                }
             }
             catch (Exception e)
             {
@@ -149,39 +111,8 @@ namespace NTerm
             return (stat, msg);
         }
 
-
-        //You can use TcpClient.ConnectAsync Method to control the timeout period.
-        //if (!client.ConnectAsync("remotehost", remotePort).Wait(1000))
-        //{
-        //    // connection failure
-        //}
-
-
-
-
-        //https://learn.microsoft.com/en-us/dotnet/fundamentals/networking/sockets/socket-services#create-a-socket-client
-
-        async public Task<(OpStatus stat, string msg, string data)> Receive_Async()
-        {
-            OpStatus stat = OpStatus.Success;
-            string msg = "";
-            string data = "";
-
-            // var ipEndPoint = new IPEndPoint(ipAddress, 13);
-            using TcpClient client = new();
-            await client.ConnectAsync(_host, _port);
-            await using NetworkStream stream = client.GetStream();
-
-            var buffer = new byte[1_024];
-            int received = await stream.ReadAsync(buffer);
-
-            var message = Encoding.UTF8.GetString(buffer, 0, received);
-            Console.WriteLine($"Message received: \"{message}\"");
-            // Sample output:
-
-            return (stat, msg, data);
-        }
-
+        /// <summary>IComm implementation.</summary>
+        /// <see cref="IComm"/>
         public (OpStatus stat, string msg, string data) Receive()
         {
             OpStatus stat = OpStatus.Success;
@@ -190,79 +121,49 @@ namespace NTerm
 
             try
             {
-                //_tan.Arm();
+                using var client = new TcpClient();
+                client.ReceiveTimeout = RESPONSE_TIME;
+                client.ReceiveBufferSize = BUFFER_SIZE;
 
-                //https://stackoverflow.com/questions/17118632/how-to-set-the-timeout-for-a-tcpclient
-                using var client = new TcpClient(_host, _port);
-                //using var client = new TcpClient();// _host, _port);
-                // Set some properties.
-                client.ReceiveTimeout = 10;// _config.ResponseTime;
-                client.ReceiveBufferSize = _config.BufferSize;
-                //client.Connect(_host, _port);  // await client.ConnectAsync(_host, _port, cts.Token);
+                var start = Utils.GetCurrentMsec();
 
-                using var stream = client.GetStream();
+                var task = client.ConnectAsync(_host, _port);
 
-
-                bool rcvDone = false;
-                int totalRx = 0;
-                byte[] rx = new byte[_config!.BufferSize];
-
-                while (!rcvDone)
+                if (task.Wait(CONNECT_TIME))
                 {
-                    // Get response. If the read time-out expires, Read() throws IOException.
-                    int byteCount = stream.Read(rx, totalRx, _config!.BufferSize - totalRx);
+                    _logger.Debug($"Receive/connect took {Utils.GetCurrentMsec() - start}");
 
-                    if (byteCount == 0)
+                    // Connected.
+                    using var stream = client.GetStream();
+
+                    bool rcvDone = false;
+                    int totalRx = 0;
+                    byte[] rx = new byte[BUFFER_SIZE];
+
+                    while (!rcvDone)
                     {
-                        rcvDone = true;
-                    }
-                    else if (totalRx >= _config.BufferSize)
-                    {
-                        rcvDone = true;
-                        _logger.Warn("TcpComm rx buffer overflow");
-                    }
-                    else
-                    {
-                        data = Utils.BytesToString(rx);
+                        // Get response. If the read time-out expires, Read() throws IOException.
+                        int byteCount = stream.Read(rx, totalRx, BUFFER_SIZE - totalRx);
+
+                        if (byteCount == 0)
+                        {
+                            rcvDone = true;
+                        }
+                        else if (totalRx >= BUFFER_SIZE)
+                        {
+                            rcvDone = true;
+                            _logger.Warn("TcpComm rx buffer overflow");
+                        }
+                        else
+                        {
+                            data = Utils.BytesToString(rx);
+                        }
                     }
                 }
-
-                //if (_tan.Grab())
-                //{
-                //    _logger.Info($"Send(): {_tan.Dump()}");
-                //    _tan.Stop();
-                //}
-
-                // stat = EnsureConnect();
-
-                // if (stat == OpStatus.Success)
-                // {
-                //     bool rcvDone = false;
-                //     int totalRx = 0;
-                //     byte[] rx = new byte[_config!.BufferSize];
-
-                //     using var stream = AltStream ?? _client.GetStream();
-
-                //     while (!rcvDone)
-                //     {
-                //         // Get response. If the read time-out expires, Read() throws IOException.
-                //         int byteCount = stream.Read(rx, totalRx, _config!.BufferSize - totalRx);
-
-                //         if (byteCount == 0)
-                //         {
-                //             rcvDone = true;
-                //         }
-                //         else if (totalRx >= _config.BufferSize)
-                //         {
-                //             rcvDone = true;
-                //             _logger.Warn("TcpComm rx buffer overflow");
-                //         }
-                //         else
-                //         {
-                //             data = Utils.BytesToString(rx);
-                //         }
-                //     }
-                // }
+                else
+                {
+                    stat = OpStatus.Timeout;
+                }
             }
             catch (Exception e)
             {
@@ -272,36 +173,26 @@ namespace NTerm
             return (stat, msg, data);
         }
 
+        /// <summary>IComm implementation.</summary>
+        /// <see cref="IComm"/>
         public void Reset()
         {
-            // Reset comms, resource management.
-            //_client.Close();
         }
-        #endregion
 
-        #region Private stuff
-        // OpStatus EnsureConnect()
-        // {
-        //     var stat = OpStatus.Success;
-
-        //     if (!_client.Connected)
-        //     {
-        //         try
-        //         {
-        //             _client.Connect(_host, _port);  // await client.ConnectAsync(_host, _port, cts.Token);
-        //         }
-        //         catch (Exception e)
-        //         {
-        //             stat = ProcessException(e);
-        //         }
-        //     }
-
-        //     return stat;
-        // }
-
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="e"></param>
+        /// <returns></returns>
         OpStatus ProcessException(Exception e)
         {
             OpStatus stat;
+
+            // Async ops carry the original exception here.
+            if (e is AggregateException)
+            {
+                e = e.InnerException;
+            }
 
             switch (e)
             {
@@ -347,6 +238,5 @@ namespace NTerm
 
             return stat;
         }
-        #endregion
     }
 }

@@ -30,7 +30,9 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Compile Remove="App_1.cs" />
     <Compile Remove="TcpComm_1.cs" />
+    <Compile Remove="TcpComm_transient.cs" />
   </ItemGroup>
 
   <ItemGroup>

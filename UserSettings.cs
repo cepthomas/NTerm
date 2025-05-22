@@ -44,7 +44,7 @@ namespace NTerm
         [Description("Modifier for application functions ; exit/help/etc.")]
         [Browsable(true)]
         [JsonConverter(typeof(JsonStringEnumConverter))]
-        public KeyMod MetaKeyMod { get; set; } = KeyMod.CtrlShift;
+        public KeyMod MetaKeyMod { get; set; } = KeyMod.CtrlShift; // TODO use char for indicator - '!' 
 
         [DisplayName("File Log Level")]
         [Description("Log level for file write.")]
@@ -61,7 +61,7 @@ namespace NTerm
 
     /// <summary>What are we doing today?</summary>
     [Serializable]
-    public sealed class Config //TODO these appear alphabetically.
+    public sealed class Config //TODO these appear alphabetically in editor.
     {
         [DisplayName("Name")]
         [Description("Name")]
@@ -78,16 +78,6 @@ namespace NTerm
         [Description("Type specific args. See README.md.")]
         [Browsable(true)]
         public List<string> Args { get; set; } = [];
-
-        [DisplayName("Resp Time")]
-        [Description("Server must connect or reply to commands in msec.")]
-        [Browsable(true)]
-        public int ResponseTime { get; set; } = 0;
-
-        [DisplayName("Buff Size")]
-        [Description("R/W buffer size.")]
-        [Browsable(true)]
-        public int BufferSize { get; set; } = 4096;
 
         [DisplayName("Hot Keys")]
         [Description("Hot key definitions. See README.md.")]

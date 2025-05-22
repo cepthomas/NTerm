@@ -12,22 +12,19 @@ using NTerm;
 using Ephemera.NBagOfUis;
 
 
-// TODO fix all tests
-
-
 namespace Test
 {
     static class Program
     {
         static void Main(string[] args)
         {
-            UserSettings ss = (UserSettings)SettingsCore.Load(MiscUtils.GetSourcePath(), typeof(UserSettings), "fake_settings.json");
+            //UserSettings ss = (UserSettings)SettingsCore.Load(MiscUtils.GetSourcePath(), typeof(UserSettings), "fake_settings.json");
 
             Console.WriteLine("Hello, Test!");
 
             //FakeSettings();
 
-            Server.Run(int.Parse(ss.Configs[0].Args[1]));
+            Server.Run(8888);// int.Parse(ss.Configs[0].Args[1]));
         }
 
 

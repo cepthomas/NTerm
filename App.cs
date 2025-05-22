@@ -45,34 +45,21 @@ namespace NTerm
         double _startMsec;
         #endregion
 
-
-
-
-        // // Human polling time in msec.
-        // readonly int loop_time = 50;
-        // // Server must reply to client in msec or it's considered dead.
-        // readonly int server_response_time = 200;  // 100?
-        // // Last command time. Non zero implies waiting for a response.
-        // long sendts = 0;
-
-
-
-        #region Lifecycle
         /// <summary>Build me one.</summary>
         public App()
         {
-            GetCurrentMsec(true);
+            _startMsec = Utils.GetCurrentMsec();
 
             // Set up log first.
             var appDir = MiscUtils.GetAppDataDir("NTerm", "Ephemera");
             var logFileName = Path.Combine(appDir, "log.txt");
             LogManager.Run(logFileName, 50000);
-            LogManager.LogMessage += (object? sender, LogMessageEventArgs e) => Write($"{e.Message}");
+            LogManager.LogMessage += (object? sender, LogMessageEventArgs e) => Print($"{e.Message}");
             _settings = (UserSettings)SettingsCore.Load(appDir, typeof(UserSettings));
 
-            InitFromSettings();
+            var ok = InitFromSettings();
 
-            if (_config is not null)
+            if (ok && _config is not null)
             {
                 Run(); // forever
             }
@@ -91,9 +78,7 @@ namespace NTerm
             _comm?.Dispose();
             _comm = null;
         }
-        #endregion
 
-        #region Main loop
         /// <summary>
         /// Main loop.
         /// </summary>
@@ -101,13 +86,11 @@ namespace NTerm
         {
             // TODO write prompt somewhere/when?
 
-            // TODO sanity check.
-            Write(">>>[38;2;204;39;187mYou have freedom here[0m.\n<NL>The only guide\r\n<CR><NL>is your heart.");
+            // sanity check. Print(">>>[38;2;204;39;187mYou have freedom here[0m.\n<NL>The only guide\r\n<CR><NL>is your heart.");
 
             using CancellationTokenSource ts = new();
 
             using Task taskKeyboard = Task.Run(() => DoKeyboard(ts.Token));
-            // Task taskRead = Task.Run(() => DoRead(ts.Token));
 
             bool timedOut = false;
 
@@ -128,7 +111,6 @@ namespace NTerm
                                 break;
 
                             case "s":
-                                /*var eds =*/
                                 SettingsEditor.Edit(_settings, "NTerm", 120);
                                 InitFromSettings();
                                 break;
@@ -144,10 +126,10 @@ namespace NTerm
                     }
                     else
                     {
-                        // Measure round trip for timeout.
-                        var start = GetCurrentMsec();
+                        // var start = Utils.GetCurrentMsec();
                         var res = _comm.Send(le.Text); // do something?
-                        _logger.Debug($"Send took {GetCurrentMsec() - start}");
+                        // _logger.Debug($"Send took {Utils.GetCurrentMsec() - start}");
+
                         switch (res.stat)
                         {
                             case OpStatus.Success:
@@ -159,22 +141,22 @@ namespace NTerm
 
                             case OpStatus.Timeout:
                                 timedOut = true;
+                                Print("Server not listening");
                                 break;
                         }
-
                     }
                 }
 
                 //=========== Comm input? ============//
                 {
-                    var start = GetCurrentMsec();
+                    // var start = Utils.GetCurrentMsec();
                     var res = _comm.Receive();
-                    _logger.Debug($"Receive took {GetCurrentMsec() - start}");
+                    // _logger.Debug($"Receive took {Utils.GetCurrentMsec() - start}");
 
                     switch (res.stat)
                     {
                         case OpStatus.Success:
-                            Write(res.data);
+                            Print(res.data);
                             break;
 
                         case OpStatus.Error:
@@ -187,120 +169,10 @@ namespace NTerm
                     }
                 }
 
-
-
-
-                // if (_qCommRead.TryDequeue(out string data))
-                // {
-                //     // TODO Fix line endings??
-                //     // data = data.Replace("\n", "\r\n").Replace("\r\r", "");
-                //     Write(data);
-                // }
-
-                /*/ ##### Get any server responses. #####
-                if self.commif is not None:
-                    try:
-                        # Don't block.
-                        self.sock.settimeout(0)
-
-                        done = False
-                        while not done:
-                            s = self.commif.read(100)
-                            if s == '':
-                                done = True
-                            else:
-                                sys.stdout.write(s)
-                                sys.stdout.flush()
-                                # Reset watchdog.
-                                self.sendts = 0
-                    except TimeoutError:
-                        # Nothing to read.
-                        timed_out = True
-                        Reset()
-                    except ConnectionError:
-                        # Server disconnected.
-                        Reset()
-                    except Exception as e:
-                        # Other unexpected errors.
-                        self.do_error(e)
-                */
-
-
-                // Check for server not responding but still connected.
-                //if self.commif is not None and self.sendts > 0:
-                //    dur = get_current_msec() - self.sendts
-                //    if dur > self.server_response_time:
-                //        self.do_info('Server not listening')
-                //        Reset()
-
-                // If there was no timeout, delay a bit. TODO
-                //read.Sleep(10);
-                if (!timedOut) Thread.Sleep(50);
-            }
-
-            // All done.
-            //ts.Dispose();
-            //taskKeyboard.Dispose();
-            //taskRead.Dispose();
-        }
-        #endregion
-
-        /// <summary>
-        /// For timing measurements.
-        /// </summary>
-        /// <param name="init">Makes all subsequent calls relative.</param>
-        /// <returns></returns>
-        double GetCurrentMsec(bool init = false)
-        {
-            if (init)
-            {
-                _startMsec = Stopwatch.GetTimestamp();
-                return 0;
-            }
-            else
-            {
-                return (double)(1000.0 * Stopwatch.GetTimestamp() / Stopwatch.Frequency);
+                // If there was no timeout, delay a bit.
+                if (!timedOut) Thread.Sleep(10);
             }
         }
-
-        void Reset()
-        {
-            _comm?.Reset();
-
-            // Reset watchdog.
-            //sendts = 0;
-
-            // # Clear queue.
-            _qCli.Clear();
-        }
-
-
-        //// https://stackoverflow.com/questions/22664392/await-console-readline
-        //async Task<CliInput> GetInputAsync() //CancellationToken token
-        //{
-        //    // Wouldn't that be return await Task.Run(() => Console.ReadLine());
-        //    return Task.Run(() => 
-        //    {
-        //        // Check for something to do.
-        //        if (Console.KeyAvailable)
-        //        {
-        //            var key = Console.ReadKey(false);
-
-        //            // Check hot key.
-        //            if (MatchMods(_settings.HotKeyMod, key.Modifiers))
-        //            {
-        //                return new CliInput(_hotKeys[(char)key.Key], key.Modifiers);
-        //            }
-        //            else
-        //            {
-        //                // Get the rest - blocks.
-        //                var rest = Console.ReadLine();
-        //                return new CliInput((char)key.Key + rest, key.Modifiers);
-        //            }
-        //        }
-        //    })
-        //}
-
 
         /// <summary>
         /// Service the cli read.
@@ -313,18 +185,19 @@ namespace NTerm
                 // Check for something to do.
                 if (Console.KeyAvailable)
                 {
-                    var key = Console.ReadKey(false);
+                    var conkey = Console.ReadKey(false);
+                    char key = conkey.KeyChar;
+                    //Console.WriteLine($">>>{key}");
 
-                    // Check hot key.
-                    if (MatchMods(_settings.HotKeyMod, key.Modifiers))
+                    // Check for hot key.
+                    if (MatchMods(_settings.HotKeyMod, conkey.Modifiers))
                     {
-                        _qCli.Enqueue(new(_hotKeys[(char)key.Key], key.Modifiers));
+                        _qCli.Enqueue(new(_hotKeys[(char)conkey.Key], conkey.Modifiers));
                     }
-                    else
+                    else // Ordinary, get the rest - blocks.
                     {
-                        // Get the rest - blocks.
                         var rest = Console.ReadLine();
-                        _qCli.Enqueue(new((char)key.Key + rest, key.Modifiers));
+                        _qCli.Enqueue(new((char)conkey.Key + rest, conkey.Modifiers));
                     }
                 }
 
@@ -333,42 +206,12 @@ namespace NTerm
             }
         }
 
-        ///// <summary>
-        ///// Service the comm read.
-        ///// </summary>
-        ///// <param name="token"></param>
-        //void DoRead(CancellationToken token)
-        //{
-        //    while (!token.IsCancellationRequested)
-        //    {
-        //       var (stat, msg, data) = _comm.Receive();
-
-        //       switch (stat)
-        //       {
-        //           case OpStatus.Success:
-        //                _qCommRead.Enqueue(data);
-        //               break;
-
-        //           case OpStatus.Error:
-        //               _logger.Error($"Comm error: {msg}");
-        //               break;
-
-        //           default: // Timeout is ok
-        //               break;
-        //       }
-
-        //       // Don't be greedy.
-        //       Thread.Sleep(20);
-        //    }
-        //}
-
-        #region Output text
         /// <summary>
         /// Write to console.
         /// </summary>
         /// <param name="text">What to print</param>
         /// <param name="nl">Default is to add a nl.</param>
-        void Write(string text, bool nl = true)
+        void Print(string text, bool nl = true)
         {
             bool hasMatch = false;
             foreach (Matcher m in _config.Matchers)
@@ -394,15 +237,15 @@ namespace NTerm
                 Console.Write(Environment.NewLine);
             }
         }
-        #endregion
 
-        #region Settings
         /// <summary>
         /// Load persisted settings.
         /// </summary>
         /// <exception cref="NotImplementedException"></exception>
-        void InitFromSettings()
+        bool InitFromSettings()
         {
+            bool ok = true;
+
             // Reset.
             _config = null;
             _comm?.Dispose();
@@ -430,14 +273,10 @@ namespace NTerm
                 }
                 catch (Exception e)
                 {
-                    // do something...
-                    //msg = $"Invalid comm args - {e.Message}";
-                    //stat = OpStatus.Error;
-                    //throw new ArgumentException(msg);
+                    _logger.Error(e.Message);
+                    ok = false;
+                    return ok;
                 }
-
-                // Init and check stat.
-                //var (stat, msg) = _comm.Init(_config); // do something...
 
                 // Init hotkeys.
                 _hotKeys.Clear();
@@ -464,11 +303,11 @@ namespace NTerm
                 _comm?.Dispose();
                 _comm = null;
                 _config = null;
+                ok = false;
             }
+            return ok;
         }
-        #endregion
 
-        #region Private stuff
         /// <summary>
         /// 
         /// </summary>
@@ -492,17 +331,19 @@ namespace NTerm
             return match;
         }
 
+        /// <summary>
+        /// 
+        /// </summary>
         void Help()
         {
             var cc = _config is not null ? $"{_config.Name}({_config.CommType})" : "None";
-            Write($"current config: {cc}");
+            Print($"current config: {cc}");
 
-            _hotKeys.ForEach(x => Write($"alt-{x.Key} sends: [{x.Value}]"));
+            _hotKeys.ForEach(x => Print($"alt-{x.Key} sends: [{x.Value}]"));
 
-            Write("serial ports:");
+            Print("serial ports:");
             var sports = SerialPort.GetPortNames();
-            sports.ForEach(s => { Write($"   {s}"); });
+            sports.ForEach(s => { Print($"   {s}"); });
         }
-        #endregion
     }
 }

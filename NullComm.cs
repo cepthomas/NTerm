@@ -19,24 +19,31 @@ namespace NTerm
         int _count = 0;
         #endregion
 
-        public void Dispose()
-        {
-        }
-
-        //public (OpStatus stat, string msg) Init(Config config)
+        /// <summary>
+        /// Make me one.
+        /// </summary>
+        /// <param name="config"></param>
         public NullComm(Config config)
         {
             //return (OpStatus.Success, $"NullComm inited at {DateTime.Now}");
         }
 
-        #region IComm implementation
-        //public Stream? AltStream { get; set; } = null;
+        /// <summary>
+        /// Clean up.
+        /// </summary>
+        public void Dispose()
+        {
+        }
 
+        /// <summary>IComm implementation.</summary>
+        /// <see cref="IComm"/>
         public (OpStatus stat, string msg) Send(string data)
         {
             return (OpStatus.Success, "Nothing to say");
         }
 
+        /// <summary>IComm implementation.</summary>
+        /// <see cref="IComm"/>
         public (OpStatus stat, string msg, string data) Receive()
         {
             // Fake blocking.
@@ -45,9 +52,10 @@ namespace NTerm
             return (OpStatus.Success, "no msg", $"NullComm receive {_count}");
         }
 
+        /// <summary>IComm implementation.</summary>
+        /// <see cref="IComm"/>
         public void Reset()
         {
         }        
-        #endregion
     }
 }

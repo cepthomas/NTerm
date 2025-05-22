@@ -29,9 +29,17 @@ namespace NTerm
         readonly Logger _logger = LogManager.CreateLogger("SER");
         Config _config;
         readonly SerialPort _serialPort;
+
+        const int CONNECT_TIME = 100;
+        const int RESPONSE_TIME = 10;
+        const int BUFFER_SIZE = 4096;
         #endregion
 
-        #region Lifecycle
+        /// <summary>
+        /// Make me one.
+        /// </summary>
+        /// <param name="config"></param>
+        /// <exception cref="ArgumentException"></exception>
         public SerialComm(Config config)
         {
             _config = config;
@@ -72,10 +80,10 @@ namespace NTerm
                 };
 
                 // Other params.
-                _serialPort.ReadBufferSize = _config.BufferSize;
-                _serialPort.WriteBufferSize = _config.BufferSize;
-                _serialPort.ReadTimeout = _config.ResponseTime;
-                _serialPort.WriteTimeout = _config.ResponseTime;
+                _serialPort.ReadBufferSize = BUFFER_SIZE;
+                _serialPort.WriteBufferSize = BUFFER_SIZE;
+                _serialPort.ReadTimeout = RESPONSE_TIME;
+                _serialPort.WriteTimeout = RESPONSE_TIME;
                 // _serialPort.Handshake?
             }
             catch (Exception e)
@@ -85,16 +93,17 @@ namespace NTerm
             }
         }
 
+        /// <summary>
+        /// Clean up.
+        /// </summary>
         public void Dispose()
         {
             _serialPort.Close();
             _serialPort.Dispose();
         }
-        #endregion
 
-        #region IComm implementation
-       // public Stream? AltStream { get; set; } = null;
-
+        /// <summary>IComm implementation.</summary>
+        /// <see cref="IComm"/>
         public (OpStatus stat, string msg) Send(string data)
         {
             OpStatus stat = OpStatus.Success;
@@ -120,6 +129,8 @@ namespace NTerm
             return (stat, msg);
         }
 
+        /// <summary>IComm implementation.</summary>
+        /// <see cref="IComm"/>
         public (OpStatus stat, string msg, string data) Receive()
         {
             OpStatus stat = OpStatus.Success;
@@ -135,8 +146,8 @@ namespace NTerm
                     using var stream = _serialPort.BaseStream;
 
                     // Get response.
-                    var rx = new byte[_config!.BufferSize];
-                    int byteCount = stream.Read(rx, 0, _config.BufferSize);
+                    var rx = new byte[BUFFER_SIZE];
+                    int byteCount = stream.Read(rx, 0, BUFFER_SIZE);
                     data = Utils.BytesToString(rx);
                 }
             }
@@ -148,13 +159,16 @@ namespace NTerm
             return (stat, msg, data);
         }
 
+        /// <summary>IComm implementation.</summary>
+        /// <see cref="IComm"/>
         public void Reset()
         {
         }        
-        #endregion
 
-
-        #region Private stuff
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <returns></returns>
         OpStatus EnsureConnect()
         {
             var stat = OpStatus.Success;
@@ -173,13 +187,18 @@ namespace NTerm
             return stat;
         }
 
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="e"></param>
+        /// <returns></returns>
         OpStatus ProcessException(Exception e)
         {
             OpStatus stat;
             switch (e)
             {
                 default:
-                    // Other errors are considered fatal.
+                    // Errors are considered fatal.
                     stat = OpStatus.Error;
                     _logger.Error($"Fatal exception: {e}");
                     break;
@@ -187,6 +206,5 @@ namespace NTerm
 
             return stat;
         }
-        #endregion
     }
 }
