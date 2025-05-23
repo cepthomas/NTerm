@@ -28,7 +28,6 @@ namespace NTerm
         readonly int _port;
 
         const int CONNECT_TIME = 50;
-   //     const int RESPONSE_TIME = 10;
         const int BUFFER_SIZE = 4096;
         #endregion
 
@@ -129,68 +128,6 @@ namespace NTerm
 
             return (stat, msg, resp);
         }
-
-        // /// <summary>IComm implementation.</summary>
-        // /// <see cref="IComm"/>
-        // public (OpStatus stat, string msg, string data) Receive()
-        // {
-        //     OpStatus stat = OpStatus.Success;
-        //     string msg = "";
-        //     string data = "";
-
-        //     try
-        //     {
-        //         using var client = new TcpClient();
-        //         client.ReceiveTimeout = RESPONSE_TIME;
-        //         client.ReceiveBufferSize = BUFFER_SIZE;
-
-        //         var start = Utils.GetCurrentMsec();
-
-        //         var task = client.ConnectAsync(_host, _port);
-
-        //         if (task.Wait(CONNECT_TIME))
-        //         {
-        //             //_logger.Debug($"Receive/connect took {Utils.GetCurrentMsec() - start}");
-
-        //             // Connected.
-        //             using var stream = client.GetStream();
-
-        //             bool rcvDone = false;
-        //             int totalRx = 0;
-        //             byte[] rx = new byte[BUFFER_SIZE];
-
-        //             while (!rcvDone)
-        //             {
-        //                 // Get response. If the read time-out expires, Read() throws IOException.
-        //                 int byteCount = stream.Read(rx, totalRx, BUFFER_SIZE - totalRx);
-
-        //                 if (byteCount == 0)
-        //                 {
-        //                     rcvDone = true;
-        //                 }
-        //                 else if (totalRx >= BUFFER_SIZE)
-        //                 {
-        //                     rcvDone = true;
-        //                     _logger.Warn("TcpComm rx buffer overflow");
-        //                 }
-        //                 else
-        //                 {
-        //                     data = Utils.BytesToString(rx);
-        //                 }
-        //             }
-        //         }
-        //         else
-        //         {
-        //             stat = OpStatus.Timeout;
-        //         }
-        //     }
-        //     catch (Exception e)
-        //     {
-        //         stat = ProcessException(e);
-        //     }
-
-        //     return (stat, msg, data);
-        // }
 
         /// <summary>IComm implementation.</summary>
         /// <see cref="IComm"/>

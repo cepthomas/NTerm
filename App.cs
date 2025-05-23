@@ -54,11 +54,10 @@ namespace NTerm
             var appDir = MiscUtils.GetAppDataDir("NTerm", "Ephemera");
             var logFileName = Path.Combine(appDir, "log.txt");
             LogManager.Run(logFileName, 50000);
-            LogManager.LogMessage += (object? sender, LogMessageEventArgs e) => Print($"{e.Message}");
+            LogManager.LogMessage += (object? sender, LogMessageEventArgs e) => { Print($"{e.Message}"); DoPrompt(); };
             _settings = (UserSettings)SettingsCore.Load(appDir, typeof(UserSettings));
 
             var ok = InitFromSettings();
-            //SettingsEditor.Edit(_settings, "NTerm", 400);
 
             if (ok && _config is not null)
             {
@@ -75,7 +74,7 @@ namespace NTerm
         /// </summary>
         public void Dispose()
         {
-            Console.WriteLine("====== Dispose !!!! ======");
+            // Console.WriteLine("====== Dispose !!!! ======");
             _comm?.Dispose();
             _comm = null;
         }
@@ -85,7 +84,7 @@ namespace NTerm
         /// </summary>
         public void Run()
         {
-            // sanity check. Print(">>>[38;2;204;39;187mYou have freedom here[0m.\n<NL>The only guide\r\n<CR><NL>is your heart.");
+            DoPrompt();
 
             using CancellationTokenSource ts = new();
             using Task taskKeyboard = Task.Run(() => DoKeyboard(ts.Token));
@@ -148,31 +147,10 @@ namespace NTerm
                                 Print("Server not responding");
                                 break;
                         }
-                        Print(_settings.Prompt, false);
                     }
+
+                    DoPrompt();
                 }
-
-                //=========== Comm input? ============//
-                // {
-                //     // var start = Utils.GetCurrentMsec();
-                //     var (stat, msg, data) = _comm.Receive();
-                //     // _logger.Debug($"Receive took {Utils.GetCurrentMsec() - start}");
-
-                //     switch (stat)
-                //     {
-                //         case OpStatus.Success:
-                //             Print(data);
-                //             break;
-
-                //         case OpStatus.Error:
-                //             _logger.Error($"Comm.Receive() error [{msg}]");
-                //             break;
-
-                //         case OpStatus.Timeout:
-                //             timedOut = true;
-                //             break;
-                //     }
-                // }
 
                 // If there was no timeout, delay a bit.
                 if (!timedOut) Thread.Sleep(10);
@@ -212,7 +190,7 @@ namespace NTerm
         }
 
         /// <summary>
-        /// Write to console.
+        /// Write to console. TODO could use ansi?
         /// </summary>
         /// <param name="text">What to print</param>
         /// <param name="nl">Default is to add a nl.</param>
@@ -225,7 +203,7 @@ namespace NTerm
                 {
                     if (m.ForeColor is not ConsoleColorEx.None) { Console.ForegroundColor = (ConsoleColor)m.ForeColor; }
                     if (m.BackColor is not ConsoleColorEx.None) { Console.BackgroundColor = (ConsoleColor)m.BackColor; }
-                    Console.Write(m.Text);
+                    Console.Write(text);
                     Console.ResetColor();
                     hasMatch = true;
                     break;
@@ -339,16 +317,24 @@ namespace NTerm
         /// <summary>
         /// 
         /// </summary>
-        void Help()
+        void Help() // TODO improve
         {
             var cc = _config is not null ? $"{_config.Name}({_config.CommType})" : "None";
-            Print($"TODO current config: {cc}");
+            Print($"current config: {cc}");
 
             _hotKeys.ForEach(x => Print($"alt-{x.Key} sends: [{x.Value}]"));
 
             Print("serial ports:");
             var sports = SerialPort.GetPortNames();
             sports.ForEach(s => { Print($"   {s}"); });
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        void DoPrompt()
+        {
+            Console.Write(_settings.Prompt);
         }
     }
 }

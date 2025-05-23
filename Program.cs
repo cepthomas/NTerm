@@ -6,9 +6,7 @@ namespace NTerm
     {
         static void Main(string[] args)
         {
-            Console.WriteLine("Hello, World!");
-            var app = new App();
-            app.Dispose();
+            using var app = new App();
         }
     }
 }

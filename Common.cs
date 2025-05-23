@@ -61,15 +61,6 @@ namespace NTerm
         /// <returns>Tuple of (operation status, error message, success response).</returns>
         (OpStatus stat, string msg, string resp) Send(string req);
 
-        // /// <summary>Send data to the server.</summary>
-        // /// <param name="data">What to send</param>
-        // /// <returns>Tuple of (operation status, error message).</returns>
-        // (OpStatus stat, string msg) Send(string data);
-
-        // /// <summary>Receive data from the server.</summary>
-        // /// <returns>Tuple of (operation status, error message, success data).</returns>
-        // (OpStatus stat, string msg, string data) Receive();
-
         /// <summary>Reset comms, resource management.</summary>
         void Reset();
     }
@@ -85,7 +76,7 @@ namespace NTerm
 
         public static string BytesToString(byte[] buff, int cnt)
         {
-            var s = Encoding.Default.GetString(buff, 0, cnt); // Use UTF8?
+            var s = Encoding.Default.GetString(buff, 0, cnt);
             return s;
         }
 
