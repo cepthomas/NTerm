@@ -28,7 +28,7 @@ namespace NTerm
         readonly int _port;
 
         const int CONNECT_TIME = 50;
-        const int RESPONSE_TIME = 10;
+   //     const int RESPONSE_TIME = 10;
         const int BUFFER_SIZE = 4096;
         #endregion
 
@@ -65,113 +65,132 @@ namespace NTerm
 
         /// <summary>IComm implementation.</summary>
         /// <see cref="IComm"/>
-        public (OpStatus stat, string msg) Send(string data)
+        public (OpStatus stat, string msg, string resp) Send(string req)
         {
             OpStatus stat = OpStatus.Success;
             string msg = "";
+            string resp = "";
 
             try
             {
+                //=========== Connect ============//
                 using var client = new TcpClient();
-                client.SendTimeout = RESPONSE_TIME;
+                client.SendTimeout = _config.ResponseTime;
                 client.SendBufferSize = BUFFER_SIZE;
                 var task = client.ConnectAsync(_host, _port);
-                if (task.Wait(CONNECT_TIME))
+                if (!task.Wait(CONNECT_TIME)) { return (OpStatus.ConnectTimeout, "", resp); }
+                using var stream = client.GetStream();
+
+                //=========== Send ============//
+                bool sendDone = false;
+                var txData = Utils.StringToBytes(req);
+                int numToSend = txData.Length;
+                int ind = 0;
+
+                while (!sendDone)
                 {
-                    // Connected.
-                    using var stream = client.GetStream();
+                    // Do a chunk.
+                    int tosend = numToSend - ind >= client!.SendBufferSize ? client.SendBufferSize : numToSend - ind;
 
-                    bool done = false;
-                    var tx = Utils.StringToBytes(data);
-                    int num = tx.Length;
-                    int ind = 0;
+                    // If the send time-out expires, Write() throws SocketException.
+                    stream.Write(txData, ind, tosend);
 
-                    while (!done)
+                    ind += tosend;
+                    sendDone = ind >= numToSend;
+                }
+
+                //=========== Receive ==========//
+                bool rcvDone = false;
+                byte[] rxData = new byte[BUFFER_SIZE];
+                List<string> respParts = [];
+
+                while (!rcvDone)
+                {
+                    // Get response. If the read time-out expires, Read() throws IOException.
+                    
+                    int byteCount = stream.Read(rxData, 0, BUFFER_SIZE);
+
+                    if (byteCount == 0)
                     {
-                        // Do a chunk.
-                        int tosend = num - ind >= client!.SendBufferSize ? client.SendBufferSize : num - ind;
-
-                        // If the send time-out expires, Write() throws SocketException.
-                        stream.Write(tx, ind, tosend);
-
-                        ind += tosend;
-                        done = ind >= num;
+                        rcvDone = true;
+                    }
+                    else
+                    {
+                        respParts.Add(Utils.BytesToString(rxData, byteCount));
                     }
                 }
-                else
-                {
-                    stat = OpStatus.Timeout;
-                }
+
+                resp = string.Join("", respParts);
             }
             catch (Exception e)
             {
                 stat = ProcessException(e);
             }
 
-            return (stat, msg);
+            return (stat, msg, resp);
         }
 
-        /// <summary>IComm implementation.</summary>
-        /// <see cref="IComm"/>
-        public (OpStatus stat, string msg, string data) Receive()
-        {
-            OpStatus stat = OpStatus.Success;
-            string msg = "";
-            string data = "";
+        // /// <summary>IComm implementation.</summary>
+        // /// <see cref="IComm"/>
+        // public (OpStatus stat, string msg, string data) Receive()
+        // {
+        //     OpStatus stat = OpStatus.Success;
+        //     string msg = "";
+        //     string data = "";
 
-            try
-            {
-                using var client = new TcpClient();
-                client.ReceiveTimeout = RESPONSE_TIME;
-                client.ReceiveBufferSize = BUFFER_SIZE;
+        //     try
+        //     {
+        //         using var client = new TcpClient();
+        //         client.ReceiveTimeout = RESPONSE_TIME;
+        //         client.ReceiveBufferSize = BUFFER_SIZE;
 
-                var start = Utils.GetCurrentMsec();
+        //         var start = Utils.GetCurrentMsec();
 
-                var task = client.ConnectAsync(_host, _port);
+        //         var task = client.ConnectAsync(_host, _port);
 
-                if (task.Wait(CONNECT_TIME))
-                {
-                    //_logger.Debug($"Receive/connect took {Utils.GetCurrentMsec() - start}");
+        //         if (task.Wait(CONNECT_TIME))
+        //         {
+        //             //_logger.Debug($"Receive/connect took {Utils.GetCurrentMsec() - start}");
 
-                    // Connected.
-                    using var stream = client.GetStream();
+        //             // Connected.
+        //             using var stream = client.GetStream();
 
-                    bool rcvDone = false;
-                    int totalRx = 0;
-                    byte[] rx = new byte[BUFFER_SIZE];
+        //             bool rcvDone = false;
+        //             int totalRx = 0;
+        //             byte[] rx = new byte[BUFFER_SIZE];
 
-                    while (!rcvDone)
-                    {
-                        // Get response. If the read time-out expires, Read() throws IOException.
-                        int byteCount = stream.Read(rx, totalRx, BUFFER_SIZE - totalRx);
+        //             while (!rcvDone)
+        //             {
+        //                 // Get response. If the read time-out expires, Read() throws IOException.
+        //                 int byteCount = stream.Read(rx, totalRx, BUFFER_SIZE - totalRx);
 
-                        if (byteCount == 0)
-                        {
-                            rcvDone = true;
-                        }
-                        else if (totalRx >= BUFFER_SIZE)
-                        {
-                            rcvDone = true;
-                            _logger.Warn("TcpComm rx buffer overflow");
-                        }
-                        else
-                        {
-                            data = Utils.BytesToString(rx);
-                        }
-                    }
-                }
-                else
-                {
-                    stat = OpStatus.Timeout;
-                }
-            }
-            catch (Exception e)
-            {
-                stat = ProcessException(e);
-            }
+        //                 if (byteCount == 0)
+        //                 {
+        //                     rcvDone = true;
+        //                 }
+        //                 else if (totalRx >= BUFFER_SIZE)
+        //                 {
+        //                     rcvDone = true;
+        //                     _logger.Warn("TcpComm rx buffer overflow");
+        //                 }
+        //                 else
+        //                 {
+        //                     data = Utils.BytesToString(rx);
+        //                 }
+        //             }
+        //         }
+        //         else
+        //         {
+        //             stat = OpStatus.Timeout;
+        //         }
+        //     }
+        //     catch (Exception e)
+        //     {
+        //         stat = ProcessException(e);
+        //     }
 
-            return (stat, msg, data);
-        }
+        //     return (stat, msg, data);
+        // }
 
         /// <summary>IComm implementation.</summary>
         /// <see cref="IComm"/>
@@ -198,7 +217,7 @@ namespace NTerm
             {
                 case OperationCanceledException ex:
                     // Usually connect timeout. Ignore and retry later.
-                    stat = OpStatus.Timeout;
+                    stat = OpStatus.ResponseTimeout;
                     //_logger.Debug($"OperationCanceledException: Timeout: {ex.Message}");
                     break;
 
@@ -208,7 +227,7 @@ namespace NTerm
                     if (valid.Contains(ex.NativeErrorCode))
                     {
                         // Ignore and retry later.
-                        stat = OpStatus.Timeout;
+                        stat = OpStatus.ResponseTimeout;
                         //_logger.Debug($"SocketException: Timeout: {ex.NativeErrorCode}");
                     }
                     else
@@ -220,7 +239,7 @@ namespace NTerm
 
                 case IOException ex:
                     // Usually receive timeout. Ignore and retry later.
-                    stat = OpStatus.Timeout;
+                    stat = OpStatus.ResponseTimeout;
                     //_logger.Debug($"IOException: Timeout: {ex.Message}");
                     break;
 

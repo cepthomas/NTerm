@@ -58,7 +58,7 @@ namespace NTerm
             _settings = (UserSettings)SettingsCore.Load(appDir, typeof(UserSettings));
 
             var ok = InitFromSettings();
-            //SettingsEditor.Edit(_settings, "NTerm", 120);
+            //SettingsEditor.Edit(_settings, "NTerm", 400);
 
             if (ok && _config is not null)
             {
@@ -85,12 +85,9 @@ namespace NTerm
         /// </summary>
         public void Run()
         {
-            // TODO write prompt somewhere/when?
-
             // sanity check. Print(">>>[38;2;204;39;187mYou have freedom here[0m.\n<NL>The only guide\r\n<CR><NL>is your heart.");
 
             using CancellationTokenSource ts = new();
-
             using Task taskKeyboard = Task.Run(() => DoKeyboard(ts.Token));
 
             bool timedOut = false;
@@ -128,47 +125,54 @@ namespace NTerm
                     else
                     {
                         // var start = Utils.GetCurrentMsec();
-                        var (stat, msg) = _comm.Send(le.Text); // do something?
+                        var (stat, msg, resp) = _comm.Send(le.Text); // do something?
                         // _logger.Debug($"Send took {Utils.GetCurrentMsec() - start}");
 
                         switch (stat)
                         {
                             case OpStatus.Success:
+                                Print(resp);
                                 break;
 
                             case OpStatus.Error:
                                 _logger.Error($"Comm.Send() error [{msg}]");
                                 break;
 
-                            case OpStatus.Timeout:
+                            case OpStatus.ConnectTimeout:
                                 timedOut = true;
-                                Print("Server not listening");
+                                Print("Server not connecting");
+                                break;
+
+                            case OpStatus.ResponseTimeout:
+                                timedOut = true;
+                                Print("Server not responding");
                                 break;
                         }
+                        Print(_settings.Prompt, false);
                     }
                 }
 
                 //=========== Comm input? ============//
-                {
-                    // var start = Utils.GetCurrentMsec();
-                    var (stat, msg, data) = _comm.Receive();
-                    // _logger.Debug($"Receive took {Utils.GetCurrentMsec() - start}");
+                // {
+                //     // var start = Utils.GetCurrentMsec();
+                //     var (stat, msg, data) = _comm.Receive();
+                //     // _logger.Debug($"Receive took {Utils.GetCurrentMsec() - start}");
 
-                    switch (stat)
-                    {
-                        case OpStatus.Success:
-                            Print(data);
-                            break;
+                //     switch (stat)
+                //     {
+                //         case OpStatus.Success:
+                //             Print(data);
+                //             break;
 
-                        case OpStatus.Error:
-                            _logger.Error($"Comm.Receive() error [{msg}]");
-                            break;
+                //         case OpStatus.Error:
+                //             _logger.Error($"Comm.Receive() error [{msg}]");
+                //             break;
 
-                        case OpStatus.Timeout:
-                            timedOut = true;
-                            break;
-                    }
-                }
+                //         case OpStatus.Timeout:
+                //             timedOut = true;
+                //             break;
+                //     }
+                // }
 
                 // If there was no timeout, delay a bit.
                 if (!timedOut) Thread.Sleep(10);

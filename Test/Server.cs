@@ -9,6 +9,10 @@ using Ephemera.NBagOfTricks;
 using Ephemera.NBagOfTricks.PNUT;
 using NTerm;
 
+        // [DisplayName("Prompt")]
+        // [Description("CLI prompt.")]
+        // [Category("NTerm")]
+        // [Browsable(true)]
 
 namespace Test
 {
@@ -61,19 +65,19 @@ namespace Test
                                 response = $"\033[91m red \033[92 green \033[94 blue \033[0m none";
                                 break;
 
-                            case "x":
-                                done = true;
-                                break;
+                            // case "x":
+                            //     done = true;
+                            //     break;
 
-                            default:
+                            default: // Always respond with something to prevent timeouts.
                                 response = $"Unknown request: {request}";
                                 break;
                         }
 
+                        // byte[] bytes = Utils.StringToBytes($"{response}{Environment.NewLine}{_prompt}");
                         byte[] bytes = Utils.StringToBytes(response);
-
                         stream.Write(bytes, 0, bytes.Length);
-                        Console.WriteLine($"Server response: [{response}]");
+                        Console.WriteLine($"Server response: [{response.Substring(0, Math.Min(32, response.Length))}]");
                     }
                     else
                     {

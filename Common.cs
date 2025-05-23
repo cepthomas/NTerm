@@ -19,7 +19,7 @@ namespace NTerm
     public enum CommType { Null, Tcp, Serial }
 
     /// <summary>How did operation turn out?</summary>
-    public enum OpStatus { Success, Timeout, Error }
+    public enum OpStatus { Success, ConnectTimeout, ResponseTimeout, Error }
 
     /// <summary>Key modifiers</summary>
     public enum KeyMod { Ctrl, Alt, Shift, CtrlShift }
@@ -48,7 +48,7 @@ namespace NTerm
     #endregion
 
     #region Types
-    /// <summary>One keyboard event data.</summary>
+    /// <summary>One keyboard event.</summary>
     /// <param name="Text">The content</param>
     /// <param name="Modifiers">Maybe modifiers</param>
     record CliInput(string Text, ConsoleModifiers Modifiers);
@@ -56,14 +56,19 @@ namespace NTerm
     /// <summary>Comm type abstraction.</summary>
     interface IComm : IDisposable
     {
-        /// <summary>Send data to the server.</summary>
-        /// <param name="data">What to send</param>
-        /// <returns>Tuple of (operation status, error message).</returns>
-        (OpStatus stat, string msg) Send(string data);
+        /// <summary>Send request to the server, get response.</summary>
+        /// <param name="req">What to send</param>
+        /// <returns>Tuple of (operation status, error message, success response).</returns>
+        (OpStatus stat, string msg, string resp) Send(string req);
 
-        /// <summary>Receive data from the server.</summary>
-        /// <returns>Tuple of (operation status, error message, success data).</returns>
-        (OpStatus stat, string msg, string data) Receive();
+        // /// <summary>Send data to the server.</summary>
+        // /// <param name="data">What to send</param>
+        // /// <returns>Tuple of (operation status, error message).</returns>
+        // (OpStatus stat, string msg) Send(string data);
+
+        // /// <summary>Receive data from the server.</summary>
+        // /// <returns>Tuple of (operation status, error message, success data).</returns>
+        // (OpStatus stat, string msg, string data) Receive();
 
         /// <summary>Reset comms, resource management.</summary>
         void Reset();
@@ -78,16 +83,20 @@ namespace NTerm
             return (double)(1000.0 * Stopwatch.GetTimestamp() / Stopwatch.Frequency);
         }
 
-        public static string BytesToString(byte[] buff)
+        public static string BytesToString(byte[] buff, int cnt)
         {
-            var s = Encoding.Default.GetString(buff); // Use UTF8?
+            var s = Encoding.Default.GetString(buff, 0, cnt); // Use UTF8?
             return s;
         }
 
-        public static string BytesToStringReadable(byte[] buff)
+        public static string BytesToStringReadable(byte[] buff, int cnt)
         {
             List<string> list = [];
-            buff.ForEach(c => { list.Add(c.IsReadable() ? ((char)c).ToString() : $"<{c:X}>"); });
+            for (int i = 0; i < cnt; i++)
+            {
+                var c = buff[i];
+                list.Add(c.IsReadable() ? ((char)c).ToString() : $"<{c:X}>");
+            }
             return string.Join("", list);
         }
 

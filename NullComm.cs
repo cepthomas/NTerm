@@ -37,20 +37,35 @@ namespace NTerm
 
         /// <summary>IComm implementation.</summary>
         /// <see cref="IComm"/>
-        public (OpStatus stat, string msg) Send(string data)
+        public (OpStatus stat, string msg, string resp) Send(string req)
         {
-            return (OpStatus.Success, "Nothing to say");
-        }
+            OpStatus stat = OpStatus.Success;
+            string msg = "Nothing to say";
+            string resp = $"NullComm receive {_count}";
+            _count += 11;
 
-        /// <summary>IComm implementation.</summary>
-        /// <see cref="IComm"/>
-        public (OpStatus stat, string msg, string data) Receive()
-        {
             // Fake blocking.
             Thread.Sleep(1000);
-            _count += 11;
-            return (OpStatus.Success, "no msg", $"NullComm receive {_count}");
+            return (stat, msg, resp);
         }
+
+
+        // /// <summary>IComm implementation.</summary>
+        // /// <see cref="IComm"/>
+        // public (OpStatus stat, string msg) Send(string data)
+        // {
+        //     return (OpStatus.Success, "Nothing to say");
+        // }
+
+        // /// <summary>IComm implementation.</summary>
+        // /// <see cref="IComm"/>
+        // public (OpStatus stat, string msg, string data) Receive()
+        // {
+        //     // Fake blocking.
+        //     Thread.Sleep(1000);
+        //     _count += 11;
+        //     return (OpStatus.Success, "no msg", $"NullComm receive {_count}");
+        // }
 
         /// <summary>IComm implementation.</summary>
         /// <see cref="IComm"/>

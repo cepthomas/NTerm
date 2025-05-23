@@ -23,7 +23,7 @@ namespace NTerm
 {
     /// <summary>Serial port comm.</summary>
     /// <see cref="IComm"/>
-    public class SerialComm : IComm // TODO needs debug with hardware.
+    public class SerialComm : IComm // TODO needs dev and debug with hardware.
     {
         #region Fields
         readonly Logger _logger = LogManager.CreateLogger("SER");
@@ -104,6 +104,45 @@ namespace NTerm
 
         /// <summary>IComm implementation.</summary>
         /// <see cref="IComm"/>
+        public (OpStatus stat, string msg, string resp) Send(string req)
+        {
+            OpStatus stat = OpStatus.Success;
+            string msg = "";
+            string resp = "";
+
+            try
+            {
+                //=========== Connect ============//
+                if (!_serialPort.IsOpen) _serialPort.Open();
+                using var stream = _serialPort.BaseStream;
+
+                //=========== Send ============//
+                _logger.Debug($"[Client] Sending [{req.Length}]");
+                stream.Write(Utils.StringToBytes(req));
+                msg = "SerialComm sent";
+
+                //=========== Receive ==========//
+                var rxdata = new byte[BUFFER_SIZE];
+                int byteCount = stream.Read(rxdata, 0, BUFFER_SIZE);
+                resp = Utils.BytesToString(rxdata, byteCount);
+            }
+            catch (Exception e)
+            {
+                stat = ProcessException(e);
+            }
+
+            return (stat, msg, resp);
+        }
+
+        /// <summary>IComm implementation.</summary>
+        /// <see cref="IComm"/>
+        public void Reset()
+        {
+        }        
+
+/*
+        /// <summary>IComm implementation.</summary>
+        /// <see cref="IComm"/>
         public (OpStatus stat, string msg) Send(string data)
         {
             OpStatus stat = OpStatus.Success;
@@ -159,12 +198,6 @@ namespace NTerm
             return (stat, msg, data);
         }
 
-        /// <summary>IComm implementation.</summary>
-        /// <see cref="IComm"/>
-        public void Reset()
-        {
-        }        
-
         /// <summary>
         /// 
         /// </summary>
@@ -186,6 +219,7 @@ namespace NTerm
 
             return stat;
         }
+*/
 
         /// <summary>
         /// 
