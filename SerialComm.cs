@@ -13,7 +13,6 @@ using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 using Ephemera.NBagOfTricks;
-using Ephemera.NBagOfTricks.Slog;
 
 
 // https://learn.microsoft.com/en-us/dotnet/api/system.io.ports.serialport
@@ -27,7 +26,7 @@ namespace NTerm
     {
         #region Fields
         readonly Logger _logger = LogManager.CreateLogger("SER");
-        Config _config;
+        readonly Config _config;
         readonly SerialPort _serialPort;
 
         const int CONNECT_TIME = 100;

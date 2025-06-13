@@ -9,7 +9,6 @@ using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using Ephemera.NBagOfTricks;
-using Ephemera.NBagOfTricks.Slog;
 using Ephemera.NBagOfUis;
 
 
@@ -138,11 +137,11 @@ namespace NTerm
         public override StandardValuesCollection GetStandardValues(ITypeDescriptorContext? context)
         {
             var settings = (UserSettings)context!.Instance!;
-            switch (context!.PropertyDescriptor!.Name)
+            return context!.PropertyDescriptor!.Name switch
             {
-                case "CurrentConfig": return new StandardValuesCollection(settings.Configs.Select(x => x.Name).ToList());
-                default: return new StandardValuesCollection(null);
-            }
+                "CurrentConfig" => new StandardValuesCollection(settings.Configs.Select(x => x.Name).ToList()),
+                _ => new StandardValuesCollection(null),
+            };
         }
 
         public override bool GetStandardValuesSupported(ITypeDescriptorContext? context) { return true; }
