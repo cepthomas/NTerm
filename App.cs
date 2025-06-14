@@ -316,12 +316,12 @@ namespace NTerm
         /// <summary>
         /// 
         /// </summary>
-        void Help() // TODOX improve
+        void Help()
         {
             var cc = _config is not null ? $"{_config.Name}({_config.CommType})" : "None";
             Print($"current config: {cc}");
 
-            _hotKeys.ForEach(x => Print($"alt-{x.Key} sends: [{x.Value}]"));
+            _hotKeys.ForEach(x => Print($"{_settings.HotKeyMod}-{x.Key} sends: [{x.Value}]"));
 
             Print("serial ports:");
             var sports = SerialPort.GetPortNames();
