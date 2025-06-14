@@ -189,7 +189,7 @@ namespace NTerm
         }
 
         /// <summary>
-        /// Write to console. TODO could use ansi?
+        /// Write to console.
         /// </summary>
         /// <param name="text">What to print</param>
         /// <param name="nl">Default is to add a nl.</param>
@@ -316,7 +316,7 @@ namespace NTerm
         /// <summary>
         /// 
         /// </summary>
-        void Help() // TODO improve
+        void Help() // TODOX improve
         {
             var cc = _config is not null ? $"{_config.Name}({_config.CommType})" : "None";
             Print($"current config: {cc}");
