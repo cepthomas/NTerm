@@ -46,16 +46,9 @@ namespace NTerm
 
     public class Utils
     {
-        /// <summary>For timing measurements.</summary>
-        public static double GetCurrentMsec()
-        {
-            return (double)(1000.0 * Stopwatch.GetTimestamp() / Stopwatch.Frequency);
-        }
-
         public static string BytesToString(byte[] buff, int cnt)
         {
-            var s = Encoding.Default.GetString(buff, 0, cnt);
-            return s;
+            return Encoding.Default.GetString(buff, 0, cnt);
         }
 
         public static string BytesToStringReadable(byte[] buff, int cnt)
@@ -72,8 +65,7 @@ namespace NTerm
         public static byte[] StringToBytes(string s)
         {
             // Valid strings are always convertible.
-            var buff = Encoding.Default.GetBytes(s);
-            return buff;
+            return Encoding.Default.GetBytes(s);
         }
     }
 }
