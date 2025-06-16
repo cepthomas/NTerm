@@ -41,13 +41,13 @@ namespace NTerm
         readonly ConcurrentQueue<CliInput> _qCli = new();
 
         /// <summary>For timing measurements.</summary>
-        // readonly double _startMsec; TODO use TimeIt
+        readonly TimeIt _tmit = new();
         #endregion
 
         /// <summary>Build me one.</summary>
         public App()
         {
-            // _startMsec = Utils.GetCurrentMsec();
+            //TimeIt.Snap("App()");
 
             // Set up log first.
             var appDir = MiscUtils.GetAppDataDir("NTerm", "Ephemera");
