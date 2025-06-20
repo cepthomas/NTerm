@@ -8,8 +8,8 @@ using System.IO;
 using System.Windows.Forms;
 using Ephemera.NBagOfTricks.PNUT;
 using Ephemera.NBagOfTricks;
-using NTerm;
 using Ephemera.NBagOfUis;
+using NTerm;
 
 
 namespace Test
