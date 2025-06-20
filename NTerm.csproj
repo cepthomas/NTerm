@@ -62,8 +62,4 @@
     </EmbeddedResource>
   </ItemGroup>
 
-    <Target Name="PostBuild" AfterTargets="PostBuildEvent">
-      <Exec Command="copy /Y $(OutputPath)* C:\Dev\bin" />
-    </Target>
-
 </Project>
