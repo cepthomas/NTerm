@@ -3,21 +3,18 @@
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <SelfContained>false</SelfContained>
-    <RuntimeIdentifier>win-x64</RuntimeIdentifier>
-    <TargetFramework>net8.0-windows</TargetFramework>
     <Nullable>enable</Nullable>
     <UseWindowsForms>true</UseWindowsForms>
     <ImplicitUsings>disable</ImplicitUsings>
     <ApplicationIcon>cucaracha.ico</ApplicationIcon>
     <SatelliteResourceLanguages>none</SatelliteResourceLanguages>
-  </PropertyGroup>
 
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
+    <OutputPath>bin\</OutputPath>
+    <!-- <RuntimeIdentifier>win-x64</RuntimeIdentifier> -->
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <!-- <Platforms>Any CPU</Platforms> -->
     <NoWarn>1701;1702;CA1816;CA1822</NoWarn>
-  </PropertyGroup>
 
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
-    <NoWarn>1701;1702;CA1816;CA1822</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>
@@ -30,17 +27,6 @@
     <None Remove="lib\**" />
     <None Remove="stuff\**" />
     <None Remove="Test\**" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <Compile Remove="App_1.cs" />
-    <Compile Remove="TcpComm_1.cs" />
-    <Compile Remove="TcpComm_transient.cs" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <None Remove="logic.py" />
-    <None Remove="NTerm.zip" />
   </ItemGroup>
 
   <ItemGroup>
