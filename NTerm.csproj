@@ -8,12 +8,13 @@
     <ImplicitUsings>disable</ImplicitUsings>
     <ApplicationIcon>cucaracha.ico</ApplicationIcon>
     <SatelliteResourceLanguages>none</SatelliteResourceLanguages>
+    <NoWarn>1701;1702;CA1816;CA1822</NoWarn>
 
     <OutputPath>bin\</OutputPath>
-    <!-- <RuntimeIdentifier>win-x64</RuntimeIdentifier> -->
+    <!-- need RuntimeIdentifier to prevent runtimes dir creation -->
+    <RuntimeIdentifier>win-x64</RuntimeIdentifier>
     <TargetFramework>net8.0-windows</TargetFramework>
     <!-- <Platforms>Any CPU</Platforms> -->
-    <NoWarn>1701;1702;CA1816;CA1822</NoWarn>
 
   </PropertyGroup>
 
