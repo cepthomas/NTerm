@@ -1,20 +1,18 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
+
     <OutputType>Exe</OutputType>
-    <SelfContained>false</SelfContained>
-    <Nullable>enable</Nullable>
     <UseWindowsForms>true</UseWindowsForms>
+    <OutputPath>bin\</OutputPath>
+    <RuntimeIdentifier>win-x64</RuntimeIdentifier>
+    <TargetFramework>net8.0-windows</TargetFramework>
+
+    <Nullable>enable</Nullable>
     <ImplicitUsings>disable</ImplicitUsings>
     <ApplicationIcon>cucaracha.ico</ApplicationIcon>
     <SatelliteResourceLanguages>none</SatelliteResourceLanguages>
     <NoWarn>1701;1702;CA1816;CA1822</NoWarn>
-
-    <OutputPath>bin\</OutputPath>
-    <!-- need RuntimeIdentifier to prevent runtimes dir creation -->
-    <RuntimeIdentifier>win-x64</RuntimeIdentifier>
-    <TargetFramework>net8.0-windows</TargetFramework>
-    <!-- <Platforms>Any CPU</Platforms> -->
 
   </PropertyGroup>
 

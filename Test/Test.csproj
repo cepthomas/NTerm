@@ -2,14 +2,13 @@
 
     <PropertyGroup>
         <OutputType>Exe</OutputType>
-        <SelfContained>false</SelfContained>
         <RuntimeIdentifier>win-x64</RuntimeIdentifier>
         <TargetFramework>net8.0-windows</TargetFramework>
-        <Nullable>enable</Nullable>
         <UseWindowsForms>true</UseWindowsForms>
+
+        <Nullable>enable</Nullable>
         <ImplicitUsings>disable</ImplicitUsings>
         <SatelliteResourceLanguages>none</SatelliteResourceLanguages>
-        <!-- <Platforms>x64</Platforms> -->
     </PropertyGroup>
 
     <ItemGroup>
