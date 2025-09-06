@@ -16,7 +16,7 @@ namespace NTerm
 
     #region Enums
     /// <summary>Supported flavors.</summary>
-    public enum CommType { Null, Tcp, Serial }
+    public enum CommType { Null, Tcp, Udp, Serial }
 
     /// <summary>How did operation turn out?</summary>
     public enum OpStatus { Success, ConnectTimeout, ResponseTimeout, Error }

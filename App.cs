@@ -123,7 +123,7 @@ namespace NTerm
                     else
                     {
                         // var start = Utils.GetCurrentMsec();
-                        var (stat, msg, resp) = _comm.Send(le.Text); // do something?
+                        var (stat, msg, resp) = _comm.Send(le.Text); // do something? TODO1 UDP can't wait for user input - should poll anyways.
                         // _logger.Debug($"Send took {Utils.GetCurrentMsec() - start}");
 
                         switch (stat)
