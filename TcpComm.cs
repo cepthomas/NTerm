@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -21,27 +22,47 @@ namespace NTerm
     {
         #region Fields
         readonly Logger _logger = LogManager.CreateLogger("TCP");
-        readonly Config _config;
-        readonly string _host;
-        readonly int _port;
+        //readonly Config _config;
+        string _host;
+        int _port;
 
         const int CONNECT_TIME = 50;
         const int BUFFER_SIZE = 4096;
         #endregion
 
-        /// <summary>
-        /// Make me one.
-        /// </summary>
-        /// <param name="config"></param>
+        /// <summary>Send string queue.</summary>
+        readonly ConcurrentQueue<string> _qsend = new();
+
+
+
+// https://learn.microsoft.com/en-us/dotnet/standard/asynchronous-programming-patterns/task-based-asynchronous-pattern-tap?redirectedfrom=MSDN
+//.NET provides the Progress<T> class, which implements IProgress<T>. The Progress<T> class is declared as follows:
+// public class Progress<T> : IProgress<T>  
+// {  
+//     public Progress();  
+//     public Progress(Action<T> handler);  
+//     protected virtual void OnReport(T value);  
+//     public event EventHandler<T>? ProgressChanged;  
+// }  
+
+IProgress<string> _progress;
+
+
+                /// <param name="config"></param>
+
+        /// <summary>IComm implementation.</summary>
+        /// <see cref="IComm"/>
         /// <exception cref="ArgumentException"></exception>
-        public TcpComm(Config config)
+        public OpStatus Init(string config, IProgress<string> progress)
         {
             try
             {
-                _config = config;
+                //_host = host;
+                //_port = port;
+                _progress = progress;
 
                 // Parse the args: "127.0.0.1 59120"
-                var parts = _config.Args;
+                var parts = config.SplitByToken(" ");
 
                 _host = parts[0];
                 _port = int.Parse(parts[1]);
@@ -51,6 +72,7 @@ namespace NTerm
                 var msg = $"Invalid args: {e.Message}";
                 throw new ArgumentException(msg);
             }
+            return OpStatus.Success;
         }
 
         /// <summary>
@@ -62,7 +84,53 @@ namespace NTerm
 
         /// <summary>IComm implementation.</summary>
         /// <see cref="IComm"/>
-        public (OpStatus stat, string msg, string resp) Send(string req)
+        public OpStatus Send(string req)
+        {
+            _qsend.Enqueue(req);
+            return OpStatus.Success;
+        }
+
+
+        Task DoWorkAsync(string data)
+        {
+            return Task.Run(() => DoWork(data));
+        }
+
+        void DoWork(string data)
+        {
+            Console.WriteLine(data);
+
+            Thread.Sleep(100);
+        }
+
+        /// <summary>IComm implementation.</summary>
+        /// <see cref="IComm"/>
+        public OpStatus Run()
+        {
+            var t = DoWorkAsync("booga");
+
+            // var workers = new List<IWorker> {new Worker(), new Worker(), new Worker()};
+            
+            // var tasks = workers.Select(t => t.DoWorkAsync("some data"));
+
+            // Task.WhenAll(tasks).ContinueWith(task => Callback());
+
+            // Console.WriteLine("Waiting");
+
+            return OpStatus.Success;
+        
+        }
+
+
+/////////////////////////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////////////////////////
+
+
+
+        /// <summary>IComm implementation.</summary>
+        /// <see cref="IComm"/>
+        public (OpStatus stat, string msg, string resp) Send_orig(string req)
         {
             OpStatus stat = OpStatus.Success;
             string msg = "";
@@ -72,7 +140,7 @@ namespace NTerm
             {
                 //=========== Connect ============//
                 using var client = new TcpClient();
-                client.SendTimeout = _config.ResponseTime;
+// from???                client.SendTimeout = _config.ResponseTime;
                 client.SendBufferSize = BUFFER_SIZE;
 
                 var task = client.ConnectAsync(_host, _port);
@@ -132,6 +200,11 @@ namespace NTerm
 
             return (stat, msg, resp);
         }
+
+
+
+
+
 
         /// <summary>IComm implementation.</summary>
         /// <see cref="IComm"/>

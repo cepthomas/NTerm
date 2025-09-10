@@ -15,7 +15,7 @@ namespace NTerm
 {
     /// <summary>UDP comm.</summary>
     /// <see cref="IComm"/>
-    internal class UdpComm : IComm
+    internal class UdpComm //: IComm
     {
         #region Fields
         readonly Logger _logger = LogManager.CreateLogger("UDP");

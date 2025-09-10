@@ -17,6 +17,9 @@ using Ephemera.NBagOfTricks;
 using Ephemera.NBagOfUis;
 
 
+using System.Threading.Tasks.Dataflow;
+
+
 namespace NTerm
 {
     public class App : IDisposable
@@ -29,7 +32,7 @@ namespace NTerm
         readonly UserSettings _settings = new();
 
         /// <summary>Current config</summary>
-        Config? _config = null;
+        string _commConfig = "?";
 
         /// <summary>Client comm flavor.</summary>
         IComm? _comm = null;
@@ -44,21 +47,45 @@ namespace NTerm
         readonly TimeIt _tmit = new();
         #endregion
 
+
+        string _name = "???";
+
+        string commType = "?";
+
+        CommType _commType = CommType.Null;
+
+        int _responseTime = 1000;
+
+        Dictionary<string, ConsoleColorEx> _matchers = [];
+
+        Progress<string> _progress = new();
+
+
+
         /// <summary>Build me one.</summary>
         public App()
         {
             //TimeIt.Snap("App()");
+            bool ok = true;
+
+            var appDir = MiscUtils.GetAppDataDir("NTerm", "Ephemera");
+            _settings = (UserSettings)SettingsCore.Load(appDir, typeof(UserSettings));
+
+            InitFromSettings();
 
             // Set up log first.
-            var appDir = MiscUtils.GetAppDataDir("NTerm", "Ephemera");
             var logFileName = Path.Combine(appDir, "log.txt");
             LogManager.Run(logFileName, 50000);
             LogManager.LogMessage += (object? sender, LogMessageEventArgs e) => { Print($"{e.Message}"); DoPrompt(); };
-            _settings = (UserSettings)SettingsCore.Load(appDir, typeof(UserSettings));
 
-            var ok = InitFromSettings();
 
-            if (ok && _config is not null)
+            // Init stuff.
+            LoadIni();
+
+            _progress.ProgressChanged += (_, s) => { Print(s, false); };
+
+
+            if (ok)
             {
                 Run(); // forever
             }
@@ -123,17 +150,17 @@ namespace NTerm
                     else
                     {
                         // var start = Utils.GetCurrentMsec();
-                        var (stat, msg, resp) = _comm.Send(le.Text); // do something? TODO1 UDP can't wait for user input - should poll anyways.
+                        var stat = _comm.Send(le.Text);
                         // _logger.Debug($"Send took {Utils.GetCurrentMsec() - start}");
 
                         switch (stat)
                         {
                             case OpStatus.Success:
-                                Print(resp);
+                    //            Print(resp);
                                 break;
 
                             case OpStatus.Error:
-                                _logger.Error($"Comm.Send() error [{msg}]");
+                    //              _logger.Error($"Comm.Send() error [{msg}]");
                                 break;
 
                             case OpStatus.ConnectTimeout:
@@ -153,6 +180,123 @@ namespace NTerm
 
                 // If there was no timeout, delay a bit.
                 if (!timedOut) Thread.Sleep(10);
+            }
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        void LoadIni()
+        {
+            // Process command line options.
+            try
+            {
+                var args = Environment.GetCommandLineArgs();
+
+                // cmd line: my.ini OR one of the comm_type args
+                //[nterm]
+                //comm_type=null
+                //comm_type=tcp 127.0.0.1 59120
+                //comm_type=udp 127.0.0.1 59120
+                //comm_type=serial COM1 9600 8N1 ; E-O-N  6-7-8  0-1-15
+                //[hot keys]
+                //k=do something
+                //o=send me
+                //[matchers]
+                //blue=Text to match
+
+                for (int i = 0; i < args.Length; i++)
+                {
+                    var arg = args[i];
+
+                    switch (arg)
+                    {
+                        case "null":
+                            _commType = CommType.Null;
+                            break;
+
+                        case "tcp":
+                            _commType = CommType.Tcp;
+                            break;
+
+                        case "udp":
+                            _commType = CommType.Udp;
+                            break;
+
+                        case "serial":
+                            _commType = CommType.Serial;
+                            break;
+
+                        case "-?":
+                            Help();
+                            Environment.Exit(0);
+                            break;
+
+                        default:
+                            // If first, check for valid file.
+                            if (i == 0)
+                            {
+                                if (arg.EndsWith(".ini") && File.Exists(arg))
+                                {
+                                    ReadIniFile(arg);
+                                }
+                                else
+                                {
+                                    throw new ArgumentException($"Invalid ini file: {arg}");
+                                }
+                            }
+                            else
+                            {
+                                throw new ArgumentException($"Invalid argument: {arg}");
+                            }
+                            break;
+                    }
+                }
+            }
+            catch (IniSyntaxException ex)
+            {
+                Print($"IniSyntaxException at {ex.LineNum}: {ex.Message}");//, TODO errColor);
+                Environment.Exit(1);
+            }
+            catch (ArgumentException ex)
+            {
+                Print($"ArgumentException: {ex.Message}");//, errColor);
+                Environment.Exit(3);
+            }
+            catch (Exception ex)
+            {
+                Print($"{ex.GetType()}: {ex.Message}");//, errColor);
+                Environment.Exit(4);
+            }
+
+            ///
+            void ReadIniFile(string fn)
+            {
+                var inrdr = new IniReader(fn);
+
+                foreach (var val in inrdr.Contents["nterm"].Values)
+                {
+                    switch (val.Key)
+                    {
+                        case "comm_type": commType = val.Value; break;
+                        default: throw new IniSyntaxException($"Invalid section value for {val.Key}", -1);
+                    }
+                }
+
+                //[hot_keys]
+                //k=do something
+                //o=send me
+                foreach (var val in inrdr.Contents["hot_keys"].Values)
+                {
+                    _hotKeys[val.Key[0]] = val.Value; 
+                }
+
+                //[matchers]
+                //blue=Text to match
+                foreach (var val in inrdr.Contents["matchers"].Values)
+                {
+                    _matchers[val.Key] = Enum.Parse<ConsoleColorEx>(val.Value, true);
+                }
             }
         }
 
@@ -196,12 +340,11 @@ namespace NTerm
         void Print(string text, bool nl = true)
         {
             bool hasMatch = false;
-            foreach (Matcher m in _config.Matchers)
+            foreach (var m in _matchers)
             {
-                if (text.Contains(m.Text))
+                if (text.Contains(m.Key))
                 {
-                    if (m.ForeColor is not ConsoleColorEx.None) { Console.ForegroundColor = (ConsoleColor)m.ForeColor; }
-                    if (m.BackColor is not ConsoleColorEx.None) { Console.BackgroundColor = (ConsoleColor)m.BackColor; }
+                    if (m.Value is not ConsoleColorEx.None) { Console.ForegroundColor = (ConsoleColor)m.Value; }
                     Console.Write(text);
                     Console.ResetColor();
                     hasMatch = true;
@@ -218,76 +361,6 @@ namespace NTerm
             {
                 Console.Write(Environment.NewLine);
             }
-        }
-
-        /// <summary>
-        /// Load persisted settings.
-        /// </summary>
-        /// <exception cref="NotImplementedException"></exception>
-        bool InitFromSettings()
-        {
-            bool ok = true;
-
-            // Reset.
-            _config = null;
-            _comm?.Dispose();
-            _comm = null;
-
-            LogManager.MinLevelFile = _settings.FileLogLevel;
-            LogManager.MinLevelNotif = _settings.NotifLogLevel;
-
-            var lc = _settings.Configs.Select(x => x.Name).ToList();
-
-            if (lc.Count > 0)
-            {
-                var c = _settings.Configs.FirstOrDefault(x => x.Name == _settings.CurrentConfig);
-                _config = c is null ? _settings.Configs[0] : c;
-
-                try
-                {
-                    _comm = _config.CommType switch
-                    {
-                        CommType.Null => new NullComm(_config),
-                        CommType.Tcp => new TcpComm(_config),
-                        CommType.Serial => new SerialComm(_config),
-                        _ => throw new NotImplementedException(),
-                    };
-                }
-                catch (Exception e)
-                {
-                    _logger.Error(e.Message);
-                    ok = false;
-                    return ok;
-                }
-
-                // Init hotkeys.
-                _hotKeys.Clear();
-                _config.HotKeys.ForEach(hk =>
-                {
-                    var parts = hk.SplitByToken("=");
-
-                    if (parts.Count == 2 && parts[0].Length == 1 && parts[1].Length > 0)
-                    {
-                        _hotKeys[parts[0].ToUpper()[0]] = parts[1];
-                    }
-                    else
-                    {
-                        _logger.Warn($"Invalid hotkey:{hk}");
-                    }
-                });
-
-                _logger.Info($"Using {_config.Name} [{_config.CommType}]");
-            }
-
-            if (_config is null)
-            {
-                _logger.Warn($"Client is not selected - edit your settings");
-                _comm?.Dispose();
-                _comm = null;
-                _config = null;
-                ok = false;
-            }
-            return ok;
         }
 
         /// <summary>
@@ -316,11 +389,8 @@ namespace NTerm
         /// <summary>
         /// 
         /// </summary>
-        void Help()
+        void Help() // TODO
         {
-            var cc = _config is not null ? $"{_config.Name}({_config.CommType})" : "None";
-            Print($"current config: {cc}");
-
             _hotKeys.ForEach(x => Print($"{_settings.HotKeyMod}-{x.Key} sends: [{x.Value}]"));
 
             Print("serial ports:");
@@ -334,6 +404,15 @@ namespace NTerm
         void DoPrompt()
         {
             Console.Write(_settings.Prompt);
+        }
+
+        /// <summary>
+        /// Load persisted settings.
+        /// </summary>
+        void InitFromSettings()
+        {
+            LogManager.MinLevelFile = _settings.FileLogLevel;
+            LogManager.MinLevelNotif = _settings.NotifLogLevel;
         }
     }
 }

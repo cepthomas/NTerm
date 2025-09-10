@@ -22,9 +22,8 @@ namespace NTerm
         /// Make me one.
         /// </summary>
         /// <param name="config"></param>
-        public NullComm(Config config)
+        public NullComm()
         {
-            //return (OpStatus.Success, $"NullComm inited at {DateTime.Now}");
         }
 
         /// <summary>
@@ -32,6 +31,21 @@ namespace NTerm
         /// </summary>
         public void Dispose()
         {
+        }
+
+        public OpStatus Init(string config, IProgress<string> progress)
+        {
+            return OpStatus.Success;//, $"NullComm inited at {DateTime.Now}");
+        }
+
+        public OpStatus Run()
+        {
+            throw new NotImplementedException();
+        }
+
+        OpStatus IComm.Send(string req)
+        {
+            throw new NotImplementedException();
         }
 
         /// <summary>IComm implementation.</summary>
@@ -52,6 +66,6 @@ namespace NTerm
         /// <see cref="IComm"/>
         public void Reset()
         {
-        }        
+        }
     }
 }

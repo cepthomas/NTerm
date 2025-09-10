@@ -34,10 +34,29 @@ namespace NTerm
     /// <summary>Comm type abstraction.</summary>
     interface IComm : IDisposable
     {
+        /// <summary>Make me one.</summary>
+        /// <param name="config"></param>
+        /// <param name="progress"></param>
+        OpStatus Init(string config, IProgress<string> progress);
+
+        OpStatus Run();
+
         /// <summary>Send request to the server, get response.</summary>
         /// <param name="req">What to send</param>
         /// <returns>Tuple of (operation status, error message, success response).</returns>
-        (OpStatus stat, string msg, string resp) Send(string req);
+//        (OpStatus stat, string msg, string resp) Send(string req);
+        OpStatus Send(string req);
+
+
+
+
+        // Task DoWorkAsync(string data);
+
+        // void DoWork(string data);
+
+
+
+
 
         /// <summary>Reset comms, resource management.</summary>
         void Reset();

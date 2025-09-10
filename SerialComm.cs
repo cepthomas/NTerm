@@ -22,7 +22,7 @@ namespace NTerm
 {
     /// <summary>Serial port comm.</summary>
     /// <see cref="IComm"/>
-    public class SerialComm : IComm // TODO needs dev and debug with hardware.
+    public class SerialComm //: IComm // TODO needs dev and debug with hardware.
     {
         #region Fields
         readonly Logger _logger = LogManager.CreateLogger("SER");
