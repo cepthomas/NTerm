@@ -97,7 +97,7 @@ namespace NTerm
                 //=========== CLI input? ============//
                 if (_qCli.TryDequeue(out CliInput? le))
                 {
-                    // Check meta key.
+                    // Check for meta key.
                     if (le.Text.Length > 1 && le.Text.StartsWith(_settings.MetaMarker))
                     {
                         switch (le.Text[1])

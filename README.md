@@ -14,7 +14,7 @@ Supports:
 - CommType: Null, Tcp, Udp, Serial
 - Args:
   - Tcp/Udp: "127.0.0.1", "59120"
-  - Serial: "COM1", "9600", "E|O|N", "6|7|8", "0|1|1.5"
+  - Serial: "COM1", "9600", "E|O|N", "6|7|8", "0|1|1.5"  - 8N1
 - HotKeys: like "k=do something"  "o=send me"
 - ... more
 
@@ -24,21 +24,16 @@ Supports:
 
 ## Metakeys? TODO1
 
-config metakeychar = '!'
+config MetaMarker = '!'
+case "q":  quit
+case "s":  edit settings
+case "?":  help
+user: "k=do something"  "o=send me"
 
-    case "q":
-        ts.Cancel();
-        break;
 
-    case "s":
-        /*var eds =*/
-        SettingsEditor.Edit(_settings, "NTerm", 120);
-        InitFromSettings();
-        break;
 
-    case "?":
-        Help();
-        break;
+### ==================================================
 
+- 
 
 

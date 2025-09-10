@@ -22,7 +22,6 @@ namespace NTerm
         #region Fields
         readonly Logger _logger = LogManager.CreateLogger("TCP");
         readonly Config _config;
-        // TcpClient _client;
         readonly string _host;
         readonly int _port;
 
@@ -75,8 +74,14 @@ namespace NTerm
                 using var client = new TcpClient();
                 client.SendTimeout = _config.ResponseTime;
                 client.SendBufferSize = BUFFER_SIZE;
+
                 var task = client.ConnectAsync(_host, _port);
-                if (!task.Wait(CONNECT_TIME)) { return (OpStatus.ConnectTimeout, "", resp); }
+
+                if (!task.Wait(CONNECT_TIME))
+                {
+                    return (OpStatus.ConnectTimeout, "", resp);
+                }
+
                 using var stream = client.GetStream();
 
                 //=========== Send ============//
