@@ -1,9 +1,7 @@
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
-using System.IO;
-using System.IO.Ports;
 using System.Linq;
-using System.Text;
 using System.Threading;
 using Ephemera.NBagOfTricks;
 
@@ -16,15 +14,18 @@ namespace NTerm
     {
         #region Fields
         int _count = 0;
+        readonly ConcurrentQueue<string> _qsend = new();
+        IProgress<string> _progress;
         #endregion
 
-        /// <summary>
-        /// Make me one.
-        /// </summary>
-        /// <param name="config"></param>
-        public NullComm()
-        {
-        }
+
+        // /// <summary>
+        // /// Make me one.
+        // /// </summary>
+        // /// <param name="config"></param>
+        // public NullComm()
+        // {
+        // }
 
         /// <summary>
         /// Clean up.
@@ -33,39 +34,40 @@ namespace NTerm
         {
         }
 
-        public OpStatus Init(string config, IProgress<string> progress)
+        public OpStatus Init(List<string> config, IProgress<string> progress)
         {
+            _progress = progress;
+
             return OpStatus.Success;//, $"NullComm inited at {DateTime.Now}");
         }
 
-        public OpStatus Run()
+        public void Run(CancellationToken token)
         {
-            throw new NotImplementedException();
+            while (!token.IsCancellationRequested)
+            {
+                if (_qsend.TryDequeue(out string? s))
+                {
+                    _progress.Report($">>> Got:{s}");
+                }
+
+                // Don't be greedy.
+                Thread.Sleep(20);
+            }
         }
 
+        /// <summary>IComm implementation.</summary>
+        /// <see cref="IComm"/>
         OpStatus IComm.Send(string req)
         {
-            throw new NotImplementedException();
-        }
-
-        /// <summary>IComm implementation.</summary>
-        /// <see cref="IComm"/>
-        public (OpStatus stat, string msg, string resp) Send(string req)
-        {
             OpStatus stat = OpStatus.Success;
-            string msg = "Nothing to say";
-            string resp = $"NullComm receive {_count}";
-            _count += 11;
-
-            // Fake blocking.
-            Thread.Sleep(1000);
-            return (stat, msg, resp);
+            _qsend.Enqueue(req);
+            return stat;
         }
 
-        /// <summary>IComm implementation.</summary>
-        /// <see cref="IComm"/>
-        public void Reset()
-        {
-        }
+        ///// <summary>IComm implementation.</summary>
+        ///// <see cref="IComm"/>
+        //public void Reset()
+        //{
+        //}
     }
 }

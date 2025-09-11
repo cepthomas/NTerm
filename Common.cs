@@ -1,10 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Diagnostics;
-using System.Drawing;
-using System.IO;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using Ephemera.NBagOfTricks;
 
 
@@ -37,29 +35,21 @@ namespace NTerm
         /// <summary>Make me one.</summary>
         /// <param name="config"></param>
         /// <param name="progress"></param>
-        OpStatus Init(string config, IProgress<string> progress);
+        OpStatus Init(List<string> config, IProgress<string> progress);
 
-        OpStatus Run();
+        /// <summary>Start the comm task.</summary>
+        /// <returns>Operation status.</returns>
+        void Run(CancellationToken token);
 
-        /// <summary>Send request to the server, get response.</summary>
+        /// <summary>Send request to the server.</summary>
         /// <param name="req">What to send</param>
-        /// <returns>Tuple of (operation status, error message, success response).</returns>
-//        (OpStatus stat, string msg, string resp) Send(string req);
+        /// <returns>Operation status.</returns>
         OpStatus Send(string req);
 
+        //void Dispose();
 
-
-
-        // Task DoWorkAsync(string data);
-
-        // void DoWork(string data);
-
-
-
-
-
-        /// <summary>Reset comms, resource management.</summary>
-        void Reset();
+        ///// <summary>Reset comms, resource management.</summary>
+        //void Reset();
     }
     #endregion
 

@@ -1,4 +1,4 @@
-# NTerm
+# NTerm  TODO1
 
 Minimalist terminal for simple things like embedded systems.
 Very much a work in progress.
@@ -18,11 +18,20 @@ Supports:
 - HotKeys: like "k=do something"  "o=send me"
 - ... more
 
-## Hotkeys? TODO1
+## settings
+
+string Prompt = "# ";
+KeyMod HotKeyMod = KeyMod.Ctrl;
+char MetaMarker = '!';
+LogLevel FileLogLevel = LogLevel.Trace;
+LogLevel NotifLogLevel = LogLevel.Info;
+
+
+## Hotkeys?
 
 
 
-## Metakeys? TODO1
+## Metakeys?
 
 config MetaMarker = '!'
 case "q":  quit
@@ -32,8 +41,19 @@ user: "k=do something"  "o=send me"
 
 
 
-### ==================================================
+### config ==================================================
 
-- 
+[nterm]
+; Flavor
+comm_type = null
+comm_type = tcp 127.0.0.1 59120
+comm_type = udp 127.0.0.1 59120
+comm_type = serial COM1 9600 8N1 ; E|O|N 6|7|8 0|1|15
 
+[hot_keys]
+k=do something
+o=send me
+
+[matchers]
+blue=Text to match
 

@@ -26,7 +26,6 @@ namespace NTerm
     {
         #region Fields
         readonly Logger _logger = LogManager.CreateLogger("SER");
-        readonly Config _config;
         readonly SerialPort _serialPort;
 
         const int CONNECT_TIME = 100;
@@ -39,6 +38,8 @@ namespace NTerm
         /// </summary>
         /// <param name="config"></param>
         /// <exception cref="ArgumentException"></exception>
+        
+        /*
         public SerialComm(Config config)
         {
             _config = config;
@@ -91,6 +92,7 @@ namespace NTerm
                 throw new ArgumentException(msg);
             }
         }
+        */
 
         /// <summary>
         /// Clean up.

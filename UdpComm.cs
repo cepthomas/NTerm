@@ -19,11 +19,11 @@ namespace NTerm
     {
         #region Fields
         readonly Logger _logger = LogManager.CreateLogger("UDP");
-        readonly Config _config;
         readonly string _host;
         readonly int _port;
 
         const int CONNECT_TIME = 50;
+        const int RESPONSE_TIME = 1000;
         const int BUFFER_SIZE = 4096;
         #endregion
 
@@ -32,24 +32,24 @@ namespace NTerm
         /// </summary>
         /// <param name="config"></param>
         /// <exception cref="ArgumentException"></exception>
-        public UdpComm(Config config)
-        {
-            try
-            {
-                _config = config;
+        //public UdpComm(Config config)
+        //{
+        //    try
+        //    {
+        //        _config = config;
 
-                // Parse the args: "127.0.0.1 59120"
-                var parts = _config.Args;
+        //        // Parse the args: "127.0.0.1 59120"
+        //        var parts = _config.Args;
 
-                _host = parts[0];
-                _port = int.Parse(parts[1]);
-            }
-            catch (Exception e)
-            {
-                var msg = $"Invalid args: {e.Message}";
-                throw new ArgumentException(msg);
-            }
-        }
+        //        _host = parts[0];
+        //        _port = int.Parse(parts[1]);
+        //    }
+        //    catch (Exception e)
+        //    {
+        //        var msg = $"Invalid args: {e.Message}";
+        //        throw new ArgumentException(msg);
+        //    }
+        //}
 
         /// <summary>
         /// Clean up.
@@ -73,7 +73,7 @@ namespace NTerm
             {
                 //=========== Connect ============//
                 using var client = new TcpClient();
-                client.SendTimeout = _config.ResponseTime;
+                client.SendTimeout = RESPONSE_TIME;
                 client.SendBufferSize = BUFFER_SIZE;
                 var task = client.ConnectAsync(_host, _port);
                 if (!task.Wait(CONNECT_TIME)) { return (OpStatus.ConnectTimeout, "", resp); }

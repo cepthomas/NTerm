@@ -21,57 +21,43 @@ namespace NTerm
     internal class TcpComm : IComm
     {
         #region Fields
+        /// <summary>Logger.</summary>
         readonly Logger _logger = LogManager.CreateLogger("TCP");
-        //readonly Config _config;
+
+        /// <summary>Update client.</summary>
+        IProgress<string> _progress;
+
+        /// <summary>Config.</summary>
         string _host;
+
+        /// <summary>Config.</summary>
         int _port;
 
-        const int CONNECT_TIME = 50;
-        const int BUFFER_SIZE = 4096;
-        #endregion
-
-        /// <summary>Send string queue.</summary>
+        /// <summary>Send queue.</summary>
         readonly ConcurrentQueue<string> _qsend = new();
 
-
-
-// https://learn.microsoft.com/en-us/dotnet/standard/asynchronous-programming-patterns/task-based-asynchronous-pattern-tap?redirectedfrom=MSDN
-//.NET provides the Progress<T> class, which implements IProgress<T>. The Progress<T> class is declared as follows:
-// public class Progress<T> : IProgress<T>  
-// {  
-//     public Progress();  
-//     public Progress(Action<T> handler);  
-//     protected virtual void OnReport(T value);  
-//     public event EventHandler<T>? ProgressChanged;  
-// }  
-
-IProgress<string> _progress;
-
-
-                /// <param name="config"></param>
+        const int CONNECT_TIME = 50;
+        const int RESPONSE_TIME = 1000;
+        const int BUFFER_SIZE = 4096;
+        #endregion
 
         /// <summary>IComm implementation.</summary>
         /// <see cref="IComm"/>
         /// <exception cref="ArgumentException"></exception>
-        public OpStatus Init(string config, IProgress<string> progress)
+        public OpStatus Init(List<string> config, IProgress<string> progress)
         {
             try
             {
-                //_host = host;
-                //_port = port;
                 _progress = progress;
-
-                // Parse the args: "127.0.0.1 59120"
-                var parts = config.SplitByToken(" ");
-
-                _host = parts[0];
-                _port = int.Parse(parts[1]);
+                _host = config[0];
+                _port = int.Parse(config[1]);
             }
             catch (Exception e)
             {
                 var msg = $"Invalid args: {e.Message}";
                 throw new ArgumentException(msg);
             }
+
             return OpStatus.Success;
         }
 
@@ -91,94 +77,79 @@ IProgress<string> _progress;
         }
 
 
-        Task DoWorkAsync(string data)
-        {
-            return Task.Run(() => DoWork(data));
-        }
+        // Task DoWorkAsync(string data)
+        // {
+        //     return Task.Run(() => DoWork(data));
+        // }
 
-        void DoWork(string data)
-        {
-            Console.WriteLine(data);
-
-            Thread.Sleep(100);
-        }
-
-        /// <summary>IComm implementation.</summary>
-        /// <see cref="IComm"/>
-        public OpStatus Run()
-        {
-            var t = DoWorkAsync("booga");
-
-            // var workers = new List<IWorker> {new Worker(), new Worker(), new Worker()};
-            
-            // var tasks = workers.Select(t => t.DoWorkAsync("some data"));
-
-            // Task.WhenAll(tasks).ContinueWith(task => Callback());
-
-            // Console.WriteLine("Waiting");
-
-            return OpStatus.Success;
-        
-        }
-
-
-/////////////////////////////////////////////////////////////////////////////////////////////
-/////////////////////////////////////////////////////////////////////////////////////////////
-/////////////////////////////////////////////////////////////////////////////////////////////
-
+        // void DoWork(string data)
+        // {
+        //     Console.WriteLine(data);
+        //     Thread.Sleep(100);
+        // }
 
 
         /// <summary>IComm implementation.</summary>
         /// <see cref="IComm"/>
-        public (OpStatus stat, string msg, string resp) Send_orig(string req)
+        public void Run(CancellationToken token)
         {
-            OpStatus stat = OpStatus.Success;
-            string msg = "";
-            string resp = "";
+            //try  // TODO1 needed?
+            //{
+            //}
+            //catch (Exception e)
+            //{
+            //    stat = ProcessException(e);
+            //}
 
-            try
+
+            while (!token.IsCancellationRequested)
             {
+                // Check connected, reconnect. TODO1
                 //=========== Connect ============//
                 using var client = new TcpClient();
-// from???                client.SendTimeout = _config.ResponseTime;
+                client.SendTimeout = RESPONSE_TIME;
                 client.SendBufferSize = BUFFER_SIZE;
 
                 var task = client.ConnectAsync(_host, _port);
 
                 if (!task.Wait(CONNECT_TIME))
                 {
-                    return (OpStatus.ConnectTimeout, "", resp);
+                    //return (OpStatus.ConnectTimeout, "", resp);
                 }
 
                 using var stream = client.GetStream();
 
+
+                // Any to send?
                 //=========== Send ============//
-                bool sendDone = false;
-                var txData = Utils.StringToBytes(req);
-                int numToSend = txData.Length;
-                int ind = 0;
-
-                while (!sendDone)
+                if (_qsend.TryDequeue(out string? s))
                 {
-                    // Do a chunk.
-                    int tosend = numToSend - ind >= client!.SendBufferSize ? client.SendBufferSize : numToSend - ind;
+                    bool sendDone = false;
+                    var txData = Utils.StringToBytes(s);
+                    int numToSend = txData.Length;
+                    int ind = 0;
 
-                    // If the send time-out expires, Write() throws SocketException.
-                    stream.Write(txData, ind, tosend);
+                    while (!sendDone)
+                    {
+                        // Do a chunk.
+                        int tosend = numToSend - ind >= client!.SendBufferSize ? client.SendBufferSize : numToSend - ind;
 
-                    ind += tosend;
-                    sendDone = ind >= numToSend;
+                        // If the send time-out expires, Write() throws SocketException.
+                        stream.Write(txData, ind, tosend);
+
+                        ind += tosend;
+                        sendDone = ind >= numToSend;
+                    }
                 }
 
+                // Any received?
                 //=========== Receive ==========//
                 bool rcvDone = false;
                 byte[] rxData = new byte[BUFFER_SIZE];
-                List<string> respParts = [];
 
                 while (!rcvDone)
                 {
                     // Get response. If the read time-out expires, Read() throws IOException.
-                    
                     int byteCount = stream.Read(rxData, 0, BUFFER_SIZE);
 
                     if (byteCount == 0)
@@ -187,29 +158,13 @@ IProgress<string> _progress;
                     }
                     else
                     {
-                        respParts.Add(Utils.BytesToString(rxData, byteCount));
+                        _progress.Report(Utils.BytesToString(rxData, byteCount));
                     }
                 }
 
-                resp = string.Join("", respParts);
+                // Don't be greedy.
+                Thread.Sleep(20);
             }
-            catch (Exception e)
-            {
-                stat = ProcessException(e);
-            }
-
-            return (stat, msg, resp);
-        }
-
-
-
-
-
-
-        /// <summary>IComm implementation.</summary>
-        /// <see cref="IComm"/>
-        public void Reset()
-        {
         }
 
         /// <summary>
@@ -217,7 +172,7 @@ IProgress<string> _progress;
         /// </summary>
         /// <param name="e"></param>
         /// <returns></returns>
-        OpStatus ProcessException(Exception e)
+        OpStatus ProcessException(Exception e) // TODO1
         {
             OpStatus stat;
 
@@ -271,5 +226,11 @@ IProgress<string> _progress;
 
             return stat;
         }
+
+        ///// <summary>IComm implementation.</summary>
+        ///// <see cref="IComm"/>
+        //public void Reset()
+        //{
+        //}
     }
 }
