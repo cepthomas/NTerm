@@ -13,7 +13,7 @@ namespace NTerm
     public class NullComm : IComm
     {
         #region Fields
-        int _count = 0;
+        //int _count = 0;
         readonly ConcurrentQueue<string> _qsend = new();
         IProgress<string> _progress;
         #endregion
@@ -34,21 +34,27 @@ namespace NTerm
         {
         }
 
-        public OpStatus Init(List<string> config, IProgress<string> progress)
+        public void Init(List<string> config, IProgress<string> progress)
         {
             _progress = progress;
-
-            return OpStatus.Success;//, $"NullComm inited at {DateTime.Now}");
         }
 
         public void Run(CancellationToken token)
         {
             while (!token.IsCancellationRequested)
             {
+                List<string> res = [];
+
                 if (_qsend.TryDequeue(out string? s))
                 {
-                    _progress.Report($">>> Got:{s}");
+                    var sout = $">>>NullComm:{s}!{Environment.NewLine}";
+                    // Simulate broken line.
+                    res.Add(sout[..5]);
+                    res.Add(sout[5..]);
                 }
+
+                res.ForEach(r => _progress.Report(r));
+
 
                 // Don't be greedy.
                 Thread.Sleep(20);
@@ -57,11 +63,12 @@ namespace NTerm
 
         /// <summary>IComm implementation.</summary>
         /// <see cref="IComm"/>
-        OpStatus IComm.Send(string req)
+        void IComm.Send(string req)
         {
-            OpStatus stat = OpStatus.Success;
-            _qsend.Enqueue(req);
-            return stat;
+            for (int i = 0; i < 5; i++)
+            {
+                _qsend.Enqueue($"{req}*iter{i + 1}");
+            }
         }
 
         ///// <summary>IComm implementation.</summary>

@@ -35,7 +35,7 @@ namespace NTerm
         /// <summary>Make me one.</summary>
         /// <param name="config"></param>
         /// <param name="progress"></param>
-        OpStatus Init(List<string> config, IProgress<string> progress);
+        void Init(List<string> config, IProgress<string> progress);
 
         /// <summary>Start the comm task.</summary>
         /// <returns>Operation status.</returns>
@@ -44,7 +44,7 @@ namespace NTerm
         /// <summary>Send request to the server.</summary>
         /// <param name="req">What to send</param>
         /// <returns>Operation status.</returns>
-        OpStatus Send(string req);
+        void Send(string req);
 
         //void Dispose();
 

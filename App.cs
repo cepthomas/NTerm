@@ -2,20 +2,13 @@ using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Drawing;
 using System.IO;
 using System.IO.Ports;
 using System.Linq;
-using System.Reflection;
-using System.Text;
-using System.Text.Json;
-using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
-using System.Windows.Forms;
 using Ephemera.NBagOfTricks;
 using Ephemera.NBagOfUis;
-// using Ephemera.NBagOfUis;
 
 
 
@@ -31,7 +24,7 @@ namespace NTerm
         readonly UserSettings _settings = new();
 
         /// <summary>Client comm flavor.</summary>
-        IComm? _comm = null;
+        IComm _comm = new NullComm();
 
         /// <summary>User hot keys.</summary>
         readonly Dictionary<char, string> _hotKeys = [];
@@ -41,38 +34,17 @@ namespace NTerm
 
         /// <summary>For timing measurements.</summary>
         readonly TimeIt _tmit = new();
-        #endregion
 
-
-        // /// <summary>Current config</summary>
-        // string _commConfig = "?";
-
-
-        // string _name = "???";
-
-        // string commType = "?";
-
-        // CommType _commType = CommType.Null;
-
-        // int _responseTime = 1000;
-
-        Dictionary<string, ConsoleColorEx> _matchers = [];
-
-        ConsoleColor errColor = ConsoleColor.Red;
+        /// <summary>Colorizing text.</summary>
+        readonly Dictionary<string, ConsoleColorEx> _matchers = [];
 
         /// <summary>Comm task reporting input.</summary>
-        Progress<string> _progress = new();
+        readonly Progress<string> _progress = new();
         // https://learn.microsoft.com/en-us/dotnet/standard/asynchronous-programming-patterns/task-based-asynchronous-pattern-tap?redirectedfrom=MSDN
-        //.NET provides the Progress<T> class, which implements IProgress<T>. The Progress<T> class is declared as follows:
-        // public class Progress<T> : IProgress<T>  
-        // {  
-        //     public Progress();  
-        //     public Progress(Action<T> handler);  
-        //     protected virtual void OnReport(T value);  
-        //     public event EventHandler<T>? ProgressChanged;  
-        // }  
 
-
+        /// <summary>Colorizing text.</summary>
+        const ConsoleColor ERR_COLOR = ConsoleColor.Red;
+        #endregion
 
         /// <summary>
         /// Build me one.
@@ -80,7 +52,6 @@ namespace NTerm
         public App()
         {
             //TimeIt.Snap("App()");
-            bool ok = true;
 
             // Get settings.
             var appDir = MiscUtils.GetAppDataDir("NTerm", "Ephemera");
@@ -91,33 +62,32 @@ namespace NTerm
             LogManager.MinLevelFile = _settings.FileLogLevel;
             LogManager.MinLevelNotif = _settings.NotifLogLevel;
             LogManager.Run(logFileName, 50000);
-            LogManager.LogMessage += (object? sender, LogMessageEventArgs e) => { PrintLine($"{e.Message}"); DoPrompt(); };
+            LogManager.LogMessage += (sender, e) => { PrintLine($"{e.Message}"); DoPrompt(); };
 
             // Set things up.
             try
             {
+                _progress.ProgressChanged += (_, s) => { Print(s); };
+
                 // Init stuff.
                 ProcessCommandLine();
-
-                _progress.ProgressChanged += (_, s) => { Print(s); };
 
                 Run(); // forever
             }
             catch (IniSyntaxException ex)
             {
-                PrintLine($"IniSyntaxException at {ex.LineNum}: {ex.Message}", errColor);
+                PrintLine($"IniSyntaxException at {ex.LineNum}: {ex.Message}", ERR_COLOR);
                 Environment.Exit(1);
             }
             catch (ArgumentException ex)
             {
-                Help();
-                PrintLine($"ArgumentException: {ex.Message}", errColor);
-                Environment.Exit(3);
+                PrintLine($"ArgumentException: {ex.Message}", ERR_COLOR);
+                Environment.Exit(2);
             }
             catch (Exception ex)
             {
-                PrintLine($"{ex.GetType()}: {ex.Message}", errColor);
-                Environment.Exit(4);
+                PrintLine($"{ex.GetType()}: {ex.Message}", ERR_COLOR);
+                Environment.Exit(3);
             }
             finally
             {
@@ -132,9 +102,8 @@ namespace NTerm
         /// </summary>
         public void Dispose()
         {
-            // Console.WriteLine("====== Dispose !!!! ======");
+            // PrintLine("====== Dispose !!!! ======");
             _comm?.Dispose();
-            //_comm = null;
         }
 
         /// <summary>
@@ -145,25 +114,17 @@ namespace NTerm
             DoPrompt();
 
             using CancellationTokenSource ts = new();
-
             using Task taskKeyboard = Task.Run(() => DoKeyboard(ts.Token));
             using Task taskKComm = Task.Run(() => _comm.Run(ts.Token));
 
-            bool timedOut = false;
-
-
-            // var workers = new List<IWorker> {new Worker(), new Worker(), new Worker()};
-            // var tasks = workers.Select(t => t.DoWorkAsync("some data"));
-            // Task.WhenAll(tasks).ContinueWith(task => Callback());
-            // Console.WriteLine("Waiting");
-
-
+            //bool timedOut = false;
+            bool continuous = false;
 
             while (!ts.Token.IsCancellationRequested)
             {
-                timedOut = false;
+                //timedOut = false;
 
-                //=========== CLI input? ============//
+                ///// CLI input? /////
                 if (_qCli.TryDequeue(out CliInput? le))
                 {
                     // Check for meta key.
@@ -185,7 +146,7 @@ namespace NTerm
                                 break;
 
                             case '?':
-                                Help();
+                                Tools.ShowReadme("NTerm");
                                 break;
 
                             default:
@@ -195,39 +156,45 @@ namespace NTerm
                     }
                     else
                     {
-                        var stat = _comm.Send(le.Text);
+                        _comm.Send(le.Text);
 
-                        switch (stat)
-                        {
-                            case OpStatus.Success:
-                                break;
+                        //switch (stat)
+                        //{
+                        //    case OpStatus.Success:
+                        //        break;
 
-                            case OpStatus.Error:
-                                _logger.Error($"Comm.Send() error");
-                                break;
+                        //    case OpStatus.Error:
+                        //        _logger.Error($"Comm.Send() error");
+                        //        break;
 
-                            case OpStatus.ConnectTimeout:
-                                timedOut = true;
-                                PrintLine("Server not connecting");
-                                break;
+                        //    case OpStatus.ConnectTimeout:
+                        //        timedOut = true;
+                        //        PrintLine("Server not connecting");
+                        //        break;
 
-                            case OpStatus.ResponseTimeout:
-                                timedOut = true;
-                                PrintLine("Server not responding");
-                                break;
-                        }
+                        //    case OpStatus.ResponseTimeout:
+                        //        timedOut = true;
+                        //        PrintLine("Server not responding");
+                        //        break;
+                        //}
                     }
-
-                    DoPrompt();
+                    
+                    if (!continuous)
+                    {
+                        DoPrompt();
+                    }
                 }
 
-                // If there was no timeout, delay a bit.
-                if (!timedOut)
-                {
-                    Thread.Sleep(10);
+                // Delay a bit.
+                Thread.Sleep(10);
+
+                //// If there was no timeout, delay a bit.
+                //if (!timedOut)
+                //{
+                //    Thread.Sleep(10);
+                //}
                 }
             }
-        }
 
         /// <summary>
         /// Task to service the cli read.
@@ -240,24 +207,36 @@ namespace NTerm
                 // Check for something to do.
                 if (Console.KeyAvailable)
                 {
-                    var conkey = Console.ReadKey(false);
-                    char key = conkey.KeyChar;
-                    //Console.WriteLine($">>>{key}");
-
-                    // Check for hot key.
-                    if (MatchMods(_settings.HotKeyMod, conkey.Modifiers))
-                    {
-                        _qCli.Enqueue(new(_hotKeys[(char)conkey.Key], conkey.Modifiers));
-                    }
-                    else // Ordinary, get the rest - blocks.
-                    {
-                        var rest = Console.ReadLine();
-                        _qCli.Enqueue(new(key + rest, conkey.Modifiers));
-                    }
+                    var s = Console.ReadLine();
+                    _qCli.Enqueue(new(s, ConsoleModifiers.None));
                 }
 
                 // Don't be greedy.
                 Thread.Sleep(20);
+
+                //// Check for something to do. TODO1 peek doesn't work. Hot keys.
+                //if (Console.KeyAvailable)
+                //{
+                //    //int ikey = Console.In.Peek();
+                //    var conkey = Console.ReadKey(false);
+                //    char key = conkey.KeyChar;
+
+                //    // Check for hot key.
+                //    if (MatchMods(_settings.HotKeyMod, conkey.Modifiers))
+                //    {
+                //        _qCli.Enqueue(new(_hotKeys[(char)conkey.Key], conkey.Modifiers));
+                //    }
+                //    else // Ordinary, get the rest of the line - blocks.
+                //    {
+                //        var rest = Console.ReadLine();
+                //        _qCli.Enqueue(new(key + rest, conkey.Modifiers));
+                //    }
+                //}
+
+                //// Don't be greedy.
+                //Thread.Sleep(20);
+
+
             }
         }
 
@@ -266,7 +245,7 @@ namespace NTerm
         /// </summary>
         void ProcessCommandLine()
         {
-            var args = Environment.GetCommandLineArgs().ToList();
+            var args = Environment.GetCommandLineArgs().ToList()[1..];
 
             if (args.Count == 0)
             {
@@ -282,8 +261,8 @@ namespace NTerm
                     ProcessCommType(args[0], args[1..]);
                     break;
 
-                case "-?":
-                    Help();
+                case "?":
+                    Tools.ShowReadme("NTerm");
                     Environment.Exit(0);
                     break;
 
@@ -328,28 +307,18 @@ namespace NTerm
             ///// Local function. /////
             void ProcessCommType(string ctype, List<string> args)
             {
-                switch (ctype)
+                _comm = ctype switch
                 {
-                    case "null":
-                        _comm = new NullComm();
-                        break;
-
-                    case "tcp":
-                        _comm = new TcpComm();
-                        break;
-
+                    "null" => new NullComm(),
+                    "tcp" => new TcpComm(),
                     //case "udp":
                     //    _comm = new UdpComm();
                     //    break;
-
                     //case "serial":
                     //    _comm = new SerialComm();
                     //    break;
-
-                    default:
-                        throw new ArgumentException($"Invalid comm type: {ctype}");
-                }
-
+                    _ => throw new ArgumentException($"Invalid comm type: {ctype}"),
+                };
                 _comm.Init(args, _progress);
             }
         }
@@ -365,7 +334,7 @@ namespace NTerm
             {
                 foreach (var m in _matchers)
                 {
-                    if (text.Contains(m.Key)) // TODO1 compiled regexes?
+                    if (text.Contains(m.Key)) // faster than compiled regexes
                     {
                         color = (ConsoleColor)m.Value;
                         break;
@@ -418,17 +387,19 @@ namespace NTerm
             return match;
         }
 
-        /// <summary>
-        /// 
-        /// </summary>
-        void Help() // TODO
-        {
-            _hotKeys.ForEach(x => PrintLine($"{_settings.HotKeyMod}-{x.Key} sends: [{x.Value}]"));
+        ///// <summary>
+        ///// 
+        ///// </summary>
+        //void Help() // TODO
+        //{
+        //    Tools.ShowReadme("NTerm");
 
-            PrintLine("serial ports:");
-            var sports = SerialPort.GetPortNames();
-            sports.ForEach(s => { PrintLine($"   {s}"); });
-        }
+        //    _hotKeys.ForEach(x => PrintLine($"{_settings.HotKeyMod}-{x.Key} sends: [{x.Value}]"));
+
+        //    PrintLine("serial ports:");
+        //    var sports = SerialPort.GetPortNames();
+        //    sports.ForEach(s => { PrintLine($"   {s}"); });
+        //}
 
         /// <summary>
         /// 

@@ -44,7 +44,7 @@ namespace NTerm
         /// <summary>IComm implementation.</summary>
         /// <see cref="IComm"/>
         /// <exception cref="ArgumentException"></exception>
-        public OpStatus Init(List<string> config, IProgress<string> progress)
+        public void Init(List<string> config, IProgress<string> progress)
         {
             try
             {
@@ -57,8 +57,6 @@ namespace NTerm
                 var msg = $"Invalid args: {e.Message}";
                 throw new ArgumentException(msg);
             }
-
-            return OpStatus.Success;
         }
 
         /// <summary>
@@ -70,10 +68,9 @@ namespace NTerm
 
         /// <summary>IComm implementation.</summary>
         /// <see cref="IComm"/>
-        public OpStatus Send(string req)
+        public void Send(string req)
         {
             _qsend.Enqueue(req);
-            return OpStatus.Success;
         }
 
 
@@ -93,7 +90,7 @@ namespace NTerm
         /// <see cref="IComm"/>
         public void Run(CancellationToken token)
         {
-            //try  // TODO1 needed?
+            //try  // TODO1 needed? or let App take care of it.
             //{
             //}
             //catch (Exception e)
@@ -112,7 +109,7 @@ namespace NTerm
 
                 var task = client.ConnectAsync(_host, _port);
 
-                if (!task.Wait(CONNECT_TIME))
+                if (!task.Wait(CONNECT_TIME, token))
                 {
                     //return (OpStatus.ConnectTimeout, "", resp);
                 }
