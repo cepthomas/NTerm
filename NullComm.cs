@@ -13,34 +13,26 @@ namespace NTerm
     public class NullComm : IComm
     {
         #region Fields
-        //int _count = 0;
         readonly ConcurrentQueue<string> _qsend = new();
-        IProgress<string> _progress;
+        readonly ConcurrentQueue<string> _qrecv = new();
         #endregion
 
+        /// <summary>Constructor.</summary>
+        public NullComm()
+        {
+        }
 
-        // /// <summary>
-        // /// Make me one.
-        // /// </summary>
-        // /// <param name="config"></param>
-        // public NullComm()
-        // {
-        // }
-
-        /// <summary>
-        /// Clean up.
-        /// </summary>
+        /// <summary>Clean up.</summary>
         public void Dispose()
         {
         }
 
-        public void Init(List<string> config, IProgress<string> progress)
-        {
-            _progress = progress;
-        }
-
+        /// <summary>IComm implementation.</summary>
+        /// <see cref="IComm"/>
         public void Run(CancellationToken token)
         {
+            Random rand = new();
+
             while (!token.IsCancellationRequested)
             {
                 List<string> res = [];
@@ -48,13 +40,11 @@ namespace NTerm
                 if (_qsend.TryDequeue(out string? s))
                 {
                     var sout = $">>>NullComm:{s}!{Environment.NewLine}";
-                    // Simulate broken line.
-                    res.Add(sout[..5]);
-                    res.Add(sout[5..]);
+                    // Simulate broken lines.
+                    int lb = rand.Next(1, sout.Length - 2);
+                    _qrecv.Enqueue(sout[..lb]);
+                    _qrecv.Enqueue(sout[lb..]);
                 }
-
-                res.ForEach(r => _progress.Report(r));
-
 
                 // Don't be greedy.
                 Thread.Sleep(20);
@@ -63,7 +53,7 @@ namespace NTerm
 
         /// <summary>IComm implementation.</summary>
         /// <see cref="IComm"/>
-        void IComm.Send(string req)
+        public void Send(string req)
         {
             for (int i = 0; i < 5; i++)
             {
@@ -71,10 +61,18 @@ namespace NTerm
             }
         }
 
-        ///// <summary>IComm implementation.</summary>
-        ///// <see cref="IComm"/>
-        //public void Reset()
-        //{
-        //}
+        /// <summary>IComm implementation.</summary>
+        /// <see cref="IComm"/>
+        public string? Receive()
+        {
+            _qrecv.TryDequeue(out string? res);
+            return res;
+        }
+
+        /// <summary>IComm implementation.</summary>
+        /// <see cref="IComm"/>
+        public void Reset()
+        {
+        }
     }
 }

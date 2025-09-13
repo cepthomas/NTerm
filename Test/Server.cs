@@ -12,7 +12,7 @@ using NTerm;
 
 namespace Test
 {
-    public class Server
+    public class Server // TODO1 need cmd/resp TCP, cont TCP, cont UDP(client)
     {
         public static void Run(int port)
         {

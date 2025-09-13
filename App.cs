@@ -2,6 +2,7 @@ using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Drawing.Printing;
 using System.IO;
 using System.IO.Ports;
 using System.Linq;
@@ -26,25 +27,22 @@ namespace NTerm
         /// <summary>Client comm flavor.</summary>
         IComm _comm = new NullComm();
 
-        /// <summary>User hot keys.</summary>
-        readonly Dictionary<char, string> _hotKeys = [];
+        /// <summary>User meta keys.</summary>
+        readonly Dictionary<char, string> _metaKeys = [];
 
         /// <summary>Cli event queue.</summary>
-        readonly ConcurrentQueue<CliInput> _qCli = new();
+        readonly ConcurrentQueue<string> _qUserCli = new();
 
         /// <summary>For timing measurements.</summary>
         readonly TimeIt _tmit = new();
 
         /// <summary>Colorizing text.</summary>
         readonly Dictionary<string, ConsoleColorEx> _matchers = [];
-
-        /// <summary>Comm task reporting input.</summary>
-        readonly Progress<string> _progress = new();
-        // https://learn.microsoft.com/en-us/dotnet/standard/asynchronous-programming-patterns/task-based-asynchronous-pattern-tap?redirectedfrom=MSDN
-
-        /// <summary>Colorizing text.</summary>
-        const ConsoleColor ERR_COLOR = ConsoleColor.Red;
         #endregion
+
+
+        bool continuous = false; // TODO1 how to handle this option vs cmd/resp. Also handle prompt. meta to stop/start recv.
+
 
         /// <summary>
         /// Build me one.
@@ -62,38 +60,33 @@ namespace NTerm
             LogManager.MinLevelFile = _settings.FileLogLevel;
             LogManager.MinLevelNotif = _settings.NotifLogLevel;
             LogManager.Run(logFileName, 50000);
-            LogManager.LogMessage += (sender, e) => { PrintLine($"{e.Message}"); DoPrompt(); };
+            LogManager.LogMessage += (sender, e) => { PrintLine($"{e.Message}", _settings.IntColor); DoPrompt(); };
 
             // Set things up.
             try
             {
-                _progress.ProgressChanged += (_, s) => { Print(s); };
-
                 // Init stuff.
                 ProcessCommandLine();
 
-                Run(); // forever
+                // Go forever.
+                Run();
             }
             catch (IniSyntaxException ex)
             {
-                PrintLine($"IniSyntaxException at {ex.LineNum}: {ex.Message}", ERR_COLOR);
+                PrintLine($"IniSyntaxException at {ex.LineNum}: {ex.Message}", _settings.ErrColor);
                 Environment.Exit(1);
-            }
-            catch (ArgumentException ex)
-            {
-                PrintLine($"ArgumentException: {ex.Message}", ERR_COLOR);
-                Environment.Exit(2);
             }
             catch (Exception ex)
             {
-                PrintLine($"{ex.GetType()}: {ex.Message}", ERR_COLOR);
-                Environment.Exit(3);
+                PrintLine($"{ex.GetType()}: {ex}", _settings.ErrColor);
+                Environment.Exit(2);
             }
             finally
             {
                 // All done.
                 _settings.Save();
                 LogManager.Stop();
+                Environment.Exit(0);
             }
         }
 
@@ -102,7 +95,7 @@ namespace NTerm
         /// </summary>
         public void Dispose()
         {
-            // PrintLine("====== Dispose !!!! ======");
+            // PrintLine("====== Dispose !!!! ======", _settings.IntColor);
             _comm?.Dispose();
         }
 
@@ -111,36 +104,35 @@ namespace NTerm
         /// </summary>
         public void Run()
         {
-            DoPrompt();
-
             using CancellationTokenSource ts = new();
             using Task taskKeyboard = Task.Run(() => DoKeyboard(ts.Token));
-            using Task taskKComm = Task.Run(() => _comm.Run(ts.Token));
+            using Task taskComm = Task.Run(() => _comm.Run(ts.Token));
 
-            //bool timedOut = false;
-            bool continuous = false;
+            DoPrompt();
 
             while (!ts.Token.IsCancellationRequested)
             {
                 //timedOut = false;
 
-                ///// CLI input? /////
-                if (_qCli.TryDequeue(out CliInput? le))
+                ///// User input? /////
+                while (_qUserCli.TryDequeue(out string? s))
                 {
                     // Check for meta key.
-                    if (le.Text.Length > 1 && le.Text.StartsWith(_settings.MetaMarker))
+                    if (s.Length > 1 && s.StartsWith(_settings.MetaMarker))
                     {
-                        switch (le.Text[1])
+                        var hk = s[1];
+                        switch (hk)
                         {
                             case 'q':
                                 ts.Cancel();
+                                Task.WaitAll([taskKeyboard, taskComm]);
                                 break;
 
                             case 's':
                                 var changes = SettingsEditor.Edit(_settings, "NTerm", 500);
                                 if (changes.Count > 0)
                                 {
-                                    PrintLine("Settings changed - please restart");
+                                    PrintLine("Settings changed - please restart", _settings.IntColor);
                                     Environment.Exit(0);
                                 }
                                 break;
@@ -150,39 +142,35 @@ namespace NTerm
                                 break;
 
                             default:
-                                _logger.Warn($"Unknown meta key: {le.Text[1]}");
+                                // Check for user meta key.
+                                if (_metaKeys.TryGetValue(hk, out var sk))
+                                {
+                                    _comm.Send(sk);
+                                }
+                                else
+                                {
+                                    _logger.Warn($"Unknown meta key:{sk}");
+                                }
                                 break;
                         }
                     }
                     else
                     {
-                        _comm.Send(le.Text);
-
-                        //switch (stat)
-                        //{
-                        //    case OpStatus.Success:
-                        //        break;
-
-                        //    case OpStatus.Error:
-                        //        _logger.Error($"Comm.Send() error");
-                        //        break;
-
-                        //    case OpStatus.ConnectTimeout:
-                        //        timedOut = true;
-                        //        PrintLine("Server not connecting");
-                        //        break;
-
-                        //    case OpStatus.ResponseTimeout:
-                        //        timedOut = true;
-                        //        PrintLine("Server not responding");
-                        //        break;
-                        //}
+                        _comm.Send(s);
                     }
-                    
+
                     if (!continuous)
                     {
                         DoPrompt();
                     }
+                }
+
+                ///// Comm receive? /////
+                while (true)
+                {
+                    var s = _comm.Receive();
+                    if (s == null) break;
+                    Print(s);
                 }
 
                 // Delay a bit.
@@ -193,11 +181,11 @@ namespace NTerm
                 //{
                 //    Thread.Sleep(10);
                 //}
-                }
             }
+        }
 
         /// <summary>
-        /// Task to service the cli read.
+        /// Task to service the user input read.
         /// </summary>
         /// <param name="token"></param>
         void DoKeyboard(CancellationToken token)
@@ -208,41 +196,19 @@ namespace NTerm
                 if (Console.KeyAvailable)
                 {
                     var s = Console.ReadLine();
-                    _qCli.Enqueue(new(s, ConsoleModifiers.None));
+                    _qUserCli.Enqueue(new(s));
                 }
 
                 // Don't be greedy.
                 Thread.Sleep(20);
-
-                //// Check for something to do. TODO1 peek doesn't work. Hot keys.
-                //if (Console.KeyAvailable)
-                //{
-                //    //int ikey = Console.In.Peek();
-                //    var conkey = Console.ReadKey(false);
-                //    char key = conkey.KeyChar;
-
-                //    // Check for hot key.
-                //    if (MatchMods(_settings.HotKeyMod, conkey.Modifiers))
-                //    {
-                //        _qCli.Enqueue(new(_hotKeys[(char)conkey.Key], conkey.Modifiers));
-                //    }
-                //    else // Ordinary, get the rest of the line - blocks.
-                //    {
-                //        var rest = Console.ReadLine();
-                //        _qCli.Enqueue(new(key + rest, conkey.Modifiers));
-                //    }
-                //}
-
-                //// Don't be greedy.
-                //Thread.Sleep(20);
-
-
             }
         }
 
         /// <summary>
-        /// Process user options.
+        /// Process user input.
         /// </summary>
+        /// <exception cref="ArgumentException"></exception>
+        /// <exception cref="IniSyntaxException"></exception>
         void ProcessCommandLine()
         {
             var args = Environment.GetCommandLineArgs().ToList()[1..];
@@ -285,10 +251,10 @@ namespace NTerm
                             }
                         }
 
-                        // [hot_keys]
-                        foreach (var val in inrdr.Contents["hot_keys"].Values)
+                        // [meta_keys]
+                        foreach (var val in inrdr.Contents["meta_keys"].Values)
                         {
-                            _hotKeys[val.Key[0]] = val.Value; 
+                            _metaKeys[val.Key[0]] = val.Value;
                         }
 
                         // [matchers]
@@ -310,16 +276,11 @@ namespace NTerm
                 _comm = ctype switch
                 {
                     "null" => new NullComm(),
-                    "tcp" => new TcpComm(),
-                    //case "udp":
-                    //    _comm = new UdpComm();
-                    //    break;
-                    //case "serial":
-                    //    _comm = new SerialComm();
-                    //    break;
+                    "tcp" => new TcpComm(args),
+                    "udp" => new UdpComm(args),
+                    "serial" => new SerialComm(args),
                     _ => throw new ArgumentException($"Invalid comm type: {ctype}"),
                 };
-                _comm.Init(args, _progress);
             }
         }
 
@@ -328,29 +289,35 @@ namespace NTerm
         /// </summary>
         /// <param name="text">What to print</param>
         /// <param name="color">Explicit color to use.</param>
-        void Print(string text, ConsoleColor? color = null)
+        void Print(string text, ConsoleColorEx color = ConsoleColorEx.None)
         {
-            if (color is null)
+            if (color == ConsoleColorEx.None)
             {
                 foreach (var m in _matchers)
                 {
                     if (text.Contains(m.Key)) // faster than compiled regexes
                     {
-                        color = (ConsoleColor)m.Value;
+                        color = m.Value;
                         break;
                     }
                 }
-            }
 
-            if (color is not null)
-            {
-                Console.ForegroundColor = (ConsoleColor)color;
-                Console.Write(text);
-                Console.ResetColor();
+                if (color != ConsoleColorEx.None)
+                {
+                    Console.ForegroundColor = (ConsoleColor)color;
+                    Console.Write(text);
+                    Console.ResetColor();
+                }
+                else
+                {
+                    Console.Write(text);
+                }
             }
             else
             {
+                Console.BackgroundColor = (ConsoleColor)color;
                 Console.Write(text);
+                Console.ResetColor();
             }
         }
 
@@ -359,54 +326,17 @@ namespace NTerm
         /// </summary>
         /// <param name="text">What to print</param>
         /// <param name="color">Explicit color to use.</param>
-        void PrintLine(string text, ConsoleColor? color = null)
+        void PrintLine(string text, ConsoleColorEx color = ConsoleColorEx.None)
         {
             Print(text + Environment.NewLine, color);
         }
-
-        /// <summary>
-        /// Helper.
-        /// </summary>
-        /// <param name="keyMod"></param>
-        /// <param name="consMods"></param>
-        /// <returns></returns>
-        bool MatchMods(KeyMod keyMod, ConsoleModifiers consMods)
-        {
-            bool match = false;
-
-            switch (keyMod, consMods)
-            {
-                case (KeyMod.Ctrl, ConsoleModifiers.Control):
-                case (KeyMod.Alt, ConsoleModifiers.Alt):
-                case (KeyMod.Shift, ConsoleModifiers.Shift):
-                case (KeyMod.CtrlShift, ConsoleModifiers.Control | ConsoleModifiers.Shift):
-                    match = true;
-                    break;
-            }
-
-            return match;
-        }
-
-        ///// <summary>
-        ///// 
-        ///// </summary>
-        //void Help() // TODO
-        //{
-        //    Tools.ShowReadme("NTerm");
-
-        //    _hotKeys.ForEach(x => PrintLine($"{_settings.HotKeyMod}-{x.Key} sends: [{x.Value}]"));
-
-        //    PrintLine("serial ports:");
-        //    var sports = SerialPort.GetPortNames();
-        //    sports.ForEach(s => { PrintLine($"   {s}"); });
-        //}
 
         /// <summary>
         /// 
         /// </summary>
         void DoPrompt()
         {
-            Console.Write(_settings.Prompt);
+            //TODO1? Console.Write(_settings.Prompt);
         }
     }
 }

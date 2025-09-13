@@ -405,3 +405,4 @@ iobj/
 /Script
 test_out.txt
 /Test/*.json
+/Properties/launchSettings.json

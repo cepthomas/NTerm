@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
+using System.Net.Sockets;
 using System.Text;
 using System.Threading;
 using Ephemera.NBagOfTricks;
@@ -8,50 +10,26 @@ using Ephemera.NBagOfTricks;
 
 namespace NTerm
 {
-    #region Exceptions
-
-    #endregion
-
-    #region Enums
-    /// <summary>Supported flavors.</summary>
-    public enum CommType { Null, Tcp, Udp, Serial }
-
     /// <summary>How did operation turn out?</summary>
-    public enum OpStatus { Success, ConnectTimeout, ResponseTimeout, Error }
-
-    /// <summary>Key modifiers</summary>
-    public enum KeyMod { Ctrl, Alt, Shift, CtrlShift }
-    #endregion
-
-    #region Types
-    /// <summary>One keyboard event.</summary>
-    /// <param name="Text">The content</param>
-    /// <param name="Modifiers">Maybe modifiers</param>
-    record CliInput(string Text, ConsoleModifiers Modifiers);
+    public enum CommState { None, Connect, Send, Recv }
 
     /// <summary>Comm type abstraction.</summary>
     interface IComm : IDisposable
     {
-        /// <summary>Make me one.</summary>
-        /// <param name="config"></param>
-        /// <param name="progress"></param>
-        void Init(List<string> config, IProgress<string> progress);
-
         /// <summary>Start the comm task.</summary>
-        /// <returns>Operation status.</returns>
         void Run(CancellationToken token);
 
-        /// <summary>Send request to the server.</summary>
-        /// <param name="req">What to send</param>
-        /// <returns>Operation status.</returns>
-        void Send(string req);
+        /// <summary>Send to the server.</summary>
+        /// <param name="msg">What to send</param>
+        void Send(string msg);
 
-        //void Dispose();
+        /// <summary>Receive from the server.</summary>
+        /// <returns>Received message or null if none.</returns>
+        string? Receive();
 
-        ///// <summary>Reset comms, resource management.</summary>
-        //void Reset();
+        /// <summary>Reset comms, resource management.</summary>
+        void Reset();
     }
-    #endregion
 
     public class Utils
     {
@@ -76,5 +54,65 @@ namespace NTerm
             // Valid strings are always convertible.
             return Encoding.Default.GetBytes(s);
         }
+
+        // /// <summary>
+        // /// Common processing of exceptions. Does logging etc.
+        // /// </summary>
+        // /// <param name="e"></param>
+        // /// <param name="logger"></param>
+        // /// <returns>OpStatus for caller to interpret.</returns>
+        // public static OpStatus ProcessException(Exception e, Logger logger)
+        // {
+        //     OpStatus stat;
+
+        //     // Async ops carry the original exception in inner.
+        //     if (e is AggregateException)
+        //     {
+        //         e = e.InnerException ?? e;
+        //     }
+
+        //     switch (e)
+        //     {
+        //         case OperationCanceledException ex: // Usually connect timeout. Ignore and retry later.
+        //             stat = OpStatus.ResponseTimeout;
+        //             //_logger.Debug($"OperationCanceledException: Timeout: {ex.Message}");
+        //             break;
+
+        //         case SocketException ex: // Some are expected and recoverable. https://learn.microsoft.com/en-us/windows/win32/winsock/windows-sockets-error-codes-2
+        //             int[] valid = [10053, 10054, 10060, 10061, 10064];
+        //             if (valid.Contains(ex.NativeErrorCode))
+        //             {
+        //                 // Ignore and retry later.
+        //                 stat = OpStatus.ResponseTimeout;
+        //                 //_logger.Debug($"SocketException: Timeout: {ex.NativeErrorCode}");
+        //             }
+        //             else
+        //             {
+        //                 stat = OpStatus.Error;
+        //                 logger.Error($"SocketException: Error: {ex}");
+        //             }
+        //             break;
+
+        //         case IOException ex: // Usually receive timeout. Ignore and retry later.
+        //             stat = OpStatus.ResponseTimeout;
+        //             //_logger.Debug($"IOException: Timeout: {ex.Message}");
+        //             break;
+
+        //         //case ObjectDisposedException ex: // fatal
+        //         //    stat = OpStatus.Error;
+        //         //    logger.Error($"ObjectDisposedException: {ex.Message}");
+        //         //    break;
+
+        //         default: // Other errors are considered fatal.
+        //             stat = OpStatus.Error;
+        //             logger.Error($"Fatal exception: {e}");
+        //             break;
+        //     }
+
+        //     return stat;
+        // }
     }
+    // /// <summary>How did operation turn out?</summary>
+    // public enum OpStatus { Success, ConnectTimeout, ResponseTimeout, Error }
+
 }

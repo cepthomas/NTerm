@@ -1,15 +1,9 @@
 ﻿using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
-using System.ComponentModel;
 using System.IO;
 using System.IO.Ports;
 using System.Linq;
-using System.Management;
-using System.Net;
-using System.Net.WebSockets;
-using System.Runtime.InteropServices;
-using System.Text;
-using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 using Ephemera.NBagOfTricks;
@@ -22,61 +16,54 @@ namespace NTerm
 {
     /// <summary>Serial port comm.</summary>
     /// <see cref="IComm"/>
-    public class SerialComm //: IComm // TODO needs dev and debug with hardware.
+    public class SerialComm : IComm // TODO needs dev and debug with hardware.
     {
         #region Fields
         readonly Logger _logger = LogManager.CreateLogger("SER");
         readonly SerialPort _serialPort;
-
-        const int CONNECT_TIME = 100;
+        readonly ConcurrentQueue<string> _qSend = new();
+        readonly ConcurrentQueue<string> _qRecv = new();
+        // const int CONNECT_TIME = 100;
         const int RESPONSE_TIME = 10;
         const int BUFFER_SIZE = 4096;
         #endregion
 
-        /// <summary>
-        /// Make me one.
-        /// </summary>
+        /// <summary>Constructor.</summary>
         /// <param name="config"></param>
-        /// <exception cref="ArgumentException"></exception>
-        
-        /*
-        public SerialComm(Config config)
+        /// <exception cref="IniSyntaxException"></exception>
+        public SerialComm(List<string> config)
         {
-            _config = config;
             _serialPort = new();
 
             try
             {
-                // Parse the args: "COM1 9600 E|O|N 6|7|8 0|1|1.5"
-                var parts = _config.Args;
+                // Parse the args: COM1 9600 8N1 ; E|O|N 6|7|8 0|1|15
+                _serialPort.PortName = config[0];
 
-                var i = int.Parse(parts[0].Replace("COM", ""));
-                _serialPort.PortName = $"COM{i}";
+                _serialPort.BaudRate = int.Parse(config[1]);
 
-                _serialPort.BaudRate = int.Parse(parts[1]);
-
-                _serialPort.Parity = parts[2] switch
+                _serialPort.DataBits = config[2][0] switch
                 {
-                    "E" => Parity.Even,
-                    "O" => Parity.Odd,
-                    "N" => Parity.None,
-                    _ => throw new ArgumentException($"Invalid parity:{parts[2]}"),
+                    '6' => 6,
+                    '7' => 7,
+                    '8' => 8,
+                    _ => throw new ArgumentException($"Invalid data bits:{config[2]}"),
                 };
 
-                _serialPort.DataBits = parts[3] switch
+                _serialPort.Parity = config[2][1] switch
                 {
-                    "6" => 6,
-                    "7" => 7,
-                    "8" => 8,
-                    _ => throw new ArgumentException($"Invalid data bits:{parts[3]}"),
+                    'E' => Parity.Even,
+                    'O' => Parity.Odd,
+                    'N' => Parity.None,
+                    _ => throw new ArgumentException($"Invalid parity:{config[2]}"),
                 };
 
-                _serialPort.StopBits = parts[4] switch
+                _serialPort.StopBits = config[2][2] switch
                 {
-                    "0" => StopBits.None,
-                    "1" => StopBits.One,
-                    "1.5" => StopBits.OnePointFive,
-                    _ => throw new ArgumentException($"Invalid stop bits:{parts[4]}"),
+                    '0' => StopBits.None,
+                    '1' => StopBits.One,
+                    //'15' => StopBits.OnePointFive,
+                    _ => throw new ArgumentException($"Invalid stop bits:{config[2]}"),
                 };
 
                 // Other params.
@@ -89,14 +76,11 @@ namespace NTerm
             catch (Exception e)
             {
                 var msg = $"Invalid args: {e.Message}";
-                throw new ArgumentException(msg);
+                throw new IniSyntaxException(msg, -1);
             }
         }
-        */
 
-        /// <summary>
-        /// Clean up.
-        /// </summary>
+        /// <summary>Clean up.</summary>
         public void Dispose()
         {
             _serialPort.Close();
@@ -105,60 +89,94 @@ namespace NTerm
 
         /// <summary>IComm implementation.</summary>
         /// <see cref="IComm"/>
-        public (OpStatus stat, string msg, string resp) Send(string req)
+        public void Run(CancellationToken token)
         {
-            OpStatus stat = OpStatus.Success;
-            string msg = "";
-            string resp = "";
+            CommState state = CommState.None;
 
-            try
+            while (!token.IsCancellationRequested)
             {
-                //=========== Connect ============//
-                if (!_serialPort.IsOpen) _serialPort.Open();
-                using var stream = _serialPort.BaseStream;
+                try
+                {
+                    //=========== Connect ============//
+                    state = CommState.Connect;
 
-                //=========== Send ============//
-                _logger.Debug($"[Client] Sending [{req.Length}]");
-                stream.Write(Utils.StringToBytes(req));
-                msg = "SerialComm sent";
+                    if (!_serialPort.IsOpen)
+                    {
+                        _serialPort.Open();
+                    }
 
-                //=========== Receive ==========//
-                var rxdata = new byte[BUFFER_SIZE];
-                int byteCount = stream.Read(rxdata, 0, BUFFER_SIZE);
-                resp = Utils.BytesToString(rxdata, byteCount);
+                    //=========== Send ============//
+                    state = CommState.Send;
+
+                    while (_qSend.TryDequeue(out string? s))
+                    {
+                        _serialPort.Write(s);
+                    }
+
+                    //=========== Receive ==========//
+                    state = CommState.Recv;
+
+                    var rxdata = new byte[BUFFER_SIZE];
+                    int byteCount = _serialPort.Read(rxdata, 0, BUFFER_SIZE);
+
+                    if (byteCount > 0)
+                    {
+                        _qRecv.Enqueue( Utils.BytesToString(rxdata, byteCount));
+                    }
+                }
+                catch (Exception e)
+                {
+                    // All fatal except TimeoutException.
+                    // common:
+                    // - ArgumentOutOfRangeException
+                    // - ArgumentException
+                    // - ArgumentNullException
+                    // open:
+                    // - UnauthorizedAccessException  Access is denied to the port. -or- Already open.
+                    // - IOException  The port is in an invalid state. -or- the parameters passed from this SerialPort object were invalid.
+                    // - InvalidOperationException  The specified port on the current instance of the SerialPort is already open.
+                    // write:
+                    // - InvalidOperationException - The specified port is not open.
+                    // - TimeoutException - The operation did not complete before the time-out period ended.  RETRY
+                    // read:
+                    // - InvalidOperationException - The specified port is not open.
+                    // - TimeoutException - No bytes were available to read.  RETRY
+
+                    if (e is TimeoutException)
+                    {
+                        // TODO1 Handle timeout.
+                    }
+                    else
+                    {
+                        // Fatal - bubble up to App to handle.
+                        throw;
+                    }
+                }
+
+                // Don't be greedy.
+                Thread.Sleep(20);
             }
-            catch (Exception e)
-            {
-                stat = ProcessException(e);
-            }
+        }
 
-            return (stat, msg, resp);
+        /// <summary>IComm implementation.</summary>
+        /// <see cref="IComm"/>
+        public void Send(string req)
+        {
+            _qSend.Enqueue(req);
+        }
+
+        /// <summary>IComm implementation.</summary>
+        /// <see cref="IComm"/>
+        public string? Receive()
+        {
+            _qRecv.TryDequeue(out string? res);
+            return res;
         }
 
         /// <summary>IComm implementation.</summary>
         /// <see cref="IComm"/>
         public void Reset()
         {
-        }        
-
-        /// <summary>
-        /// 
-        /// </summary>
-        /// <param name="e"></param>
-        /// <returns></returns>
-        OpStatus ProcessException(Exception e)
-        {
-            OpStatus stat;
-            switch (e)
-            {
-                default:
-                    // Errors are considered fatal.
-                    stat = OpStatus.Error;
-                    _logger.Error($"Fatal exception: {e}");
-                    break;
-            }
-
-            return stat;
         }
     }
 }
