@@ -36,8 +36,8 @@ namespace NTerm
         {
             try
             {
-                _host = config[0];
-                _port = int.Parse(config[1]);
+                _host = config[1];
+                _port = int.Parse(config[2]);
             }
             catch (Exception e)
             {

@@ -38,11 +38,11 @@ namespace NTerm
             try
             {
                 // Parse the args: COM1 9600 8N1 ; E|O|N 6|7|8 0|1|15
-                _serialPort.PortName = config[0];
+                _serialPort.PortName = config[1];
 
-                _serialPort.BaudRate = int.Parse(config[1]);
+                _serialPort.BaudRate = int.Parse(config[2]);
 
-                _serialPort.DataBits = config[2][0] switch
+                _serialPort.DataBits = config[3][0] switch
                 {
                     '6' => 6,
                     '7' => 7,
@@ -50,7 +50,7 @@ namespace NTerm
                     _ => throw new ArgumentException($"Invalid data bits:{config[2]}"),
                 };
 
-                _serialPort.Parity = config[2][1] switch
+                _serialPort.Parity = config[3][1] switch
                 {
                     'E' => Parity.Even,
                     'O' => Parity.Odd,
@@ -58,7 +58,7 @@ namespace NTerm
                     _ => throw new ArgumentException($"Invalid parity:{config[2]}"),
                 };
 
-                _serialPort.StopBits = config[2][2] switch
+                _serialPort.StopBits = config[3][2] switch
                 {
                     '0' => StopBits.None,
                     '1' => StopBits.One,

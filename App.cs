@@ -41,7 +41,7 @@ namespace NTerm
         #endregion
 
 
-        bool continuous = false; // TODO1 how to handle this option vs cmd/resp. Also handle prompt. meta to stop/start recv.
+bool continuous = false; // TODO1 how to handle this option vs cmd/resp. Also handle prompt. meta to stop/start recv.
 
 
         /// <summary>
@@ -168,7 +168,7 @@ namespace NTerm
                 ///// Comm receive? /////
                 while (true)
                 {
-                    var s = _comm.Receive();
+                    var s = _comm.Receive(); // TODO1 needs delim - ini.
                     if (s == null) break;
                     Print(s);
                 }
@@ -196,7 +196,11 @@ namespace NTerm
                 if (Console.KeyAvailable)
                 {
                     var s = Console.ReadLine();
-                    _qUserCli.Enqueue(new(s));
+
+                    if (s is not null && s.Length > 0)
+                    {
+                        _qUserCli.Enqueue(new(s));
+                    }
                 }
 
                 // Don't be greedy.
@@ -224,7 +228,7 @@ namespace NTerm
                 case "tcp":
                 case "udp":
                 case "serial":
-                    ProcessCommType(args[0], args[1..]);
+                    ProcessCommType(args);
                     break;
 
                 case "?":
@@ -244,7 +248,7 @@ namespace NTerm
                             switch (val.Key)
                             {
                                 case "comm_type":
-                                    ProcessCommType(val.Key, val.Value.SplitByToken(" "));
+                                    ProcessCommType(val.Value.SplitByToken(" "));
                                     break;
                                 default:
                                     throw new IniSyntaxException($"Invalid section value for {val.Key}", -1);
@@ -271,15 +275,15 @@ namespace NTerm
             }
 
             ///// Local function. /////
-            void ProcessCommType(string ctype, List<string> args)
+            void ProcessCommType(List<string> args)
             {
-                _comm = ctype switch
+                _comm = args[0] switch
                 {
                     "null" => new NullComm(),
                     "tcp" => new TcpComm(args),
                     "udp" => new UdpComm(args),
                     "serial" => new SerialComm(args),
-                    _ => throw new ArgumentException($"Invalid comm type: {ctype}"),
+                    _ => throw new IniSyntaxException($"Invalid comm type: {args[0]}", -1),
                 };
             }
         }
@@ -304,6 +308,7 @@ namespace NTerm
 
                 if (color != ConsoleColorEx.None)
                 {
+                    //Console.BackgroundColor = (ConsoleColor)color;
                     Console.ForegroundColor = (ConsoleColor)color;
                     Console.Write(text);
                     Console.ResetColor();
@@ -315,7 +320,7 @@ namespace NTerm
             }
             else
             {
-                Console.BackgroundColor = (ConsoleColor)color;
+                Console.ForegroundColor = (ConsoleColor)color;
                 Console.Write(text);
                 Console.ResetColor();
             }
