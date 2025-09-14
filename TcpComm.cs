@@ -19,11 +19,11 @@ namespace NTerm
     internal class TcpComm : IComm
     {
         #region Fields
-        readonly Logger _logger = LogManager.CreateLogger("TCP");
+        // readonly Logger _logger = LogManager.CreateLogger("TCP");
         string _host;
         int _port;
         readonly ConcurrentQueue<string> _qSend = new();
-        readonly ConcurrentQueue<string> _qRecv = new();
+        readonly ConcurrentQueue<byte[]> _qRecv = new();
         const int CONNECT_TIME = 50;
         const int RESPONSE_TIME = 1000;
         const int BUFFER_SIZE = 4096;
@@ -60,9 +60,9 @@ namespace NTerm
 
         /// <summary>IComm implementation.</summary>
         /// <see cref="IComm"/>
-        public string? Receive()
+        public byte[]? Receive()
         {
-            _qRecv.TryDequeue(out string? res);
+            _qRecv.TryDequeue(out byte[]? res);
             return res;
         }
 
@@ -134,7 +134,7 @@ namespace NTerm
                         }
                         else
                         {
-                            _qRecv.Enqueue(Utils.BytesToString(rxData, byteCount));
+                            _qRecv.Enqueue(rxData);
                         }
                     }
                 

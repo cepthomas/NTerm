@@ -14,7 +14,7 @@ namespace NTerm
     {
         #region Fields
         readonly ConcurrentQueue<string> _qsend = new();
-        readonly ConcurrentQueue<string> _qrecv = new();
+        readonly ConcurrentQueue<byte[]> _qrecv = new();
         #endregion
 
         /// <summary>Constructor.</summary>
@@ -35,15 +35,15 @@ namespace NTerm
 
             while (!token.IsCancellationRequested)
             {
-                List<string> res = [];
+                //List<string> res = [];
 
                 if (_qsend.TryDequeue(out string? s))
                 {
                     var sout = $">>>NullComm:{s}!{Environment.NewLine}";
                     // Simulate broken lines.
                     int lb = rand.Next(1, sout.Length - 2);
-                    _qrecv.Enqueue(sout[..lb]);
-                    _qrecv.Enqueue(sout[lb..]);
+                    _qrecv.Enqueue(Utils.StringToBytes(sout[..lb]));
+                    _qrecv.Enqueue(Utils.StringToBytes(sout[lb..]));
                 }
 
                 // Don't be greedy.
@@ -63,9 +63,9 @@ namespace NTerm
 
         /// <summary>IComm implementation.</summary>
         /// <see cref="IComm"/>
-        public string? Receive()
+        public byte[]? Receive()
         {
-            _qrecv.TryDequeue(out string? res);
+            _qrecv.TryDequeue(out byte[]? res);
             return res;
         }
 

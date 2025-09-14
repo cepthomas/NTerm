@@ -19,10 +19,10 @@ namespace NTerm
     {
         #region Fields
         /// <summary>My logger</summary>
-        readonly Logger _logger = LogManager.CreateLogger("APP");
+        // readonly Logger _logger = LogManager.CreateLogger("APP");
 
-        /// <summary>Settings</summary>
-        readonly UserSettings _settings = new();
+        ///// <summary>Settings</summary>
+        //readonly UserSettings _settings = new();
 
         /// <summary>Client comm flavor.</summary>
         IComm _comm = new NullComm();
@@ -36,12 +36,28 @@ namespace NTerm
         /// <summary>For timing measurements.</summary>
         readonly TimeIt _tmit = new();
 
+
+
         /// <summary>Colorizing text.</summary>
         readonly Dictionary<string, ConsoleColorEx> _matchers = [];
         #endregion
 
+        /// <summary>Color for error messages.</summary>
+        ConsoleColorEx _errorColor = ConsoleColorEx.Red; // default
 
-bool continuous = false; // TODO1 how to handle this option vs cmd/resp. Also handle prompt. meta to stop/start recv.
+        /// <summary>Color for internal messages.</summary>
+        ConsoleColorEx _internalColor = ConsoleColorEx.Blue; // default
+
+        /// <summary>Prompt. Can be empty for continuous receiving.</summary>
+        string _prompt = ""; // default
+
+        /// <summary>Indicator for application functions.</summary>
+        char _meta = '-'; // default
+
+        /// <summary>Message delimiter: LF|CR|NUL.</summary>
+        byte _delim = 10; // default LF
+
+
 
 
         /// <summary>
@@ -51,41 +67,41 @@ bool continuous = false; // TODO1 how to handle this option vs cmd/resp. Also ha
         {
             //TimeIt.Snap("App()");
 
-            // Get settings.
-            var appDir = MiscUtils.GetAppDataDir("NTerm", "Ephemera");
-            _settings = (UserSettings)SettingsCore.Load(appDir, typeof(UserSettings));
+            //// Get settings.
+            //var appDir = MiscUtils.GetAppDataDir("NTerm", "Ephemera");
+            //_settings = (UserSettings)SettingsCore.Load(appDir, typeof(UserSettings));
 
-            // Set up log first.
-            var logFileName = Path.Combine(appDir, "log.txt");
-            LogManager.MinLevelFile = _settings.FileLogLevel;
-            LogManager.MinLevelNotif = _settings.NotifLogLevel;
-            LogManager.Run(logFileName, 50000);
-            LogManager.LogMessage += (sender, e) => { PrintLine($"{e.Message}", _settings.IntColor); DoPrompt(); };
+            //// Set up log first.
+            //var logFileName = Path.Combine(appDir, "log.txt");
+            //LogManager.MinLevelFile = _settings.FileLogLevel;
+            //LogManager.MinLevelNotif = _settings.NotifLogLevel;
+            //LogManager.Run(logFileName, 50000);
+            //LogManager.LogMessage += (sender, e) => { PrintLine($"{e.Message}", _settings.IntColor); DoPrompt(); };
 
             // Set things up.
             try
             {
                 // Init stuff.
-                ProcessCommandLine();
+                ProcessAppCommandLine();
 
                 // Go forever.
                 Run();
             }
             catch (IniSyntaxException ex)
             {
-                PrintLine($"IniSyntaxException at {ex.LineNum}: {ex.Message}", _settings.ErrColor);
+                PrintLine($"IniSyntaxException at {ex.LineNum}: {ex.Message}", _errorColor);
                 Environment.Exit(1);
             }
             catch (Exception ex)
             {
-                PrintLine($"{ex.GetType()}: {ex}", _settings.ErrColor);
+                PrintLine($"{ex.GetType()}: {ex}", _errorColor);
                 Environment.Exit(2);
             }
             finally
             {
                 // All done.
-                _settings.Save();
-                LogManager.Stop();
+                //_settings.Save();
+                //LogManager.Stop();
                 Environment.Exit(0);
             }
         }
@@ -118,38 +134,36 @@ bool continuous = false; // TODO1 how to handle this option vs cmd/resp. Also ha
                 while (_qUserCli.TryDequeue(out string? s))
                 {
                     // Check for meta key.
-                    if (s.Length > 1 && s.StartsWith(_settings.MetaMarker))
+                    if (s.Length > 1 && s.StartsWith(_meta))
                     {
                         var hk = s[1];
                         switch (hk)
                         {
-                            case 'q':
+                            case 'q': // quit
                                 ts.Cancel();
                                 Task.WaitAll([taskKeyboard, taskComm]);
                                 break;
 
-                            case 's':
-                                var changes = SettingsEditor.Edit(_settings, "NTerm", 500);
-                                if (changes.Count > 0)
-                                {
-                                    PrintLine("Settings changed - please restart", _settings.IntColor);
-                                    Environment.Exit(0);
-                                }
+                            //case 's': // edit settings
+                            //    var changes = SettingsEditor.Edit(_settings, "NTerm", 500);
+                            //    if (changes.Count > 0)
+                            //    {
+                            //        Print("Settings changed - please restart", _settings.IntColor);
+                            //    }
+                            //    break;
+
+                            case '?': // help
+                                About();
                                 break;
 
-                            case '?':
-                                Tools.ShowReadme("NTerm");
-                                break;
-
-                            default:
-                                // Check for user meta key.
+                            default: // user meta key?
                                 if (_metaKeys.TryGetValue(hk, out var sk))
                                 {
                                     _comm.Send(sk);
                                 }
                                 else
                                 {
-                                    _logger.Warn($"Unknown meta key:{sk}");
+                                    Print($"Unknown meta key:{sk}", _internalColor);
                                 }
                                 break;
                         }
@@ -159,10 +173,12 @@ bool continuous = false; // TODO1 how to handle this option vs cmd/resp. Also ha
                         _comm.Send(s);
                     }
 
-                    if (!continuous)
-                    {
-                        DoPrompt();
-                    }
+                    DoPrompt();
+
+                    //if (!continuous)
+                    //{
+                    //    DoPrompt();
+                    //}
                 }
 
                 ///// Comm receive? /////
@@ -170,7 +186,7 @@ bool continuous = false; // TODO1 how to handle this option vs cmd/resp. Also ha
                 {
                     var s = _comm.Receive(); // TODO1 needs delim - ini.
                     if (s == null) break;
-                    Print(s);
+                    Print("TODO1");
                 }
 
                 // Delay a bit.
@@ -208,20 +224,102 @@ bool continuous = false; // TODO1 how to handle this option vs cmd/resp. Also ha
             }
         }
 
-        /// <summary>
-        /// Process user input.
+        /// <summary>s
+        /// Process user command line input. Could be explicit comm spec or a config file name.
         /// </summary>
         /// <exception cref="ArgumentException"></exception>
         /// <exception cref="IniSyntaxException"></exception>
-        void ProcessCommandLine()
+        void ProcessAppCommandLine()
         {
             var args = Environment.GetCommandLineArgs().ToList()[1..];
 
             if (args.Count == 0)
             {
-                throw new ArgumentException($"Invalid command line");
+                About();
+                return;
             }
 
+            List<string> commSpec = [];
+
+            // Check for ini file first.
+            if (args[0].EndsWith(".ini") && File.Exists(args[0]))
+            {
+                // OK process it.
+                var inrdr = new IniReader(args[0]);
+
+                // [nterm] section
+                foreach (var nval in inrdr.Contents["nterm"].Values)
+                {
+                    switch (nval.Key)
+                    {
+                        case "comm_type":
+                            commSpec = nval.Value.SplitByToken(" ");
+                            break;
+
+                        case "err_color":
+                            _errorColor = Enum.Parse<ConsoleColorEx>(nval.Value, true);
+                            break;
+
+                        case "internal_color":
+                            _errorColor = Enum.Parse<ConsoleColorEx>(nval.Value, true);
+                            break;
+
+                        case "prompt":
+                            _prompt = nval.Value;
+                            break;
+
+                        case "meta":
+                            _meta = nval.Value[0];
+                            break;
+
+                        case "delim":
+                            _delim = nval.Value switch
+                            {
+                                "LF" => 10,
+                                "CR" => 13,
+                                "NUL" => 0,
+                                _ => throw new IniSyntaxException($"Invalid delim: {nval.Value}", -1),
+                            };
+                            break;
+
+                        default:
+                            throw new IniSyntaxException($"Invalid [nterm] section key: {nval.Key}", -1);
+                    }
+                }
+
+                // [meta_keys] section
+                foreach (var val in inrdr.Contents["meta_keys"].Values)
+                {
+                    _metaKeys[val.Key[0]] = val.Value;
+                }
+
+                // [matchers] section
+                foreach (var val in inrdr.Contents["matchers"].Values)
+                {
+                    _matchers[val.Key] = Enum.Parse<ConsoleColorEx>(val.Value, true);
+                }
+            }
+            else // assume explicit cl spec
+            {
+                commSpec = args;
+            }
+
+            // Process comm spec.
+            if (commSpec.Count > 0)
+            {
+                _comm = commSpec[0] switch
+                {
+                    "null" => new NullComm(),
+                    "tcp" => new TcpComm(args),
+                    "udp" => new UdpComm(args),
+                    "serial" => new SerialComm(args),
+                    _ => throw new IniSyntaxException($"Invalid comm type: {args[0]}", -1),
+                };
+            }
+        }
+
+
+/*
             switch (args[0])
             {
                 case "null":
@@ -232,12 +330,11 @@ bool continuous = false; // TODO1 how to handle this option vs cmd/resp. Also ha
                     break;
 
                 case "?":
-                    Tools.ShowReadme("NTerm");
-                    Environment.Exit(0);
+                    About();
                     break;
 
                 default:
-                    // Check for valid file.
+                    // Valid ini file?
                     if (args[0].EndsWith(".ini") && File.Exists(args[0]))
                     {
                         var inrdr = new IniReader(args[0]);
@@ -286,7 +383,7 @@ bool continuous = false; // TODO1 how to handle this option vs cmd/resp. Also ha
                     _ => throw new IniSyntaxException($"Invalid comm type: {args[0]}", -1),
                 };
             }
-        }
+*/
 
         /// <summary>
         /// Write to console.
@@ -342,6 +439,14 @@ bool continuous = false; // TODO1 how to handle this option vs cmd/resp. Also ha
         void DoPrompt()
         {
             //TODO1? Console.Write(_settings.Prompt);
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        void About()
+        {
+            Tools.ShowReadme("NTerm"); // TODO other sys info?
         }
     }
 }

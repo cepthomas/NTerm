@@ -25,7 +25,11 @@ namespace NTerm
 
         /// <summary>Receive from the server.</summary>
         /// <returns>Received message or null if none.</returns>
-        string? Receive();
+        byte[]? Receive();
+
+        ///// <summary>Receive from the server.</summary>
+        ///// <returns>Received message or null if none.</returns>
+        //string? Receive();
 
         /// <summary>Reset comms, resource management.</summary>
         void Reset();

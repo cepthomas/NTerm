@@ -19,10 +19,10 @@ namespace NTerm
     public class SerialComm : IComm // TODO needs dev and debug with hardware.
     {
         #region Fields
-        readonly Logger _logger = LogManager.CreateLogger("SER");
+        // readonly Logger _logger = LogManager.CreateLogger("SER");
         readonly SerialPort _serialPort;
         readonly ConcurrentQueue<string> _qSend = new();
-        readonly ConcurrentQueue<string> _qRecv = new();
+        readonly ConcurrentQueue<byte[]> _qRecv = new();
         // const int CONNECT_TIME = 100;
         const int RESPONSE_TIME = 10;
         const int BUFFER_SIZE = 4096;
@@ -121,7 +121,7 @@ namespace NTerm
 
                     if (byteCount > 0)
                     {
-                        _qRecv.Enqueue( Utils.BytesToString(rxdata, byteCount));
+                        _qRecv.Enqueue(rxdata);
                     }
                 }
                 catch (Exception e)
@@ -167,9 +167,9 @@ namespace NTerm
 
         /// <summary>IComm implementation.</summary>
         /// <see cref="IComm"/>
-        public string? Receive()
+        public byte[]? Receive()
         {
-            _qRecv.TryDequeue(out string? res);
+            _qRecv.TryDequeue(out byte[]? res);
             return res;
         }
 

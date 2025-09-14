@@ -19,10 +19,10 @@ namespace NTerm
     internal class UdpComm : IComm
     {
         #region Fields
-        readonly Logger _logger = LogManager.CreateLogger("UDP");
+        // readonly Logger _logger = LogManager.CreateLogger("UDP");
         readonly string _host;
         readonly int _port;
-        readonly ConcurrentQueue<string> _qRecv = new();
+        readonly ConcurrentQueue<byte[]> _qRecv = new();
         const int CONNECT_TIME = 50;
         const int RESPONSE_TIME = 1000;
         const int BUFFER_SIZE = 4096;
@@ -59,9 +59,9 @@ namespace NTerm
 
         /// <summary>IComm implementation.</summary>
         /// <see cref="IComm"/>
-        public string? Receive()
+        public byte[]? Receive()
         {
-            _qRecv.TryDequeue(out string? res);
+            _qRecv.TryDequeue(out byte[]? res);
             return res;
         }
 
@@ -120,7 +120,7 @@ namespace NTerm
                         var bytes = client.ReceiveAsync(token);//   );// rxData, 0, BUFFER_SIZE);
                         if (bytes.Result.Buffer.Length > 0)
                         {
-                            _qRecv.Enqueue(Utils.BytesToString(bytes.Result.Buffer, bytes.Result.Buffer.Length));
+                            _qRecv.Enqueue(bytes.Result.Buffer);// Utils.BytesToString(bytes.Result.Buffer, bytes.Result.Buffer.Length));
                         }
                         else
                         {
