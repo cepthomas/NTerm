@@ -2,6 +2,7 @@ using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text;
 using System.Threading;
 using Ephemera.NBagOfTricks;
 
@@ -10,7 +11,7 @@ namespace NTerm
 {
     /// <summary>Default comm.</summary>
     /// <see cref="IComm"/>
-    public class NullComm : IComm
+    public class NullComm : IComm //TODO1 put in test and make true null modem.
     {
         #region Fields
         readonly ConcurrentQueue<string> _qsend = new();
@@ -25,30 +26,6 @@ namespace NTerm
         /// <summary>Clean up.</summary>
         public void Dispose()
         {
-        }
-
-        /// <summary>IComm implementation.</summary>
-        /// <see cref="IComm"/>
-        public void Run(CancellationToken token)
-        {
-            Random rand = new();
-
-            while (!token.IsCancellationRequested)
-            {
-                //List<string> res = [];
-
-                if (_qsend.TryDequeue(out string? s))
-                {
-                    var sout = $">>>NullComm:{s}!{Environment.NewLine}";
-                    // Simulate broken lines.
-                    int lb = rand.Next(1, sout.Length - 2);
-                    _qrecv.Enqueue(Utils.StringToBytes(sout[..lb]));
-                    _qrecv.Enqueue(Utils.StringToBytes(sout[lb..]));
-                }
-
-                // Don't be greedy.
-                Thread.Sleep(20);
-            }
         }
 
         /// <summary>IComm implementation.</summary>
@@ -73,6 +50,28 @@ namespace NTerm
         /// <see cref="IComm"/>
         public void Reset()
         {
+        }
+
+        /// <summary>IComm implementation.</summary>
+        /// <see cref="IComm"/>
+        public void Run(CancellationToken token)
+        {
+            Random rand = new();
+
+            while (!token.IsCancellationRequested)
+            {
+                if (_qsend.TryDequeue(out string? s))
+                {
+                    var sout = $"NullComm-recv:{s}|\n";
+                    // Simulate broken lines.
+                    int lb = rand.Next(1, sout.Length - 2);
+                    _qrecv.Enqueue(Encoding.Default.GetBytes(sout[..lb]));
+                    _qrecv.Enqueue(Encoding.Default.GetBytes(sout[lb..]));
+                }
+
+                // Don't be greedy.
+                Thread.Sleep(5);
+            }
         }
     }
 }

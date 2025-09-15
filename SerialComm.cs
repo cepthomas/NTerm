@@ -16,14 +16,12 @@ namespace NTerm
 {
     /// <summary>Serial port comm.</summary>
     /// <see cref="IComm"/>
-    public class SerialComm : IComm // TODO needs dev and debug with hardware.
+    public class SerialComm : IComm // TODO needs finishing with hardware.
     {
         #region Fields
-        // readonly Logger _logger = LogManager.CreateLogger("SER");
         readonly SerialPort _serialPort;
         readonly ConcurrentQueue<string> _qSend = new();
         readonly ConcurrentQueue<byte[]> _qRecv = new();
-        // const int CONNECT_TIME = 100;
         const int RESPONSE_TIME = 10;
         const int BUFFER_SIZE = 4096;
         #endregion
@@ -37,7 +35,7 @@ namespace NTerm
 
             try
             {
-                // Parse the args: COM1 9600 8N1 ; E|O|N 6|7|8 0|1|15
+                // Parse the args: COM1 9600 8N1 => E|O|N 6|7|8 0|1|15
                 _serialPort.PortName = config[1];
 
                 _serialPort.BaudRate = int.Parse(config[2]);
@@ -85,6 +83,27 @@ namespace NTerm
         {
             _serialPort.Close();
             _serialPort.Dispose();
+        }
+
+        /// <summary>IComm implementation.</summary>
+        /// <see cref="IComm"/>
+        public void Send(string req)
+        {
+            _qSend.Enqueue(req);
+        }
+
+        /// <summary>IComm implementation.</summary>
+        /// <see cref="IComm"/>
+        public byte[]? Receive()
+        {
+            _qRecv.TryDequeue(out byte[]? res);
+            return res;
+        }
+
+        /// <summary>IComm implementation.</summary>
+        /// <see cref="IComm"/>
+        public void Reset()
+        {
         }
 
         /// <summary>IComm implementation.</summary>
@@ -137,14 +156,14 @@ namespace NTerm
                     // - InvalidOperationException  The specified port on the current instance of the SerialPort is already open.
                     // write:
                     // - InvalidOperationException - The specified port is not open.
-                    // - TimeoutException - The operation did not complete before the time-out period ended.  RETRY
+                    // - TimeoutException - The operation did not complete before the time-out period ended.
                     // read:
                     // - InvalidOperationException - The specified port is not open.
-                    // - TimeoutException - No bytes were available to read.  RETRY
+                    // - TimeoutException - No bytes were available to read.
 
                     if (e is TimeoutException)
                     {
-                        // TODO1 Handle timeout.
+                        // Handle timeout, or just keep trying.
                     }
                     else
                     {
@@ -154,29 +173,8 @@ namespace NTerm
                 }
 
                 // Don't be greedy.
-                Thread.Sleep(20);
+                Thread.Sleep(5);
             }
-        }
-
-        /// <summary>IComm implementation.</summary>
-        /// <see cref="IComm"/>
-        public void Send(string req)
-        {
-            _qSend.Enqueue(req);
-        }
-
-        /// <summary>IComm implementation.</summary>
-        /// <see cref="IComm"/>
-        public byte[]? Receive()
-        {
-            _qRecv.TryDequeue(out byte[]? res);
-            return res;
-        }
-
-        /// <summary>IComm implementation.</summary>
-        /// <see cref="IComm"/>
-        public void Reset()
-        {
         }
     }
 }

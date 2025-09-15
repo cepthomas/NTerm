@@ -6,11 +6,11 @@ using System.Drawing.Printing;
 using System.IO;
 using System.IO.Ports;
 using System.Linq;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Ephemera.NBagOfTricks;
 using Ephemera.NBagOfUis;
-
 
 
 namespace NTerm
@@ -27,21 +27,14 @@ namespace NTerm
         /// <summary>Client comm flavor.</summary>
         IComm _comm = new NullComm();
 
-        /// <summary>User meta keys.</summary>
-        readonly Dictionary<char, string> _metaKeys = [];
-
         /// <summary>Cli event queue.</summary>
         readonly ConcurrentQueue<string> _qUserCli = new();
 
         /// <summary>For timing measurements.</summary>
         readonly TimeIt _tmit = new();
-
-
-
-        /// <summary>Colorizing text.</summary>
-        readonly Dictionary<string, ConsoleColorEx> _matchers = [];
         #endregion
 
+        #region Config
         /// <summary>Color for error messages.</summary>
         ConsoleColorEx _errorColor = ConsoleColorEx.Red; // default
 
@@ -57,31 +50,30 @@ namespace NTerm
         /// <summary>Message delimiter: LF|CR|NUL.</summary>
         byte _delim = 10; // default LF
 
+        /// <summary>User meta keys.</summary>
+        readonly Dictionary<char, string> _metaKeys = [];
 
+        /// <summary>Colorizing text.</summary>
+        readonly Dictionary<string, ConsoleColorEx> _matchers = [];
+        #endregion
 
+        #region Logging
+        enum Cat { Send, Receive, Error, Internal }
+        FileStream? _logStream = null;
+        long _startTick = 0;
+        #endregion
 
         /// <summary>
         /// Build me one.
         /// </summary>
         public App()
         {
-            //TimeIt.Snap("App()");
-
-            //// Get settings.
-            //var appDir = MiscUtils.GetAppDataDir("NTerm", "Ephemera");
-            //_settings = (UserSettings)SettingsCore.Load(appDir, typeof(UserSettings));
-
-            //// Set up log first.
-            //var logFileName = Path.Combine(appDir, "log.txt");
-            //LogManager.MinLevelFile = _settings.FileLogLevel;
-            //LogManager.MinLevelNotif = _settings.NotifLogLevel;
-            //LogManager.Run(logFileName, 50000);
-            //LogManager.LogMessage += (sender, e) => { PrintLine($"{e.Message}", _settings.IntColor); DoPrompt(); };
-
-            // Set things up.
             try
             {
                 // Init stuff.
+                _startTick = Stopwatch.GetTimestamp();
+                _logStream = File.Open(Path.Combine(MiscUtils.GetSourcePath(), "nterm.log"), FileMode.Create); // or FileMode.Append
+
                 ProcessAppCommandLine();
 
                 // Go forever.
@@ -89,21 +81,16 @@ namespace NTerm
             }
             catch (IniSyntaxException ex)
             {
-                PrintLine($"IniSyntaxException at {ex.LineNum}: {ex.Message}", _errorColor);
+                Print(Cat.Error, $"IniSyntaxException at {ex.LineNum}: {ex.Message}");
                 Environment.Exit(1);
             }
             catch (Exception ex)
             {
-                PrintLine($"{ex.GetType()}: {ex}", _errorColor);
+                Print(Cat.Error, $"{ex.GetType()}: {ex}");
                 Environment.Exit(2);
             }
-            finally
-            {
-                // All done.
-                //_settings.Save();
-                //LogManager.Stop();
-                Environment.Exit(0);
-            }
+
+            Environment.Exit(0);
         }
 
         /// <summary>
@@ -111,8 +98,8 @@ namespace NTerm
         /// </summary>
         public void Dispose()
         {
-            // PrintLine("====== Dispose !!!! ======", _settings.IntColor);
             _comm?.Dispose();
+            _logStream?.Dispose();
         }
 
         /// <summary>
@@ -124,6 +111,8 @@ namespace NTerm
             using Task taskKeyboard = Task.Run(() => DoKeyboard(ts.Token));
             using Task taskComm = Task.Run(() => _comm.Run(ts.Token));
 
+            List<char> rcvBuffer = [];
+
             DoPrompt();
 
             while (!ts.Token.IsCancellationRequested)
@@ -133,60 +122,83 @@ namespace NTerm
                 ///// User input? /////
                 while (_qUserCli.TryDequeue(out string? s))
                 {
+                    if (s.Length == 0) return;
+
                     // Check for meta key.
-                    if (s.Length > 1 && s.StartsWith(_meta))
+                    if (s[0] == _meta)
                     {
-                        var hk = s[1];
-                        switch (hk)
+                        if (s.Length > 1)
                         {
-                            case 'q': // quit
-                                ts.Cancel();
-                                Task.WaitAll([taskKeyboard, taskComm]);
-                                break;
+                            var hk = s[1];
+                            switch (hk)
+                            {
+                                case 'q': // quit
+                                    ts.Cancel();
+                                    Task.WaitAll([taskKeyboard, taskComm]);
+                                    break;
 
-                            //case 's': // edit settings
-                            //    var changes = SettingsEditor.Edit(_settings, "NTerm", 500);
-                            //    if (changes.Count > 0)
-                            //    {
-                            //        Print("Settings changed - please restart", _settings.IntColor);
-                            //    }
-                            //    break;
+                                case '?': // help
+                                    About();
+                                    break;
 
-                            case '?': // help
-                                About();
-                                break;
-
-                            default: // user meta key?
-                                if (_metaKeys.TryGetValue(hk, out var sk))
-                                {
-                                    _comm.Send(sk);
-                                }
-                                else
-                                {
-                                    Print($"Unknown meta key:{sk}", _internalColor);
-                                }
-                                break;
+                                default: // user meta key?
+                                    if (_metaKeys.TryGetValue(hk, out var sk))
+                                    {
+                                        _comm.Send(sk);
+                                    }
+                                    else
+                                    {
+                                        Print(Cat.Error, $"Unknown meta key:{hk}");
+                                    }
+                                    break;
+                            }
                         }
+                        // else invalid/ignore
                     }
                     else
                     {
+                        Log(Cat.Send, s);
                         _comm.Send(s);
                     }
 
                     DoPrompt();
-
-                    //if (!continuous)
-                    //{
-                    //    DoPrompt();
-                    //}
                 }
 
                 ///// Comm receive? /////
                 while (true)
                 {
-                    var s = _comm.Receive(); // TODO1 needs delim - ini.
-                    if (s == null) break;
-                    Print("TODO1");
+                    var b = _comm.Receive();
+                    if (b is not null)
+                    {
+                        // Look for delimiter or just buffer it.
+                        for (int i = 0; i < b.Count(); i++)
+                        {
+                            if (b[i] == _delim)
+                            {
+                                // End line.
+                                Print(Cat.Receive, string.Concat(rcvBuffer));
+                                rcvBuffer.Clear();
+                            }
+                            else
+                            {
+                                // Add to buffer.
+                                var c = b[i];
+                                if (c.IsReadable())
+                                {
+                                    rcvBuffer.Add((char)c);
+                                }
+                                else
+                                {
+                                    var s = $"<{c:0X}>";
+                                    rcvBuffer.AddRange(s);
+                                }
+                            }
+                        }
+                    }
+                    else
+                    {
+                        break;
+                    }
                 }
 
                 // Delay a bit.
@@ -288,16 +300,10 @@ namespace NTerm
                 }
 
                 // [meta_keys] section
-                foreach (var val in inrdr.Contents["meta_keys"].Values)
-                {
-                    _metaKeys[val.Key[0]] = val.Value;
-                }
+                inrdr.Contents["meta_keys"].Values.ForEach(val => _metaKeys[val.Key[0]] = val.Value);
 
                 // [matchers] section
-                foreach (var val in inrdr.Contents["matchers"].Values)
-                {
-                    _matchers[val.Key] = Enum.Parse<ConsoleColorEx>(val.Value, true);
-                }
+                inrdr.Contents["matchers"].Values.ForEach(val => _matchers[val.Key] = Enum.Parse<ConsoleColorEx>(val.Value, true));
             }
             else // assume explicit cl spec
             {
@@ -318,80 +324,21 @@ namespace NTerm
             }
         }
 
-
-/*
-            switch (args[0])
-            {
-                case "null":
-                case "tcp":
-                case "udp":
-                case "serial":
-                    ProcessCommType(args);
-                    break;
-
-                case "?":
-                    About();
-                    break;
-
-                default:
-                    // Valid ini file?
-                    if (args[0].EndsWith(".ini") && File.Exists(args[0]))
-                    {
-                        var inrdr = new IniReader(args[0]);
-
-                        // [nterm]
-                        foreach (var val in inrdr.Contents["nterm"].Values)
-                        {
-                            switch (val.Key)
-                            {
-                                case "comm_type":
-                                    ProcessCommType(val.Value.SplitByToken(" "));
-                                    break;
-                                default:
-                                    throw new IniSyntaxException($"Invalid section value for {val.Key}", -1);
-                            }
-                        }
-
-                        // [meta_keys]
-                        foreach (var val in inrdr.Contents["meta_keys"].Values)
-                        {
-                            _metaKeys[val.Key[0]] = val.Value;
-                        }
-
-                        // [matchers]
-                        foreach (var val in inrdr.Contents["matchers"].Values)
-                        {
-                            _matchers[val.Key] = Enum.Parse<ConsoleColorEx>(val.Value, true);
-                        }
-                    }
-                    else
-                    {
-                        throw new ArgumentException($"Invalid ini file: {args[0]}");
-                    }
-                    break;
-            }
-
-            ///// Local function. /////
-            void ProcessCommType(List<string> args)
-            {
-                _comm = args[0] switch
-                {
-                    "null" => new NullComm(),
-                    "tcp" => new TcpComm(args),
-                    "udp" => new UdpComm(args),
-                    "serial" => new SerialComm(args),
-                    _ => throw new IniSyntaxException($"Invalid comm type: {args[0]}", -1),
-                };
-            }
-*/
-
         /// <summary>
-        /// Write to console.
+        /// Write a line to console.
         /// </summary>
+        /// <param name="cat">Category</param>
         /// <param name="text">What to print</param>
-        /// <param name="color">Explicit color to use.</param>
-        void Print(string text, ConsoleColorEx color = ConsoleColorEx.None)
+        void Print(Cat cat, string text)
         {
+            var color = cat switch
+            {
+                Cat.Error => _errorColor,
+                Cat.Internal => _internalColor,
+                _ => ConsoleColorEx.None,
+            };
+
+            //  If color not explicitly specified, look through possible matches.
             if (color == ConsoleColorEx.None)
             {
                 foreach (var m in _matchers)
@@ -421,16 +368,32 @@ namespace NTerm
                 Console.Write(text);
                 Console.ResetColor();
             }
+
+            Console.Write(Environment.NewLine);
+            Log(cat, text);
         }
 
-        /// <summary>
-        /// Write to console with NL.
-        /// </summary>
-        /// <param name="text">What to print</param>
-        /// <param name="color">Explicit color to use.</param>
-        void PrintLine(string text, ConsoleColorEx color = ConsoleColorEx.None)
+        void Log(Cat cat, string text)
         {
-            Print(text + Environment.NewLine, color);
+            if (_logStream is not null)
+            {
+                long tick = Stopwatch.GetTimestamp();
+                double sec = 1.0 * (tick - _startTick) / Stopwatch.Frequency;
+                double msec = 1000.0 * (tick - _startTick) / Stopwatch.Frequency;
+
+                var scat = cat switch
+                {
+                    Cat.Send => ">>>",
+                    Cat.Receive => "<<<",
+                    Cat.Error => "!!!",
+                    Cat.Internal => "---",
+                    _ => throw new NotImplementedException(),
+                };
+
+                var s = $"{sec:000.000} {scat} {text}{Environment.NewLine}";
+                _logStream.Write(Encoding.Default.GetBytes(s));
+                _logStream.Flush();
+            }
         }
 
         /// <summary>
@@ -438,7 +401,7 @@ namespace NTerm
         /// </summary>
         void DoPrompt()
         {
-            //TODO1? Console.Write(_settings.Prompt);
+            Console.Write(_prompt);
         }
 
         /// <summary>
@@ -446,7 +409,13 @@ namespace NTerm
         /// </summary>
         void About()
         {
-            Tools.ShowReadme("NTerm"); // TODO other sys info?
+            Tools.ShowReadme("NTerm");
+
+            // TODO other sys info? Config, meta keys, serial ports,...
+            // var cc = _config is not null ? $"{_config.Name}({_config.CommType})" : "None";
+            // _hotKeys.ForEach(x => Print($"{_settings.HotKeyMod}-{x.Key} sends: [{x.Value}]"));
+            // var sports = SerialPort.GetPortNames();
+            // sports.ForEach(s => { Print($"   {s}"); });
         }
     }
 }

@@ -67,35 +67,15 @@ namespace NTerm
 
         /// <summary>IComm implementation.</summary>
         /// <see cref="IComm"/>
+        public void Reset()
+        {
+        }
+
+        /// <summary>IComm implementation.</summary>
+        /// <see cref="IComm"/>
         public void Run(CancellationToken token)
         {
-
-            //udpClient.Connect("www.contoso.com", 11000);
-
-            //// Sends a message to the host to which you have connected.
-            //byte[] sendBytes = Encoding.ASCII.GetBytes("Is anybody there?");
-
-            //udpClient.Send(sendBytes, sendBytes.Length);
-
-            //// Sends a message to a different host using optional hostname and port parameters.
-            //UdpClient udpClientB = new();
-            //udpClientB.Send(sendBytes, sendBytes.Length, "AlternateHostMachineName", 11000);
-
-            ////IPEndPoint object will allow us to read datagrams sent from any source.
-            //IPEndPoint RemoteIpEndPoint = new IPEndPoint(IPAddress.Any, 0);
-
-            //// Blocks until a message returns on this socket from a remote host.
-            //byte[] receiveBytes = udpClient.Receive(ref RemoteIpEndPoint);
-            //string returnData = Encoding.ASCII.GetString(receiveBytes);
-
-            //// Uses the IPEndPoint object to determine which of these two hosts responded.
-            //Console.WriteLine("This is the message you received " + returnData.ToString());
-            //Console.WriteLine("This message was sent from " + RemoteIpEndPoint.Address.ToString() +
-            //                            " on their port number " + RemoteIpEndPoint.Port.ToString());
-
-            //udpClient.Close();
-            //udpClientB.Close();
-
+            //https://learn.microsoft.com/en-us/dotnet/api/system.net.sockets.udpclient
 
             UdpClient client = new(_host, _port);
             CommState state = CommState.None;
@@ -108,26 +88,27 @@ namespace NTerm
                     state = CommState.Connect;
 
 
+                    //=========== Send ============//
+                    // Not supported.
+
+
                     //=========== Receive ==========//
                     state = CommState.Recv;
 
                     bool rcvDone = false;
-                    //byte[] rxData = new byte[BUFFER_SIZE];
-
                     while (!rcvDone)
                     {
-                        // Get data. If the read time-out expires, Read() throws IOException.
-                        var bytes = client.ReceiveAsync(token);//   );// rxData, 0, BUFFER_SIZE);
+                        // Get data.
+                        var bytes = client.ReceiveAsync(token);
                         if (bytes.Result.Buffer.Length > 0)
                         {
-                            _qRecv.Enqueue(bytes.Result.Buffer);// Utils.BytesToString(bytes.Result.Buffer, bytes.Result.Buffer.Length));
+                            _qRecv.Enqueue(bytes.Result.Buffer);
                         }
                         else
                         {
                             rcvDone = true;
                         }
                     }
-
                 }
                 catch (Exception e)
                 {
@@ -149,112 +130,22 @@ namespace NTerm
                             if (valid.Contains(ex.NativeErrorCode))
                             {
                                 // Ignore and retry later.
-                                //_logger.Debug($"SocketException: Timeout: {ex.NativeErrorCode}");
                             }
                             else
                             {
-                                // All other errors are considered fatal - bubble up to App to handle.
+                                // All others are considered fatal - bubble up to App to handle.
                                 throw;
                             }
                             break;
 
-                        default: // All other errors are considered fatal - bubble up to App to handle.
+                        default: // All others are considered fatal - bubble up to App to handle.
                             throw;
                     }
                 }
 
                 // Don't be greedy.
-                Thread.Sleep(20);
+                Thread.Sleep(5);
             }
-        }
-
-
-
-        void Example()
-        {
-            // The UdpClient class provides simple methods for sending and receiving connectionless UDP datagrams
-            // in blocking synchronous mode. Because UDP is a connectionless transport protocol, you do not need to
-            // establish a remote host connection prior to sending and receiving data. You do, however, have the
-            // option of establishing a default remote host in one of the following two ways:
-            //   Create an instance of the UdpClient class using the remote host name and port number as parameters.
-            //   Create an instance of the UdpClient class and then call the Connect method.
-            // You can use any of the send methods provided in the UdpClient to send data to a remote device. Use the
-            // Receive method to receive data from remote hosts.
-
-
-            // This constructor arbitrarily assigns the local port number.
-            UdpClient udpClient = new(11000);
-            try
-            {
-                udpClient.Connect("www.contoso.com", 11000);
-
-                // Sends a message to the host to which you have connected.
-                byte[] sendBytes = Encoding.ASCII.GetBytes("Is anybody there?");
-
-                udpClient.Send(sendBytes, sendBytes.Length);
-
-                // Sends a message to a different host using optional hostname and port parameters.
-                UdpClient udpClientB = new();
-                udpClientB.Send(sendBytes, sendBytes.Length, "AlternateHostMachineName", 11000);
-
-                //IPEndPoint object will allow us to read datagrams sent from any source.
-                IPEndPoint RemoteIpEndPoint = new IPEndPoint(IPAddress.Any, 0);
-
-                // Blocks until a message returns on this socket from a remote host.
-                byte[] receiveBytes = udpClient.Receive(ref RemoteIpEndPoint);
-                string returnData = Encoding.ASCII.GetString(receiveBytes);
-
-                // Uses the IPEndPoint object to determine which of these two hosts responded.
-                Console.WriteLine("This is the message you received " + returnData.ToString());
-                Console.WriteLine("This message was sent from " + RemoteIpEndPoint.Address.ToString() +
-                                            " on their port number " + RemoteIpEndPoint.Port.ToString());
-
-                udpClient.Close();
-                udpClientB.Close();
-            }
-            catch (Exception e)
-            {
-                Console.WriteLine(e.ToString());
-            }
-
-            /*
-            Example: UDP Server using Python - listen
-            import socket
-            localIP     = "127.0.0.1"
-            localPort   = 20001
-            bufferSize  = 1024
-            msgFromServer       = "Hello UDP Client"
-            bytesToSend         = str.encode(msgFromServer)
-            # Create a datagram socket
-            UDPServerSocket = socket.socket(family=socket.AF_INET, type=socket.SOCK_DGRAM)
-            # Bind to address and ip
-            UDPServerSocket.bind((localIP, localPort))
-            print("UDP server up and listening")
-
-            # Listen for incoming datagrams
-            while(True):
-                bytesAddressPair = UDPServerSocket.recvfrom(bufferSize)
-                message = bytesAddressPair[0]
-                address = bytesAddressPair[1]
-                clientMsg = "Message from Client:{}".format(message)
-                clientIP  = "Client IP Address:{}".format(address)
-                print(clientMsg)
-                print(clientIP)
-            # Sending a reply to client
-            UDPServerSocket.sendto(bytesToSend, address)
-
-            Output:
-            UDP server up and listening
-            Message from Client:b"Hello UDP Server"
-            Client IP Address:("127.0.0.1", 51696)
-            */
-        }
-
-
-        /// <summary>IComm implementation.</summary>
-        /// <see cref="IComm"/>
-        public void Reset()
-        {
         }
     }
 }

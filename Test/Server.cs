@@ -12,6 +12,33 @@ using NTerm;
 
 namespace Test
 {
+    public class Utils
+    {
+        public static string BytesToString(byte[] buff, int cnt)
+        {
+            return Encoding.Default.GetString(buff, 0, cnt);
+        }
+
+        public static string BytesToStringReadable(byte[] buff, int cnt)
+        {
+            List<string> list = [];
+            for (int i = 0; i < cnt; i++)
+            {
+                var c = buff[i];
+                list.Add(c.IsReadable() ? ((char)c).ToString() : $"<{c:X}>");
+            }
+            return string.Join("", list);
+        }
+
+        public static byte[] StringToBytes(string s)
+        {
+            // Valid strings are always convertible.
+            return Encoding.Default.GetBytes(s);
+        }
+    }
+
+
+
     public class Server // TODO1 need cmd/resp TCP, cont TCP, cont UDP(client)
     {
         public static void Run(int port)

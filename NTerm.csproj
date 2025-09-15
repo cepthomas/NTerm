@@ -29,6 +29,15 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Compile Remove="_temp.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Remove="NTerm_old.zip" />
+    <None Remove="NTerm_old_settings_log.zip" />
+  </ItemGroup>
+
+  <ItemGroup>
     <Content Include="cucaracha.ico" />
   </ItemGroup>
 

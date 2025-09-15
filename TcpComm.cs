@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Net.Sockets;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Ephemera.NBagOfTricks;
@@ -19,7 +20,6 @@ namespace NTerm
     internal class TcpComm : IComm
     {
         #region Fields
-        // readonly Logger _logger = LogManager.CreateLogger("TCP");
         string _host;
         int _port;
         readonly ConcurrentQueue<string> _qSend = new();
@@ -68,6 +68,12 @@ namespace NTerm
 
         /// <summary>IComm implementation.</summary>
         /// <see cref="IComm"/>
+        public void Reset()
+        {
+        }
+
+        /// <summary>IComm implementation.</summary>
+        /// <see cref="IComm"/>
         public void Run(CancellationToken token)
         {
             CommState state = CommState.None;
@@ -99,7 +105,7 @@ namespace NTerm
                     if (_qSend.TryDequeue(out string? s))
                     {
                         bool sendDone = false;
-                        var txData = Utils.StringToBytes(s);
+                        var txData = Encoding.Default.GetBytes(s);
                         int numToSend = txData.Length;
                         int ind = 0;
 
@@ -116,7 +122,6 @@ namespace NTerm
                         }
                     }
 
-                    // Any received?
                     //=========== Receive ==========//
                     state = CommState.Recv;
 
@@ -128,13 +133,13 @@ namespace NTerm
                         // Get response. If the read time-out expires, Read() throws IOException.
                         int byteCount = stream.Read(rxData, 0, BUFFER_SIZE);
 
-                        if (byteCount == 0)
+                        if (byteCount > 0)
                         {
-                            rcvDone = true;
+                            _qRecv.Enqueue(rxData);
                         }
                         else
                         {
-                            _qRecv.Enqueue(rxData);
+                            rcvDone = true;
                         }
                     }
                 
@@ -168,7 +173,6 @@ namespace NTerm
                     switch (e)
                     {
                         case OperationCanceledException ex: // Usually connect timeout. Ignore and retry later.
-                            //_logger.Debug($"OperationCanceledException: Timeout: {ex.Message}");
                             break;
 
                         case SocketException ex: // Some are expected and recoverable. https://learn.microsoft.com/en-us/windows/win32/winsock/windows-sockets-error-codes-2
@@ -176,7 +180,6 @@ namespace NTerm
                             if (valid.Contains(ex.NativeErrorCode))
                             {
                                 // Ignore and retry later.
-                                //_logger.Debug($"SocketException: Timeout: {ex.NativeErrorCode}");
                             }
                             else
                             {
@@ -186,7 +189,6 @@ namespace NTerm
                             break;
 
                         case IOException ex: // Usually receive timeout. Ignore and retry later.
-                            //_logger.Debug($"IOException: Timeout: {ex.Message}");
                             break;
 
                         default: // All other errors are considered fatal - bubble up to App to handle.
@@ -195,13 +197,7 @@ namespace NTerm
                 }
 
                 // Don't be greedy.
-                Thread.Sleep(20);
+                Thread.Sleep(5);
             }
-        }
-
-        /// <summary>IComm implementation.</summary>
-        /// <see cref="IComm"/>
-        public void Reset()
-        {
         }
     }}
