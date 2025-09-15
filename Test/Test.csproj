@@ -1,26 +1,29 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
-    <PropertyGroup>
-        <OutputType>Exe</OutputType>
-        <RuntimeIdentifier>win-x64</RuntimeIdentifier>
-        <TargetFramework>net8.0-windows</TargetFramework>
-        <UseWindowsForms>true</UseWindowsForms>
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <Nullable>enable</Nullable>
+    <UseWindowsForms>true</UseWindowsForms>
+    <ImplicitUsings>disable</ImplicitUsings>
 
-        <Nullable>enable</Nullable>
-        <ImplicitUsings>disable</ImplicitUsings>
-        <SatelliteResourceLanguages>none</SatelliteResourceLanguages>
-    </PropertyGroup>
+    <OutputPath>bin\</OutputPath>
+    <!-- <RuntimeIdentifier>win-x64</RuntimeIdentifier> -->
+
+    <SatelliteResourceLanguages>none</SatelliteResourceLanguages>
+    <!-- <NoWarn>1701;1702;CA1816;CA1822</NoWarn> -->
+  </PropertyGroup>
 
     <ItemGroup>
         <Compile Include="..\Common.cs" Link="Common.cs" />
         <Compile Include="..\SerialComm.cs" Link="SerialComm.cs" />
         <Compile Include="..\TcpComm.cs" Link="TcpComm.cs" />
-        <Compile Include="..\UserSettings.cs" Link="UserSettings.cs" />
+        <Compile Include="..\UdpComm.cs" Link="UdpComm.cs" />
     </ItemGroup>
 
     <ItemGroup>
         <PackageReference Include="System.IO.Ports" Version="9.0.1" />
-        <PackageReference Include="System.Management" Version="9.0.1" />
+        <!-- <PackageReference Include="System.Management" Version="9.0.1" /> -->
     </ItemGroup>
 
     <ItemGroup>
@@ -31,5 +34,7 @@
             <HintPath>..\lib\Ephemera.NBagOfUis.dll</HintPath>
         </Reference>
     </ItemGroup>
+
+
 
 </Project>

@@ -115,7 +115,7 @@ namespace Test
                 buff[i] = array[offset + i];
             }
 
-            var str = Utils.BytesToString(buff, i);
+//            var str = UtilsXXX.BytesToString(buff, i);
             byte[] rx = [];// _script.Send(str);
         }
 

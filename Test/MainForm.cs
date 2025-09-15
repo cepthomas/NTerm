@@ -1,10 +1,12 @@
 using System;
+using System.Windows.Forms;
 using System.Diagnostics;
 using System.Drawing;
 using System.IO;
 using System.Net.Sockets;
 using System.Numerics;
 using System.Text;
+using System.Collections.Generic;
 using Ephemera.NBagOfTricks;
 using Ephemera.NBagOfTricks.PNUT;
 using NTerm;
@@ -12,38 +14,31 @@ using NTerm;
 
 namespace Test
 {
-    public class Utils
+    public partial class MainForm : Form
     {
-        public static string BytesToString(byte[] buff, int cnt)
+        public MainForm()
         {
-            return Encoding.Default.GetString(buff, 0, cnt);
+            InitializeComponent();
         }
 
-        public static string BytesToStringReadable(byte[] buff, int cnt)
+        void MainXXX()
         {
-            List<string> list = [];
-            for (int i = 0; i < cnt; i++)
-            {
-                var c = buff[i];
-                list.Add(c.IsReadable() ? ((char)c).ToString() : $"<{c:X}>");
-            }
-            return string.Join("", list);
+            //UserSettings ss = (UserSettings)SettingsCore.Load(MiscUtils.GetSourcePath(), typeof(UserSettings), "fake_settings.json");
+
+            Console.WriteLine("Hello, Test!");
+
+            //FakeSettings();
+
+            //Server.Run(8888);// int.Parse(ss.Configs[0].Args[1]));
         }
 
-        public static byte[] StringToBytes(string s)
-        {
-            // Valid strings are always convertible.
-            return Encoding.Default.GetBytes(s);
-        }
-    }
 
-
-
-    public class Server // TODO1 need cmd/resp TCP, cont TCP, cont UDP(client)
-    {
-        public static void Run(int port)
+        void DoTcp()
         {
             bool done = false;
+
+            int port = 9999;
+
             Console.WriteLine($"Listening on {port}");
 
             while (!done)
@@ -61,7 +56,7 @@ namespace Test
                     var rx = new byte[4096];
                     //Console.WriteLine("Start receive from client");
                     var byteCount = stream.Read(rx, 0, rx.Length);
-                    var request = Utils.BytesToString(rx[..byteCount], byteCount);
+                    var request = BytesToString(rx[..byteCount], byteCount);
                     Console.WriteLine($"Client request [{request}]");
 
                     //=========== Respond ============//
@@ -94,7 +89,7 @@ namespace Test
                     }
 
                     // byte[] bytes = Utils.StringToBytes($"{response}{Environment.NewLine}{_prompt}");
-                    byte[] bytes = Utils.StringToBytes(response);
+                    byte[] bytes = StringToBytes(response);
                     stream.Write(bytes, 0, bytes.Length);
                     Console.WriteLine($"Server response: [{response.Substring(0, Math.Min(32, response.Length))}]");
 
@@ -114,6 +109,33 @@ namespace Test
                     done = true;
                 }
             }
+        }
+
+        void DoUdp()
+        {
+
+        }
+
+        public string BytesToString(byte[] buff, int cnt)
+        {
+            return Encoding.Default.GetString(buff, 0, cnt);
+        }
+
+        public string BytesToStringReadable(byte[] buff, int cnt)
+        {
+            List<string> list = [];
+            for (int i = 0; i < cnt; i++)
+            {
+                var c = buff[i];
+                list.Add(c.IsReadable() ? ((char)c).ToString() : $"<{c:X}>");
+            }
+            return string.Join("", list);
+        }
+
+        public byte[] StringToBytes(string s)
+        {
+            // Valid strings are always convertible.
+            return Encoding.Default.GetBytes(s);
         }
     }
 }
