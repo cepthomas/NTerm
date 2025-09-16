@@ -19,7 +19,6 @@ namespace NTerm
     internal class UdpComm : IComm
     {
         #region Fields
-        // readonly Logger _logger = LogManager.CreateLogger("UDP");
         readonly string _host;
         readonly int _port;
         readonly ConcurrentQueue<byte[]> _qRecv = new();

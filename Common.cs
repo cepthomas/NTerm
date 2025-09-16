@@ -10,8 +10,12 @@ using Ephemera.NBagOfTricks;
 
 namespace NTerm
 {
+    #region Types
     /// <summary>How did operation turn out?</summary>
     public enum CommState { None, Connect, Send, Recv }
+
+    /// <summary>General categories, mainly for logging.</summary>
+    public enum Cat { Send, Receive, Error, Info }
 
     /// <summary>Comm type abstraction.</summary>
     interface IComm : IDisposable
@@ -30,4 +34,5 @@ namespace NTerm
         /// <summary>Reset comms, resource management.</summary>
         void Reset();
     }
+    #endregion
 }

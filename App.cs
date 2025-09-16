@@ -18,17 +18,17 @@ namespace NTerm
     public class App : IDisposable
     {
         #region Fields
-        /// <summary>My logger</summary>
-        // readonly Logger _logger = LogManager.CreateLogger("APP");
-
-        ///// <summary>Settings</summary>
-        //readonly UserSettings _settings = new();
-
         /// <summary>Client comm flavor.</summary>
         IComm _comm = new NullComm();
 
         /// <summary>Cli event queue.</summary>
         readonly ConcurrentQueue<string> _qUserCli = new();
+
+        /// <summary>Local logger.</summary>
+        readonly FileStream? _logStream = null;
+
+        /// <summary>Logger timestamps.</summary>
+        readonly long _startTick = Stopwatch.GetTimestamp();
 
         /// <summary>For timing measurements.</summary>
         readonly TimeIt _tmit = new();
@@ -39,28 +39,22 @@ namespace NTerm
         ConsoleColorEx _errorColor = ConsoleColorEx.Red; // default
 
         /// <summary>Color for internal messages.</summary>
-        ConsoleColorEx _internalColor = ConsoleColorEx.Blue; // default
+        ConsoleColorEx _infoColor = ConsoleColorEx.Blue; // default
 
         /// <summary>Prompt. Can be empty for continuous receiving.</summary>
-        string _prompt = ""; // default
+        string _prompt = ">"; // default
 
         /// <summary>Indicator for application functions.</summary>
-        char _meta = '-'; // default
+        char _meta = '!'; // default
 
         /// <summary>Message delimiter: LF|CR|NUL.</summary>
-        byte _delim = 10; // default LF
+        byte _delim = 10; // default LF (or 13 00)
 
-        /// <summary>User meta keys.</summary>
-        readonly Dictionary<char, string> _metaKeys = [];
+        /// <summary>User macros.</summary>
+        readonly Dictionary<string, string> _macros = [];
 
         /// <summary>Colorizing text.</summary>
         readonly Dictionary<string, ConsoleColorEx> _matchers = [];
-        #endregion
-
-        #region Logging
-        enum Cat { Send, Receive, Error, Internal }
-        FileStream? _logStream = null;
-        long _startTick = 0;
         #endregion
 
         /// <summary>
@@ -71,8 +65,7 @@ namespace NTerm
             try
             {
                 // Init stuff.
-                _startTick = Stopwatch.GetTimestamp();
-                _logStream = File.Open(Path.Combine(MiscUtils.GetSourcePath(), "nterm.log"), FileMode.Create); // or FileMode.Append
+                _logStream = File.Open(Path.Combine(MiscUtils.GetSourcePath(), "nterm.log"), FileMode.Create); // or .Append
 
                 ProcessAppCommandLine();
 
@@ -113,7 +106,7 @@ namespace NTerm
 
             List<char> rcvBuffer = [];
 
-            DoPrompt();
+            Console.Write(_prompt);
 
             while (!ts.Token.IsCancellationRequested)
             {
@@ -129,20 +122,19 @@ namespace NTerm
                     {
                         if (s.Length > 1)
                         {
-                            var hk = s[1];
-                            switch (hk)
+                            switch (s)
                             {
-                                case 'q': // quit
+                                case "q": // quit
                                     ts.Cancel();
                                     Task.WaitAll([taskKeyboard, taskComm]);
                                     break;
 
-                                case '?': // help
+                                case "?": // help
                                     About();
                                     break;
 
                                 default: // user meta key?
-                                    if (_metaKeys.TryGetValue(hk, out var sk))
+                                    if (_macros.TryGetValue(hk, out var sk))
                                     {
                                         _comm.Send(sk);
                                     }
@@ -161,7 +153,7 @@ namespace NTerm
                         _comm.Send(s);
                     }
 
-                    DoPrompt();
+                    Console.Write(_prompt);
                 }
 
                 ///// Comm receive? /////
@@ -181,7 +173,7 @@ namespace NTerm
                             }
                             else
                             {
-                                // Add to buffer.
+                                // Add to buffer. Make non-readable friendlier.
                                 var c = b[i];
                                 if (c.IsReadable())
                                 {
@@ -262,7 +254,7 @@ namespace NTerm
                 // [nterm] section
                 foreach (var nval in inrdr.Contents["nterm"].Values)
                 {
-                    switch (nval.Key)
+                    switch (nval.Key.ToLower())
                     {
                         case "comm_type":
                             commSpec = nval.Value.SplitByToken(" ");
@@ -272,8 +264,8 @@ namespace NTerm
                             _errorColor = Enum.Parse<ConsoleColorEx>(nval.Value, true);
                             break;
 
-                        case "internal_color":
-                            _errorColor = Enum.Parse<ConsoleColorEx>(nval.Value, true);
+                        case "info_color":
+                            _infoColor = Enum.Parse<ConsoleColorEx>(nval.Value, true);
                             break;
 
                         case "prompt":
@@ -299,10 +291,10 @@ namespace NTerm
                     }
                 }
 
-                // [meta_keys] section
-                inrdr.Contents["meta_keys"].Values.ForEach(val => _metaKeys[val.Key[0]] = val.Value);
+                // [macros] section   TODO1 support quoted  x = "hey, do something with x"
+                inrdr.Contents["macros"].Values.ForEach(val => _macros[val.Key[0]] = val.Value);
 
-                // [matchers] section
+                // [matchers] section   TODO1 support quoted  "abc" = magenta
                 inrdr.Contents["matchers"].Values.ForEach(val => _matchers[val.Key] = Enum.Parse<ConsoleColorEx>(val.Value, true));
             }
             else // assume explicit cl spec
@@ -313,7 +305,7 @@ namespace NTerm
             // Process comm spec.
             if (commSpec.Count > 0)
             {
-                _comm = commSpec[0] switch
+                _comm = commSpec[0].ToLower() switch
                 {
                     "null" => new NullComm(),
                     "tcp" => new TcpComm(args),
@@ -334,7 +326,7 @@ namespace NTerm
             var color = cat switch
             {
                 Cat.Error => _errorColor,
-                Cat.Internal => _internalColor,
+                Cat.Info => _infoColor,
                 _ => ConsoleColorEx.None,
             };
 
@@ -373,6 +365,11 @@ namespace NTerm
             Log(cat, text);
         }
 
+        /// <summary>
+        /// Write to logger.
+        /// </summary>
+        /// <param name="cat">Category</param>
+        /// <param name="text">What to print</param>
         void Log(Cat cat, string text)
         {
             if (_logStream is not null)
@@ -386,7 +383,7 @@ namespace NTerm
                     Cat.Send => ">>>",
                     Cat.Receive => "<<<",
                     Cat.Error => "!!!",
-                    Cat.Internal => "---",
+                    Cat.Info => "---",
                     _ => throw new NotImplementedException(),
                 };
 
@@ -394,14 +391,6 @@ namespace NTerm
                 _logStream.Write(Encoding.Default.GetBytes(s));
                 _logStream.Flush();
             }
-        }
-
-        /// <summary>
-        /// 
-        /// </summary>
-        void DoPrompt()
-        {
-            Console.Write(_prompt);
         }
 
         /// <summary>

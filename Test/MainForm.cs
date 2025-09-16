@@ -21,45 +21,45 @@ namespace Test
             InitializeComponent();
         }
 
-        void MainXXX()
+        void Go()
         {
-            //UserSettings ss = (UserSettings)SettingsCore.Load(MiscUtils.GetSourcePath(), typeof(UserSettings), "fake_settings.json");
-
-            Console.WriteLine("Hello, Test!");
-
-            //FakeSettings();
-
-            //Server.Run(8888);// int.Parse(ss.Configs[0].Args[1]));
+            // TODO1 start NTerm with arg =
+            // test.ini
+            // tcp 127.0.0.1 59120/30
+            // udp 127.0.0.1 59140
+            // null
         }
 
 
-        void DoTcp()
+        void DoTcpCmdResp()
         {
-            bool done = false;
+            int port = 59120;
 
-            int port = 9999;
+            PrintLine(Cat.Internal, $"Tcp using port: {port}");
 
-            Console.WriteLine($"Listening on {port}");
+            using CancellationTokenSource ts = new();
 
-            while (!done)
+            //=========== Connect ============//
+            using var listener = TcpListener.Create(port);
+            // listener.SendTimeout = RESPONSE_TIME;
+            // listener.SendBufferSize = BUFFER_SIZE;
+            listener.Start();
+            using var client = listener.AcceptTcpClient();
+            PrintLine(Cat.Internal, "Client has connected");
+            using var stream = client.GetStream();
+
+            while (!ts.Token.IsCancellationRequested)
             {
                 try
                 {
-                    //=========== Connect ============//
-                    using var listener = TcpListener.Create(port);
-                    listener.Start();
-                    using var client = listener.AcceptTcpClient();
-                    Console.WriteLine("Client has connected");
-
                     //=========== Receive ============//
-                    using var stream = client.GetStream();
                     var rx = new byte[4096];
-                    //Console.WriteLine("Start receive from client");
                     var byteCount = stream.Read(rx, 0, rx.Length);
-                    var request = BytesToString(rx[..byteCount], byteCount);
-                    Console.WriteLine($"Client request [{request}]");
+                    var request = BytesToString(rx[..byteCount], byteCount); // or? BytesToStringReadable
+                    PrintLine(Cat.Internal, $"Client request [{request}]");
 
-                    //=========== Respond ============//
+
+                    //=========== Send ===============//
                     string response = "";
                     switch (request)
                     {
@@ -75,46 +75,143 @@ namespace Test
                             response = $"You said [{request}]";
                             break;
 
-                        case "c":
+                        case "c": // ansi color
                             response = $"\u001b[91mRED \u001b[92m GREEN \u001b[94mBLUE \u001b[0mNONE";
                             break;
 
-                        // case "x":
-                        //     done = true;
-                        //     break;
+                        case "x":
+                            ts.Cancel();
+                            break;
 
                         default: // Always respond with something to prevent timeouts.
                             response = $"Unknown request: {request}";
                             break;
                     }
 
-                    // byte[] bytes = Utils.StringToBytes($"{response}{Environment.NewLine}{_prompt}");
-                    byte[] bytes = StringToBytes(response);
+                    byte[] bytes = StringToBytes(response + Environment.NewLine);
                     stream.Write(bytes, 0, bytes.Length);
-                    Console.WriteLine($"Server response: [{response.Substring(0, Math.Min(32, response.Length))}]");
+                    PrintLine(Cat.Internal, $"Server response: [{response.Substring(0, Math.Min(32, response.Length))}]");
 
                     // System.Threading.Thread.Sleep(10);
                 }
-                catch (SocketException e)
-                {
-                    Console.WriteLine("SocketException: {0}", e);
-                }
-                catch (IOException e)
-                {
-                    Console.WriteLine("IOException: {0}", e);
-                }
                 catch (Exception e)
                 {
-                    Console.WriteLine("!!! Other Exception: {0}", e);
-                    done = true;
+                    PrintLine(Cat.Error, $"Exception: {e}");
+                    ts.Cancel();
                 }
+                // catch (SocketException e)
+                // catch (IOException e)
             }
         }
 
-        void DoUdp()
+        void DoTcpContinuous()
         {
+            int port = 59130;
 
+            PrintLine(Cat.Internal, $"Tcp using port: {port}");
+
+            using CancellationTokenSource ts = new();
+
+            var lines = File.ReadLines(@"C:\Dev\Apps\NTerm\Test\ross_1.txt");
+            int ind = 0;
+
+            //=========== Connect ============//
+            using var listener = TcpListener.Create(port);
+            // listener.SendTimeout = RESPONSE_TIME;
+            // listener.SendBufferSize = BUFFER_SIZE;
+            listener.Start();
+            using var client = listener.AcceptTcpClient();
+            PrintLine(Cat.Internal, "Client has connected");
+            using var stream = client.GetStream();
+
+            while (!ts.Token.IsCancellationRequested && ind < lines.Count)
+            {
+                try
+                {
+                    //=========== Send ===============//
+                    string send = lines[ind++];
+
+                    byte[] bytes = StringToBytes(send + Environment.NewLine);
+                    stream.Write(bytes, 0, bytes.Length);
+                    PrintLine(Cat.Internal, $"Server send: [{send.Substring(0, Math.Min(32, send.Length))}]");
+
+                    // Pacing.
+                    System.Threading.Thread.Sleep(500);
+                }
+                catch (Exception e)
+                {
+                    PrintLine(Cat.Error, $"Exception: {e}");
+                    ts.Cancel();
+                }
+                // catch (SocketException e)
+                // catch (IOException e)
+            }
         }
+
+
+
+        void DoUdpContinuous()
+        {
+            int port = 59140;
+
+            PrintLine(Cat.Internal, $"Udp using port: {port}");
+
+            using CancellationTokenSource ts = new();
+
+            var lines = File.ReadLines(@"C:\Dev\Apps\NTerm\Test\ross_2.txt");
+            int ind = 0;
+
+            //=========== Connect ============//
+            UdpClient client = new UdpClient();
+            client.Connect("127.0.0.1", port);
+            PrintLine(Cat.Internal, "Client has connected");
+
+            while (!ts.Token.IsCancellationRequested && ind < lines.Count)
+            {
+                try
+                {
+                    //=========== Send ===============//
+                    string send = lines[ind++];
+
+                    byte[] bytes = StringToBytes(send + Environment.NewLine);
+
+                    client.Send(bytes, bytes.Length);
+
+                    // Pacing.
+                    System.Threading.Thread.Sleep(500);
+                }
+                catch (Exception e)
+                {
+                    PrintLine(Cat.Error, $"Exception: {e}");
+                    ts.Cancel();
+                }
+                // catch (SocketException e)
+                // catch (IOException e)
+            }
+        }
+
+
+
+
+        void PrintLine(Cat cat, string msg)
+        {
+            var scat = cat switch
+            {
+                Cat.Send => ">>>",
+                Cat.Receive => "<<<",
+                Cat.Error => "!!!",
+                Cat.Internal => "---",
+                _ => throw new NotImplementedException(),
+            };
+            
+            var s = $"{scat} {text}{Environment.NewLine}";
+
+            TxtDisplay.AppendText(s);
+        }
+
+
+
+
 
         public string BytesToString(byte[] buff, int cnt)
         {

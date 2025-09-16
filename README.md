@@ -1,55 +1,36 @@
-# NTerm  TODO1 doc
+# NTerm
 
-Minimalist terminal for simple things like embedded systems.
-Very much a work in progress.
+Minimalist terminal for simple text-based interfaces like embedded systems.
 
-Supports:
-- TCP line-oriented in a send-then-listen mode. NTerm is the client.
-- UDP listener. NTerm is the server.
-- Serial ports like TCP mode.
+Supported protocols:
+- TCP line-oriented in a send-then-listen mode or listen to continuous messages.
+- UDP listener to continuous messages.
+- Serial port like TCP mode.
 
-## Config .ini
+A log file `nterm.log` captures all traffic and internal messages. It is overwritten with each execution
+of the application.
 
-- Name
-- CommType: Null, Tcp, Udp, Serial
-- Args:
-  - Tcp/Udp: "127.0.0.1", "59120"
-  - Serial: "COM1", "9600", "E|O|N", "6|7|8", "0|1|1.5"  - 8N1
-- MetaKeys: like "k=do something"  "o=send me"
-- ... more
+# Configuration
 
-## settings
+A standard `.ini` format file is used to configure a session.
+See `Test\test.ini` for a description of the fields.
 
-string Prompt = "# ";
-char MetaMarker = '!';
-LogLevel FileLogLevel = LogLevel.Trace;
-LogLevel NotifLogLevel = LogLevel.Info;
-2x colors
+Alternatively, NTerm can run without a config file by passing the comm_type field in the cmd line args:
 
-## Metakeys?
+- Tcp: `NTerm tcp 127.0.0.1 59120
+- Udp: `NTerm udp 127.0.0.1 59120
+- Serial: `NTerm serial serial COM1 9600 8N1`
+- Null modem (loopback): `NTerm null`
 
-config MetaMarker = '!'
-builtin: don't use??
-  case "q":  quit
-  case "s":  edit settings
-  case "?":  help
-user: "k=do something"  "o=send me"
+# Metakeys
 
+System functions and user macros are called by prefacing with the `meta` marker (default shown):
 
+- `!q`: quit
+- `!?`: about
+- `!uuu`: user macros as defined in `macros` section. 
 
-### config ==================================================
+# Colorized output.
 
-[nterm]
-; Flavor
-comm_type = null
-comm_type = tcp 127.0.0.1 59120
-comm_type = udp 127.0.0.1 59120
-comm_type = serial COM1 9600 8N1 ; E|O|N 6|7|8 0|1|15
-
-[meta_keys]
-k=do something
-o=send me
-
-[matchers]
-blue=Text to match
-
+In order to differentiate internally generated messages, `info_color` and `error_color` can be specified.
+Additionally simple text matching and coloring is specified in the `matchers` section.
