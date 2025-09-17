@@ -42,7 +42,7 @@ namespace NTerm
         ConsoleColorEx _infoColor = ConsoleColorEx.Blue; // default
 
         /// <summary>Prompt. Can be empty for continuous receiving.</summary>
-        string _prompt = ">"; // default
+        string _prompt = ""; // default
 
         /// <summary>Indicator for application functions.</summary>
         char _meta = '!'; // default
@@ -62,6 +62,9 @@ namespace NTerm
         /// </summary>
         public App()
         {
+            //Dev();
+            //return;
+
             try
             {
                 // Init stuff.
@@ -72,9 +75,14 @@ namespace NTerm
                 // Go forever.
                 Run();
             }
+            catch (ConfigException ex)
+            {
+                Print(Cat.Error, $"Config value error: {ex.Message}");
+                Environment.Exit(1);
+            }
             catch (IniSyntaxException ex)
             {
-                Print(Cat.Error, $"IniSyntaxException at {ex.LineNum}: {ex.Message}");
+                Print(Cat.Error, $"Config syntax error at {ex.LineNum}: {ex.Message}");
                 Environment.Exit(1);
             }
             catch (Exception ex)
@@ -95,6 +103,27 @@ namespace NTerm
             _logStream?.Dispose();
         }
 
+
+        void Dev()
+        {
+            Console.BackgroundColor = ConsoleColor.Gray;
+            for (int i = (int)ConsoleColorEx.Black; i <= (int)ConsoleColorEx.White; i++)
+            {
+                Console.ForegroundColor = (ConsoleColor)i;
+                Console.WriteLine($"{(ConsoleColorEx)i} => ForegroundColor");
+            }
+
+            Console.ForegroundColor = ConsoleColor.Gray;
+            for (int i = (int)ConsoleColorEx.Black; i <= (int)ConsoleColorEx.White; i++)
+            {
+                Console.BackgroundColor = (ConsoleColor)i;
+                Console.WriteLine($"{(ConsoleColorEx)i} => BackgroundColor");
+            }
+
+            Console.ResetColor();
+        }
+
+
         /// <summary>
         /// Main loop.
         /// </summary>
@@ -110,8 +139,6 @@ namespace NTerm
 
             while (!ts.Token.IsCancellationRequested)
             {
-                //timedOut = false;
-
                 ///// User input? /////
                 while (_qUserCli.TryDequeue(out string? s))
                 {
@@ -122,7 +149,8 @@ namespace NTerm
                     {
                         if (s.Length > 1)
                         {
-                            switch (s)
+                            var mk = s[1..];
+                            switch (mk)
                             {
                                 case "q": // quit
                                     ts.Cancel();
@@ -134,13 +162,13 @@ namespace NTerm
                                     break;
 
                                 default: // user meta key?
-                                    if (_macros.TryGetValue(hk, out var sk))
+                                    if (_macros.TryGetValue(mk, out var sk))
                                     {
                                         _comm.Send(sk);
                                     }
                                     else
                                     {
-                                        Print(Cat.Error, $"Unknown meta key:{hk}");
+                                        Print(Cat.Error, $"Unknown meta key: [{mk}]");
                                     }
                                     break;
                             }
@@ -195,12 +223,6 @@ namespace NTerm
 
                 // Delay a bit.
                 Thread.Sleep(10);
-
-                //// If there was no timeout, delay a bit.
-                //if (!timedOut)
-                //{
-                //    Thread.Sleep(10);
-                //}
             }
         }
 
@@ -231,8 +253,7 @@ namespace NTerm
         /// <summary>s
         /// Process user command line input. Could be explicit comm spec or a config file name.
         /// </summary>
-        /// <exception cref="ArgumentException"></exception>
-        /// <exception cref="IniSyntaxException"></exception>
+        /// <exception cref="ConfigException"></exception>
         void ProcessAppCommandLine()
         {
             var args = Environment.GetCommandLineArgs().ToList()[1..];
@@ -282,20 +303,20 @@ namespace NTerm
                                 "LF" => 10,
                                 "CR" => 13,
                                 "NUL" => 0,
-                                _ => throw new IniSyntaxException($"Invalid delim: {nval.Value}", -1),
+                                _ => throw new ConfigException($"Invalid delim: [{nval.Value}]"),
                             };
                             break;
 
                         default:
-                            throw new IniSyntaxException($"Invalid [nterm] section key: {nval.Key}", -1);
+                            throw new ConfigException($"Invalid [nterm] section key: [{nval.Key}]");
                     }
                 }
 
-                // [macros] section   TODO1 support quoted  x = "hey, do something with x"
-                inrdr.Contents["macros"].Values.ForEach(val => _macros[val.Key[0]] = val.Value);
+                // [macros] section
+                inrdr.Contents["macros"].Values.ForEach(val => _macros[val.Key] = val.Value.Replace("\"", ""));
 
-                // [matchers] section   TODO1 support quoted  "abc" = magenta
-                inrdr.Contents["matchers"].Values.ForEach(val => _matchers[val.Key] = Enum.Parse<ConsoleColorEx>(val.Value, true));
+                // [matchers] section
+                inrdr.Contents["matchers"].Values.ForEach(val => _matchers[val.Key.Replace("\"", "")] = Enum.Parse<ConsoleColorEx>(val.Value, true));
             }
             else // assume explicit cl spec
             {
@@ -311,7 +332,7 @@ namespace NTerm
                     "tcp" => new TcpComm(args),
                     "udp" => new UdpComm(args),
                     "serial" => new SerialComm(args),
-                    _ => throw new IniSyntaxException($"Invalid comm type: {args[0]}", -1),
+                    _ => throw new ConfigException($"Invalid comm type: [{args[0]}]"),
                 };
             }
         }
@@ -323,45 +344,35 @@ namespace NTerm
         /// <param name="text">What to print</param>
         void Print(Cat cat, string text)
         {
-            var color = cat switch
+            var catColor = cat switch
             {
                 Cat.Error => _errorColor,
                 Cat.Info => _infoColor,
-                _ => ConsoleColorEx.None,
+                _ => ConsoleColorEx.None
             };
 
-            //  If color not explicitly specified, look through possible matches.
-            if (color == ConsoleColorEx.None)
+            //  If color not explicitly specified, look for text matches.
+            if (catColor == ConsoleColorEx.None)
             {
                 foreach (var m in _matchers)
                 {
                     if (text.Contains(m.Key)) // faster than compiled regexes
                     {
-                        color = m.Value;
+                        catColor = m.Value;
                         break;
                     }
                 }
-
-                if (color != ConsoleColorEx.None)
-                {
-                    //Console.BackgroundColor = (ConsoleColor)color;
-                    Console.ForegroundColor = (ConsoleColor)color;
-                    Console.Write(text);
-                    Console.ResetColor();
-                }
-                else
-                {
-                    Console.Write(text);
-                }
             }
-            else
+
+            if (catColor != ConsoleColorEx.None)
             {
-                Console.ForegroundColor = (ConsoleColor)color;
-                Console.Write(text);
-                Console.ResetColor();
+                Console.ForegroundColor = (ConsoleColor)catColor;
             }
 
+            Console.Write(text);
             Console.Write(Environment.NewLine);
+            Console.ResetColor();
+            
             Log(cat, text);
         }
 
@@ -380,10 +391,10 @@ namespace NTerm
 
                 var scat = cat switch
                 {
-                    Cat.Send => ">>>",
-                    Cat.Receive => "<<<",
-                    Cat.Error => "!!!",
-                    Cat.Info => "---",
+                    Cat.Send => ">",
+                    Cat.Receive => "<",
+                    Cat.Error => "!",
+                    Cat.Info => "-",
                     _ => throw new NotImplementedException(),
                 };
 
@@ -394,17 +405,44 @@ namespace NTerm
         }
 
         /// <summary>
-        /// 
+        /// Show me everything.
         /// </summary>
         void About()
         {
-            Tools.ShowReadme("NTerm");
+            var docs = File.ReadLines("README.md").ToList();
 
-            // TODO other sys info? Config, meta keys, serial ports,...
-            // var cc = _config is not null ? $"{_config.Name}({_config.CommType})" : "None";
-            // _hotKeys.ForEach(x => Print($"{_settings.HotKeyMod}-{x.Key} sends: [{x.Value}]"));
-            // var sports = SerialPort.GetPortNames();
-            // sports.ForEach(s => { Print($"   {s}"); });
+            //docs.Add("");
+            docs.Add("# Current Configuration");
+            docs.Add($"- comm_type:{_comm}");
+            docs.Add($"- delim:{_delim}");
+            docs.Add($"- prompt:{_prompt}");
+            docs.Add($"- meta:{_meta}");
+            docs.Add($"- info_color:{_infoColor}");
+            docs.Add($"- err_color:{_errorColor}");
+
+            if (_macros.Count > 0)
+            {
+                docs.Add("");
+                docs.Add($"macros:");
+                _macros.ForEach(m => docs.Add($"- {m.Key}:{m.Value}"));
+            }
+
+            if (_matchers.Count > 0)
+            {
+                docs.Add("");
+                docs.Add($"matchers:");
+                _matchers.ForEach(m => docs.Add($"- {m.Key}:{m.Value}"));
+            }
+
+            var sp = SerialPort.GetPortNames().ToList();
+            if (sp.Count > 0)
+            {
+                docs.Add("");
+                docs.Add("serial ports:");
+                sp.ForEach(s => { docs.Add($"- {s}"); });
+            }
+
+            Tools.MarkdownToHtml(docs, Tools.MarkdownMode.Simple, true); // Simple DarkApi LightApi
         }
     }
 }

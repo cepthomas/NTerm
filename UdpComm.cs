@@ -27,6 +27,7 @@ namespace NTerm
         const int BUFFER_SIZE = 4096;
         #endregion
 
+        #region Lifecycle
         /// <summary>Constructor.</summary>
         /// <param name="config"></param>
         /// <exception cref="ArgumentException"></exception>
@@ -49,6 +50,14 @@ namespace NTerm
         {
         }
 
+        /// <summary>What am I.</summary>
+        public override string ToString()
+        {
+            return ($"UdpComm {_host} {_port}");
+        }
+        #endregion
+
+        #region IComm implementation
         /// <summary>IComm implementation.</summary>
         /// <see cref="IComm"/>
         public void Send(string req)
@@ -146,5 +155,6 @@ namespace NTerm
                 Thread.Sleep(5);
             }
         }
+        #endregion
     }
 }

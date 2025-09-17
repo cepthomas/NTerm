@@ -10,27 +10,60 @@ Supported protocols:
 A log file `nterm.log` captures all traffic and internal messages. It is overwritten with each execution
 of the application.
 
-# Configuration
+A standard `.ini` format file is used to configure a session:
 
-A standard `.ini` format file is used to configure a session.
-See `Test\test.ini` for a description of the fields.
+- `NTerm my_config.ini`
 
-Alternatively, NTerm can run without a config file by passing the comm_type field in the cmd line args:
+See `ex.ini` for an example with description of the fields.
 
-- Tcp: `NTerm tcp 127.0.0.1 59120
-- Udp: `NTerm udp 127.0.0.1 59120
+Alternatively, NTerm can run minimally without a config file by passing the comm_type field in the cmd line args:
+
+- Tcp: `NTerm tcp 127.0.0.1 59120`
+- Udp: `NTerm udp 127.0.0.1 59120`
 - Serial: `NTerm serial serial COM1 9600 8N1`
-- Null modem (loopback): `NTerm null`
+- Null modem (aka loopback): `NTerm null`
 
-# Metakeys
+# Configuration file
 
-System functions and user macros are called by prefacing with the `meta` marker (default shown):
+Example config file.
 
-- `!q`: quit
-- `!?`: about
-- `!uuu`: user macros as defined in `macros` section. 
+```ini
+; Basic config items.
+[nterm]
 
-# Colorized output.
+; Protocol flavor - one of:
+comm_type = null
+comm_type = tcp 127.0.0.1 59120
+comm_type = udp 127.0.0.1 59140
+comm_type = serial COM1 9600 8N1 ; => 6|7|8 bits E|O|N parity 0|1 stop bits
 
-In order to differentiate internally generated messages, `info_color` and `error_color` can be specified.
-Additionally simple text matching and coloring is specified in the `matchers` section.
+; Message delimiter: LF|CR|NUL. Default is `LF`.
+delim = LF
+
+; Prompt string. If not provided, there is no prompt other than default cursor.
+; This is usually better for continuous senders. Default is none.
+prompt = >
+
+; Cmd line indicator for system functions and user macros. Default is `!`.
+meta = -
+
+; Simple user macros that sends text when executed.
+; Quotes can be used to maintain leading or trailing whitespace.
+[macros]
+dox = "hey server - do something with x"
+s3 = "send me a three"
+; System functions are:
+!q: quit
+!?: about
+
+; Console color for internal messages. Default is blue.
+info_color = green
+
+; Console color for error messages. Default is red.
+err_color = red
+
+; If the specified text appears in the line it is colorized.
+[matchers]
+"abc" = magenta
+"xyz" = yellow
+```

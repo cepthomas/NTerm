@@ -21,13 +21,72 @@ namespace Test
             InitializeComponent();
         }
 
-        void Go()
+        void OnLoad()
         {
+            var me  = @"C:\Dev\Apps\NTerm\Test\MainForm.cs"
+            var exe = @"C:\Dev\Apps\NTerm\bin\net8.0-windows\win-x64\NTerm.exe";
+
+            var ini = @"/C:\Dev\Apps\NTerm\Test\test.ini";
+            
+
+
+
+            {
+
+
+
+            }
+
+
+
             // TODO1 start NTerm with arg =
             // test.ini
-            // tcp 127.0.0.1 59120/30
-            // udp 127.0.0.1 59140
-            // null
+            // - Tcp: `NTerm tcp 127.0.0.1 59120
+            // - Udp: `NTerm udp 127.0.0.1 59120
+            // - Serial: `NTerm serial serial COM1 9600 8N1`
+            // - Null modem (loopback): `NTerm null`
+
+
+
+
+
+            // string uri = $"https://github.com/cepthomas/{appName}/blob/main/README.md";
+            // var info = new ProcessStartInfo(uri) { UseShellExecute = true };
+            // var proc = new Process() { StartInfo = info };
+            // proc.Start();
+
+
+
+
+            // ProcessStartInfo pinfo = new(args[0], args[1..])
+            // {
+            //     UseShellExecute = false,
+            //     CreateNoWindow = true,
+            //     WindowStyle = ProcessWindowStyle.Hidden,
+            //     RedirectStandardOutput = true,
+            //     RedirectStandardError = true,
+            // };
+
+            // // Add app-specific environmental variables.
+            // // pinfo.EnvironmentVariables["MY_VAR"] = "Hello!";
+
+            // using Process proc = new() { StartInfo = pinfo };
+            // //proc.Exited += (sender, e) => { LogInfo("Process exit event."); };
+
+            // LogInfo("Start process...");
+            // proc.Start();
+
+            // // TIL: To avoid deadlocks, always read the output stream first and then wait.
+            // var stdout = proc.StandardOutput.ReadToEnd();
+            // var stderr = proc.StandardError.ReadToEnd();
+
+            // //LogInfo("Wait for process to exit...");
+            // proc.WaitForExit();
+            // LogInfo("Exited.");
+
+            // return new(proc.ExitCode, stdout, stderr);
+
+
         }
 
 

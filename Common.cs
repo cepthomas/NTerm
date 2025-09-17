@@ -17,6 +17,9 @@ namespace NTerm
     /// <summary>General categories, mainly for logging.</summary>
     public enum Cat { Send, Receive, Error, Info }
 
+    /// <summary>Reporting user errors.</summary>
+    public class ConfigException(string message) : Exception(message);
+
     /// <summary>Comm type abstraction.</summary>
     interface IComm : IDisposable
     {

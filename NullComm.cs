@@ -18,6 +18,7 @@ namespace NTerm
         readonly ConcurrentQueue<byte[]> _qRecv = new();
         #endregion
 
+        #region Lifecycle
         /// <summary>Constructor.</summary>
         public NullComm()
         {
@@ -28,11 +29,19 @@ namespace NTerm
         {
         }
 
+        /// <summary>What am I.</summary>
+        public override string ToString()
+        {
+            return ($"NullComm");
+        }
+        #endregion
+
+        #region IComm implementation
         /// <summary>IComm implementation.</summary>
         /// <see cref="IComm"/>
         public void Send(string req)
         {
-            _qSend.Enqueue(req);
+            _qSend.Enqueue(req + '\n');
         }
 
         /// <summary>IComm implementation.</summary>
@@ -60,12 +69,13 @@ namespace NTerm
                 if (_qSend.TryDequeue(out string? s))
                 {
                     // Loopback. Could modify it also.
-                    _qRecv.Enqueue(s);
+                    _qRecv.Enqueue(Encoding.Default.GetBytes(s));
                 }
 
                 // Don't be greedy.
                 Thread.Sleep(5);
             }
         }
+        #endregion
     }
 }
