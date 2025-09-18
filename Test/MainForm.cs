@@ -10,91 +10,123 @@ using System.Collections.Generic;
 using Ephemera.NBagOfTricks;
 using Ephemera.NBagOfTricks.PNUT;
 using NTerm;
+using System.Threading;
 
 
 namespace Test
 {
     public partial class MainForm : Form
     {
+        #region Fields
+
+        readonly List<string> defaultConfig = [
+        "[nterm]",
+        "comm_type = null",
+        "delim = LF",
+        "prompt = >",
+        "meta = -",
+        "info_color = darkcyan",
+        "err_color = green",
+        "[macros]",
+        "dox = \"do xxxxxxx\"",
+        "s3 = \"send 333333333\"",
+        "tm = \"  xmagx   -yel-  \"",
+        "[matchers]",
+        "\"mag\" = magenta",
+        "\"yel\" = yellow"];
+
+
+        readonly string me = @"C:\Dev\Apps\NTerm\Test\bin\net8.0-windows\Test.exe";
+        readonly string exe = @"C:\Dev\Apps\NTerm\bin\net8.0-windows\win-x64\NTerm.exe";
+        readonly string cfile = @"C:\Dev\Apps\NTerm\Test\test.ini";
+
+        // colors: black darkblue darkgreen darkcyan darkred darkmagenta darkyellow gray darkgray blue green cyan red magenta yellow white
+
+        #endregion
+
+        #region Lifecycle
+        /// <summary>
+        /// Constructor.
+        /// </summary>
         public MainForm()
         {
             InitializeComponent();
+
+            BtnGo.Click += (_, __) => DoConfig();
         }
 
-        void OnLoad()
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="e"></param>
+        protected override void OnLoad(EventArgs e)
         {
-            var me  = @"C:\Dev\Apps\NTerm\Test\MainForm.cs"
-            var exe = @"C:\Dev\Apps\NTerm\bin\net8.0-windows\win-x64\NTerm.exe";
-
-            var ini = @"/C:\Dev\Apps\NTerm\Test\test.ini";
-            
-
-
-
-            {
-
-
-
-            }
-
-
-
-            // TODO1 start NTerm with arg =
-            // test.ini
-            // - Tcp: `NTerm tcp 127.0.0.1 59120
-            // - Udp: `NTerm udp 127.0.0.1 59120
-            // - Serial: `NTerm serial serial COM1 9600 8N1`
-            // - Null modem (loopback): `NTerm null`
-
-
-
-
-
-            // string uri = $"https://github.com/cepthomas/{appName}/blob/main/README.md";
-            // var info = new ProcessStartInfo(uri) { UseShellExecute = true };
-            // var proc = new Process() { StartInfo = info };
-            // proc.Start();
-
-
-
-
-            // ProcessStartInfo pinfo = new(args[0], args[1..])
-            // {
-            //     UseShellExecute = false,
-            //     CreateNoWindow = true,
-            //     WindowStyle = ProcessWindowStyle.Hidden,
-            //     RedirectStandardOutput = true,
-            //     RedirectStandardError = true,
-            // };
-
-            // // Add app-specific environmental variables.
-            // // pinfo.EnvironmentVariables["MY_VAR"] = "Hello!";
-
-            // using Process proc = new() { StartInfo = pinfo };
-            // //proc.Exited += (sender, e) => { LogInfo("Process exit event."); };
-
-            // LogInfo("Start process...");
-            // proc.Start();
-
-            // // TIL: To avoid deadlocks, always read the output stream first and then wait.
-            // var stdout = proc.StandardOutput.ReadToEnd();
-            // var stderr = proc.StandardError.ReadToEnd();
-
-            // //LogInfo("Wait for process to exit...");
-            // proc.WaitForExit();
-            // LogInfo("Exited.");
-
-            // return new(proc.ExitCode, stdout, stderr);
-
-
+            base.OnLoad(e);
         }
 
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="e"></param>
+        protected override void OnShown(EventArgs e)
+        {
+            base.OnShown(e);
+        }
+        #endregion
+
+        /// <summary>
+        /// Simple first test.
+        /// </summary>
+        void DoBasic()
+        {
+            Go("null");
+        }
+
+        /// <summary>
+        /// Test config functions.
+        /// </summary>
+        void DoConfig()
+        {
+            // Copy and mod defaultConfig => comm_type = null
+            // Write to test.ini.
+
+            // readonly List<string> defaultConfig = [
+            List<string> config = [];
+
+            defaultConfig.ForEach(l =>
+            {
+                if (l.StartsWith("comm_type"))
+                {
+                    config.Add("comm_type = null");
+                }
+                else
+                {
+                    config.Add(l);
+                }
+            });
+
+            File.WriteAllLines(cfile, config);
+
+            Go(cfile);
+
+        }
 
         void DoTcpCmdResp()
         {
+            ///// Test tcp in command/response mode. /////
+
+            // Copy and mod defaultConfig => comm_type = tcp 127.0.0.1 59120  ; C/R
+            // Write to test.ini.
+
+            Go(cfile);
+
+
+
+            // Start server.
+
             int port = 59120;
 
-            PrintLine(Cat.Internal, $"Tcp using port: {port}");
+            PrintLine(Cat.Info, $"Tcp using port: {port}");
 
             using CancellationTokenSource ts = new();
 
@@ -104,7 +136,7 @@ namespace Test
             // listener.SendBufferSize = BUFFER_SIZE;
             listener.Start();
             using var client = listener.AcceptTcpClient();
-            PrintLine(Cat.Internal, "Client has connected");
+            PrintLine(Cat.Info, "Client has connected");
             using var stream = client.GetStream();
 
             while (!ts.Token.IsCancellationRequested)
@@ -115,7 +147,7 @@ namespace Test
                     var rx = new byte[4096];
                     var byteCount = stream.Read(rx, 0, rx.Length);
                     var request = BytesToString(rx[..byteCount], byteCount); // or? BytesToStringReadable
-                    PrintLine(Cat.Internal, $"Client request [{request}]");
+                    PrintLine(Cat.Info, $"Client request [{request}]");
 
 
                     //=========== Send ===============//
@@ -123,7 +155,7 @@ namespace Test
                     switch (request)
                     {
                         case "l": // large payload
-                            response = File.ReadAllText(@"C:\Dev\Apps\NTerm\Test\ross.txt");
+                            response = File.ReadAllText(@"C:\Dev\Apps\NTerm\Test\ross_1.txt");
                             break;
 
                         case "s": // small payload
@@ -149,7 +181,7 @@ namespace Test
 
                     byte[] bytes = StringToBytes(response + Environment.NewLine);
                     stream.Write(bytes, 0, bytes.Length);
-                    PrintLine(Cat.Internal, $"Server response: [{response.Substring(0, Math.Min(32, response.Length))}]");
+                    PrintLine(Cat.Info, $"Server response: [{response.Substring(0, Math.Min(32, response.Length))}]");
 
                     // System.Threading.Thread.Sleep(10);
                 }
@@ -165,13 +197,25 @@ namespace Test
 
         void DoTcpContinuous()
         {
+            ///// Test tcp in continuous mode. /////
+
+            // Copy and mod defaultConfig => comm_type = tcp 127.0.0.1 59130 ; cont
+            // Write to test.ini.
+
+            Go(cfile);
+
+
+
+            // Start server.
+
+
             int port = 59130;
 
-            PrintLine(Cat.Internal, $"Tcp using port: {port}");
+            PrintLine(Cat.Info, $"Tcp using port: {port}");
 
             using CancellationTokenSource ts = new();
 
-            var lines = File.ReadLines(@"C:\Dev\Apps\NTerm\Test\ross_1.txt");
+            var lines = File.ReadAllLines(@"C:\Dev\Apps\NTerm\Test\ross_1.txt");
             int ind = 0;
 
             //=========== Connect ============//
@@ -180,10 +224,10 @@ namespace Test
             // listener.SendBufferSize = BUFFER_SIZE;
             listener.Start();
             using var client = listener.AcceptTcpClient();
-            PrintLine(Cat.Internal, "Client has connected");
+            PrintLine(Cat.Info, "Client has connected");
             using var stream = client.GetStream();
 
-            while (!ts.Token.IsCancellationRequested && ind < lines.Count)
+            while (!ts.Token.IsCancellationRequested && ind < lines.Length)
             {
                 try
                 {
@@ -192,7 +236,7 @@ namespace Test
 
                     byte[] bytes = StringToBytes(send + Environment.NewLine);
                     stream.Write(bytes, 0, bytes.Length);
-                    PrintLine(Cat.Internal, $"Server send: [{send.Substring(0, Math.Min(32, send.Length))}]");
+                    PrintLine(Cat.Info, $"Server send: [{send.Substring(0, Math.Min(32, send.Length))}]");
 
                     // Pacing.
                     System.Threading.Thread.Sleep(500);
@@ -211,21 +255,34 @@ namespace Test
 
         void DoUdpContinuous()
         {
+            ///// Test udp in continuous mode. /////
+
+
+            // Copy and mod defaultConfig => comm_type = udp 127.0.0.1 59140
+            // Write to test.ini.
+
+            Go(cfile);
+
+
+
+            // Start client.
+
+
             int port = 59140;
 
-            PrintLine(Cat.Internal, $"Udp using port: {port}");
+            PrintLine(Cat.Info, $"Udp using port: {port}");
 
             using CancellationTokenSource ts = new();
 
-            var lines = File.ReadLines(@"C:\Dev\Apps\NTerm\Test\ross_2.txt");
+            var lines = File.ReadAllLines(@"C:\Dev\Apps\NTerm\Test\ross_2.txt");
             int ind = 0;
 
             //=========== Connect ============//
             UdpClient client = new UdpClient();
             client.Connect("127.0.0.1", port);
-            PrintLine(Cat.Internal, "Client has connected");
+            PrintLine(Cat.Info, "Client has connected");
 
-            while (!ts.Token.IsCancellationRequested && ind < lines.Count)
+            while (!ts.Token.IsCancellationRequested && ind < lines.Length)
             {
                 try
                 {
@@ -250,19 +307,81 @@ namespace Test
         }
 
 
+        /// <summary>
+        /// Run the exe with full user cli.
+        /// </summary>
+        /// <param name="args"></param>
+        void Go(string args)
+        {
+
+            ProcessStartInfo pinfo = new(exe, args)
+            {
+            };
+
+            using Process proc = new() { StartInfo = pinfo };
+
+            PrintLine(Cat.Info, "Start process...");
+            proc.Start();
+
+            PrintLine(Cat.Info, "Wait for exit...");
+            proc.WaitForExit();
+
+            PrintLine(Cat.Info, "Exited...");
+        }
 
 
-        void PrintLine(Cat cat, string msg)
+        /// <summary>
+        /// Run the exe but take ownership of the user cli.
+        /// </summary>
+        /// <param name="args"></param>
+        void GoSteal(string args)
+        {
+
+            ProcessStartInfo pinfo = new(exe, args)
+            {
+                UseShellExecute = false,
+                //CreateNoWindow = true,
+                //WindowStyle = ProcessWindowStyle.Hidden,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+            };
+
+            // Add app-specific environmental variables.
+            // pinfo.EnvironmentVariables["MY_VAR"] = "Hello!";
+
+            using Process proc = new() { StartInfo = pinfo };
+            //proc.Exited += (sender, e) => { LogInfo("Process exit event."); };
+
+            PrintLine(Cat.Info, "Start process...");
+            proc.Start();
+
+            // TIL: To avoid deadlocks, always read the output stream first and then wait.
+            var stdout = proc.StandardOutput.ReadToEnd();
+            var stderr = proc.StandardError.ReadToEnd();
+
+            //LogInfo("Wait for process to exit...");
+            proc.WaitForExit();
+
+
+            PrintLine(Cat.Info, "Exited...");
+            // return new(proc.ExitCode, stdout, stderr);
+        }
+
+
+
+
+
+        void PrintLine(Cat cat, string text)
         {
             var scat = cat switch
             {
                 Cat.Send => ">>>",
                 Cat.Receive => "<<<",
                 Cat.Error => "!!!",
-                Cat.Internal => "---",
+                Cat.Info => "---",
                 _ => throw new NotImplementedException(),
             };
-            
+
             var s = $"{scat} {text}{Environment.NewLine}";
 
             TxtDisplay.AppendText(s);

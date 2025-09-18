@@ -62,22 +62,22 @@ namespace NTerm
         /// </summary>
         public App()
         {
-            //Dev();
-            //return;
-
             try
             {
                 // Init stuff.
-                _logStream = File.Open(Path.Combine(MiscUtils.GetSourcePath(), "nterm.log"), FileMode.Create); // or .Append
+                var fmode = FileMode.Create; // or .Append ??
+                _logStream = File.Open(Path.Combine(MiscUtils.GetSourcePath(), "nterm.log"), fmode);
 
                 ProcessAppCommandLine();
+
+                Print(Cat.Info, $"NTerm using {_comm}");
 
                 // Go forever.
                 Run();
             }
             catch (ConfigException ex)
             {
-                Print(Cat.Error, $"Config value error: {ex.Message}");
+                Print(Cat.Error, $"{ex.Message}");
                 Environment.Exit(1);
             }
             catch (IniSyntaxException ex)
@@ -102,27 +102,6 @@ namespace NTerm
             _comm?.Dispose();
             _logStream?.Dispose();
         }
-
-
-        void Dev()
-        {
-            Console.BackgroundColor = ConsoleColor.Gray;
-            for (int i = (int)ConsoleColorEx.Black; i <= (int)ConsoleColorEx.White; i++)
-            {
-                Console.ForegroundColor = (ConsoleColor)i;
-                Console.WriteLine($"{(ConsoleColorEx)i} => ForegroundColor");
-            }
-
-            Console.ForegroundColor = ConsoleColor.Gray;
-            for (int i = (int)ConsoleColorEx.Black; i <= (int)ConsoleColorEx.White; i++)
-            {
-                Console.BackgroundColor = (ConsoleColor)i;
-                Console.WriteLine($"{(ConsoleColorEx)i} => BackgroundColor");
-            }
-
-            Console.ResetColor();
-        }
-
 
         /// <summary>
         /// Main loop.
@@ -150,6 +129,9 @@ namespace NTerm
                         if (s.Length > 1)
                         {
                             var mk = s[1..];
+
+Print(Cat.Info, $"meta:{s}");
+
                             switch (mk)
                             {
                                 case "q": // quit
@@ -158,17 +140,19 @@ namespace NTerm
                                     break;
 
                                 case "?": // help
+Print(Cat.Info, $"before About()");
                                     About();
+Print(Cat.Info, $"after About()");
                                     break;
 
-                                default: // user meta key?
+                                default: // user macro?
                                     if (_macros.TryGetValue(mk, out var sk))
                                     {
                                         _comm.Send(sk);
                                     }
                                     else
                                     {
-                                        Print(Cat.Error, $"Unknown meta key: [{mk}]");
+                                        Print(Cat.Error, $"Unknown macro key: [{mk}]");
                                     }
                                     break;
                             }
@@ -180,8 +164,6 @@ namespace NTerm
                         Log(Cat.Send, s);
                         _comm.Send(s);
                     }
-
-                    Console.Write(_prompt);
                 }
 
                 ///// Comm receive? /////
@@ -191,13 +173,14 @@ namespace NTerm
                     if (b is not null)
                     {
                         // Look for delimiter or just buffer it.
-                        for (int i = 0; i < b.Count(); i++)
+                        for (int i = 0; i < b.Length; i++)
                         {
                             if (b[i] == _delim)
                             {
                                 // End line.
                                 Print(Cat.Receive, string.Concat(rcvBuffer));
                                 rcvBuffer.Clear();
+                                Console.Write(_prompt);
                             }
                             else
                             {
@@ -224,6 +207,8 @@ namespace NTerm
                 // Delay a bit.
                 Thread.Sleep(10);
             }
+
+            Print(Cat.Info, $"Run() done");
         }
 
         /// <summary>
@@ -267,8 +252,13 @@ namespace NTerm
             List<string> commSpec = [];
 
             // Check for ini file first.
-            if (args[0].EndsWith(".ini") && File.Exists(args[0]))
+            if (args[0].EndsWith(".ini"))
             {
+                if (!File.Exists(args[0]))
+                {
+                    throw new ConfigException($"Invalid config file: [{args[0]}]");
+                }
+
                 // OK process it.
                 var inrdr = new IniReader(args[0]);
 
@@ -391,10 +381,10 @@ namespace NTerm
 
                 var scat = cat switch
                 {
-                    Cat.Send => ">",
-                    Cat.Receive => "<",
-                    Cat.Error => "!",
-                    Cat.Info => "-",
+                    Cat.Send => ">>>",
+                    Cat.Receive => "<<<",
+                    Cat.Error => "!!!",
+                    Cat.Info => "---",
                     _ => throw new NotImplementedException(),
                 };
 
@@ -409,7 +399,10 @@ namespace NTerm
         /// </summary>
         void About()
         {
+Print(Cat.Info, $"About entry  {Environment.CurrentDirectory}");
+            
             var docs = File.ReadLines("README.md").ToList();
+Print(Cat.Info, $"About 10");
 
             //docs.Add("");
             docs.Add("# Current Configuration");
@@ -433,6 +426,7 @@ namespace NTerm
                 docs.Add($"matchers:");
                 _matchers.ForEach(m => docs.Add($"- {m.Key}:{m.Value}"));
             }
+Print(Cat.Info, $"About 50");
 
             var sp = SerialPort.GetPortNames().ToList();
             if (sp.Count > 0)
@@ -441,8 +435,9 @@ namespace NTerm
                 docs.Add("serial ports:");
                 sp.ForEach(s => { docs.Add($"- {s}"); });
             }
+Print(Cat.Info, $"About exit");
 
-            Tools.MarkdownToHtml(docs, Tools.MarkdownMode.Simple, true); // Simple DarkApi LightApi
+           // Tools.MarkdownToHtml(docs, Tools.MarkdownMode.Simple, true); // Simple DarkApi LightApi
         }
     }
 }

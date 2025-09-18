@@ -29,6 +29,7 @@
         private void InitializeComponent()
         {
             TxtDisplay = new System.Windows.Forms.RichTextBox();
+            BtnGo = new System.Windows.Forms.Button();
             SuspendLayout();
             // 
             // TxtDisplay
@@ -39,11 +40,21 @@
             TxtDisplay.TabIndex = 0;
             TxtDisplay.Text = "";
             // 
+            // BtnGo
+            // 
+            BtnGo.Location = new System.Drawing.Point(40, 21);
+            BtnGo.Name = "BtnGo";
+            BtnGo.Size = new System.Drawing.Size(86, 26);
+            BtnGo.TabIndex = 1;
+            BtnGo.Text = "Go!!!";
+            BtnGo.UseVisualStyleBackColor = true;
+            // 
             // MainForm
             // 
             AutoScaleDimensions = new System.Drawing.SizeF(8F, 19F);
             AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             ClientSize = new System.Drawing.Size(944, 636);
+            Controls.Add(BtnGo);
             Controls.Add(TxtDisplay);
             Name = "MainForm";
             Text = "Form1";
@@ -53,5 +64,6 @@
         #endregion
 
         private System.Windows.Forms.RichTextBox TxtDisplay;
+        private System.Windows.Forms.Button BtnGo;
     }
 }

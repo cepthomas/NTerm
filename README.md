@@ -14,8 +14,6 @@ A standard `.ini` format file is used to configure a session:
 
 - `NTerm my_config.ini`
 
-See `ex.ini` for an example with description of the fields.
-
 Alternatively, NTerm can run minimally without a config file by passing the comm_type field in the cmd line args:
 
 - Tcp: `NTerm tcp 127.0.0.1 59120`
@@ -44,17 +42,15 @@ delim = LF
 ; This is usually better for continuous senders. Default is none.
 prompt = >
 
-; Cmd line indicator for system functions and user macros. Default is `!`.
-meta = -
+; Indicator for system functions and user macros. Default is `!`.
+; System functions are: `!q` to quit and `!?` for info.
+meta = !
 
 ; Simple user macros that sends text when executed.
 ; Quotes can be used to maintain leading or trailing whitespace.
 [macros]
 dox = "hey server - do something with x"
 s3 = "send me a three"
-; System functions are:
-!q: quit
-!?: about
 
 ; Console color for internal messages. Default is blue.
 info_color = green

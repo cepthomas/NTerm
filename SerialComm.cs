@@ -24,6 +24,7 @@ namespace NTerm
         readonly ConcurrentQueue<byte[]> _qRecv = new();
         const int RESPONSE_TIME = 10;
         const int BUFFER_SIZE = 4096;
+        readonly string _config;
         #endregion
 
         #region Lifecycle
@@ -33,6 +34,7 @@ namespace NTerm
         public SerialComm(List<string> config)
         {
             _serialPort = new();
+            _config = string.Join(' ', config[1..]);
 
             try
             {
@@ -75,6 +77,7 @@ namespace NTerm
             catch (Exception e)
             {
                 var msg = $"Invalid args: {e.Message}";
+                _config = "invalid";
                 throw new IniSyntaxException(msg, -1);
             }
         }
@@ -89,7 +92,7 @@ namespace NTerm
         /// <summary>What am I.</summary>
         public override string ToString()
         {
-            return ($"SerialComm {_serialPort}");
+            return ($"SerialComm {_config[1..]} ");
         }
         #endregion
 

@@ -68,7 +68,7 @@ namespace NTerm
             {
                 if (_qSend.TryDequeue(out string? s))
                 {
-                    // Loopback. Could modify it also.
+                    // Loopback. TODO1 modify it for test
                     _qRecv.Enqueue(Encoding.Default.GetBytes(s));
                 }
 

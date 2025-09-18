@@ -3,13 +3,11 @@
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
     <TargetFramework>net8.0-windows</TargetFramework>
+    <RuntimeIdentifier>win-x64</RuntimeIdentifier>
     <Nullable>enable</Nullable>
     <UseWindowsForms>true</UseWindowsForms>
     <ImplicitUsings>disable</ImplicitUsings>
-
     <OutputPath>bin\</OutputPath>
-    <!-- <RuntimeIdentifier>win-x64</RuntimeIdentifier> -->
-
     <SatelliteResourceLanguages>none</SatelliteResourceLanguages>
     <!-- <NoWarn>1701;1702;CA1816;CA1822</NoWarn> -->
   </PropertyGroup>
