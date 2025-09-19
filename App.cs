@@ -70,7 +70,7 @@ namespace NTerm
 
                 ProcessAppCommandLine();
 
-                Print(Cat.Info, $"NTerm using {_comm}");
+                Print(Cat.None, $"NTerm using {_comm}");
 
                 // Go forever.
                 Run();
@@ -82,12 +82,14 @@ namespace NTerm
             }
             catch (IniSyntaxException ex)
             {
-                Print(Cat.Error, $"Config syntax error at {ex.LineNum}: {ex.Message}");
+                Print(Cat.Error, $"Ini syntax error at {ex.LineNum}: {ex.Message}");
+                Log(Cat.Error, ex.ToString());
                 Environment.Exit(1);
             }
             catch (Exception ex)
             {
-                Print(Cat.Error, $"{ex.GetType()}: {ex}");
+                Print(Cat.Error, $"{ex.GetType()}: {ex.Message}");
+                Log(Cat.Error, ex.ToString());
                 Environment.Exit(2);
             }
 
@@ -114,101 +116,107 @@ namespace NTerm
 
             List<char> rcvBuffer = [];
 
-            Console.Write(_prompt);
+            Prompt();
 
             while (!ts.Token.IsCancellationRequested)
             {
-                ///// User input? /////
-                while (_qUserCli.TryDequeue(out string? s))
+                try
                 {
-                    if (s.Length == 0) return;
-
-                    // Check for meta key.
-                    if (s[0] == _meta)
+                    ///// User input? /////
+                    while (_qUserCli.TryDequeue(out string? s))
                     {
-                        if (s.Length > 1)
+                        if (s.Length == 0) return;
+
+                        // Check for meta key.
+                        if (s[0] == _meta)
                         {
-                            var mk = s[1..];
-
-Print(Cat.Info, $"meta:{s}");
-
-                            switch (mk)
+                            if (s.Length > 1)
                             {
-                                case "q": // quit
-                                    ts.Cancel();
-                                    Task.WaitAll([taskKeyboard, taskComm]);
-                                    break;
+                                var mk = s[1..];
 
-                                case "?": // help
-Print(Cat.Info, $"before About()");
-                                    About();
-Print(Cat.Info, $"after About()");
-                                    break;
-
-                                default: // user macro?
-                                    if (_macros.TryGetValue(mk, out var sk))
-                                    {
-                                        _comm.Send(sk);
-                                    }
-                                    else
-                                    {
-                                        Print(Cat.Error, $"Unknown macro key: [{mk}]");
-                                    }
-                                    break;
-                            }
-                        }
-                        // else invalid/ignore
-                    }
-                    else
-                    {
-                        Log(Cat.Send, s);
-                        _comm.Send(s);
-                    }
-                }
-
-                ///// Comm receive? /////
-                while (true)
-                {
-                    var b = _comm.Receive();
-                    if (b is not null)
-                    {
-                        // Look for delimiter or just buffer it.
-                        for (int i = 0; i < b.Length; i++)
-                        {
-                            if (b[i] == _delim)
-                            {
-                                // End line.
-                                Print(Cat.Receive, string.Concat(rcvBuffer));
-                                rcvBuffer.Clear();
-                                Console.Write(_prompt);
-                            }
-                            else
-                            {
-                                // Add to buffer. Make non-readable friendlier.
-                                var c = b[i];
-                                if (c.IsReadable())
+                                switch (mk)
                                 {
-                                    rcvBuffer.Add((char)c);
+                                    case "q": // quit
+                                        ts.Cancel();
+                                        Task.WaitAll([taskKeyboard, taskComm]);
+                                        break;
+
+                                    case "?": // help
+                                        About();
+                                        Prompt();
+                                        break;
+
+                                    default: // user macro?
+                                        if (_macros.TryGetValue(mk, out var sk))
+                                        {
+                                            _comm.Send(sk);
+                                        }
+                                        else
+                                        {
+                                            Print(Cat.Error, $"Unknown macro key: [{mk}]");
+                                            Prompt();
+                                        }
+                                        break;
+                                }
+                            }
+                            // else invalid/ignore
+                        }
+                        else
+                        {
+                            Log(Cat.Send, s);
+                            _comm.Send(s);
+                        }
+                    }
+
+                    ///// Comm receive? /////
+                    while (true)
+                    {
+                        var b = _comm.Receive();
+                        if (b is not null)
+                        {
+                            // Look for delimiter or just buffer it.
+                            for (int i = 0; i < b.Length; i++)
+                            {
+                                if (b[i] == _delim)
+                                {
+                                    // End line.
+                                    Print(Cat.Receive, string.Concat(rcvBuffer));
+                                    rcvBuffer.Clear();
+                                    Prompt();
                                 }
                                 else
                                 {
-                                    var s = $"<{c:0X}>";
-                                    rcvBuffer.AddRange(s);
+                                    // Add to buffer. Make non-readable friendlier.
+                                    var c = b[i];
+                                    if (c.IsReadable())
+                                    {
+                                        rcvBuffer.Add((char)c);
+                                    }
+                                    else
+                                    {
+                                        var s = $"<{c:0X}>";
+                                        rcvBuffer.AddRange(s);
+                                    }
                                 }
                             }
                         }
+                        else
+                        {
+                            break;
+                        }
                     }
-                    else
-                    {
-                        break;
-                    }
+
+                    // Delay a bit.
+                    Thread.Sleep(10);
                 }
-
-                // Delay a bit.
-                Thread.Sleep(10);
+                catch (Exception)
+                {
+                    // Something went wrong. Must shut down gracefully before passing exception up.
+                    ts.Cancel();
+                    Task.WaitAll([taskKeyboard, taskComm]);
+                    throw;
+                }
             }
-
-            Print(Cat.Info, $"Run() done");
         }
 
         /// <summary>
@@ -319,10 +327,10 @@ Print(Cat.Info, $"after About()");
                 _comm = commSpec[0].ToLower() switch
                 {
                     "null" => new NullComm(),
-                    "tcp" => new TcpComm(args),
-                    "udp" => new UdpComm(args),
-                    "serial" => new SerialComm(args),
-                    _ => throw new ConfigException($"Invalid comm type: [{args[0]}]"),
+                    "tcp" => new TcpComm(commSpec),
+                    "udp" => new UdpComm(commSpec),
+                    "serial" => new SerialComm(commSpec),
+                    _ => throw new ConfigException($"Invalid comm type: [{commSpec[0]}]"),
                 };
             }
         }
@@ -377,7 +385,7 @@ Print(Cat.Info, $"after About()");
             {
                 long tick = Stopwatch.GetTimestamp();
                 double sec = 1.0 * (tick - _startTick) / Stopwatch.Frequency;
-                double msec = 1000.0 * (tick - _startTick) / Stopwatch.Frequency;
+                //double msec = 1000.0 * (tick - _startTick) / Stopwatch.Frequency;
 
                 var scat = cat switch
                 {
@@ -385,6 +393,7 @@ Print(Cat.Info, $"after About()");
                     Cat.Receive => "<<<",
                     Cat.Error => "!!!",
                     Cat.Info => "---",
+                    Cat.None => "---",
                     _ => throw new NotImplementedException(),
                 };
 
@@ -395,14 +404,20 @@ Print(Cat.Info, $"after About()");
         }
 
         /// <summary>
+        /// 
+        /// </summary>
+        void Prompt()
+        {
+            Console.Write(_prompt);
+        }
+
+        /// <summary>
         /// Show me everything.
         /// </summary>
         void About()
         {
-Print(Cat.Info, $"About entry  {Environment.CurrentDirectory}");
-            
-            var docs = File.ReadLines("README.md").ToList();
-Print(Cat.Info, $"About 10");
+            //var docs = File.ReadLines("xxREADME.md").ToList();
+            List<string> docs = ["Main doc at github.com/cepthomas/NTerm/blob/main/README.md"];
 
             //docs.Add("");
             docs.Add("# Current Configuration");
@@ -426,7 +441,6 @@ Print(Cat.Info, $"About 10");
                 docs.Add($"matchers:");
                 _matchers.ForEach(m => docs.Add($"- {m.Key}:{m.Value}"));
             }
-Print(Cat.Info, $"About 50");
 
             var sp = SerialPort.GetPortNames().ToList();
             if (sp.Count > 0)
@@ -435,9 +449,9 @@ Print(Cat.Info, $"About 50");
                 docs.Add("serial ports:");
                 sp.ForEach(s => { docs.Add($"- {s}"); });
             }
-Print(Cat.Info, $"About exit");
 
-           // Tools.MarkdownToHtml(docs, Tools.MarkdownMode.Simple, true); // Simple DarkApi LightApi
+            docs.ForEach(d => Print(Cat.None, d));
+            //Tools.MarkdownToHtml(docs, Tools.MarkdownMode.Simple, true); // Simple DarkApi LightApi
         }
     }
 }

@@ -62,13 +62,11 @@ namespace NTerm
         /// <see cref="IComm"/>
         public void Run(CancellationToken token)
         {
-            Random rand = new();
-
             while (!token.IsCancellationRequested)
             {
                 if (_qSend.TryDequeue(out string? s))
                 {
-                    // Loopback. TODO1 modify it for test
+                    // Loopback. TODO modify it for test
                     _qRecv.Enqueue(Encoding.Default.GetBytes(s));
                 }
 

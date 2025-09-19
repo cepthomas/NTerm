@@ -18,17 +18,21 @@
 
   <ItemGroup>
     <Compile Remove="lib\**" />
+    <Compile Remove="Server\**" />
     <Compile Remove="stuff\**" />
     <Compile Remove="Test\**" />
     <EmbeddedResource Remove="lib\**" />
+    <EmbeddedResource Remove="Server\**" />
     <EmbeddedResource Remove="stuff\**" />
     <EmbeddedResource Remove="Test\**" />
     <None Remove="lib\**" />
+    <None Remove="Server\**" />
     <None Remove="stuff\**" />
     <None Remove="Test\**" />
   </ItemGroup>
 
   <ItemGroup>
+    <Compile Remove="_async.cs" />
     <Compile Remove="_temp.cs" />
   </ItemGroup>
 

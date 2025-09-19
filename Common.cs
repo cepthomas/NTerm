@@ -11,11 +11,8 @@ using Ephemera.NBagOfTricks;
 namespace NTerm
 {
     #region Types
-    /// <summary>How did operation turn out?</summary>
-    public enum CommState { None, Connect, Send, Recv }
-
     /// <summary>General categories, mainly for logging.</summary>
-    public enum Cat { Send, Receive, Error, Info }
+    public enum Cat { None, Send, Receive, Error, Info }
 
     /// <summary>Reporting user errors.</summary>
     public class ConfigException(string message) : Exception(message);

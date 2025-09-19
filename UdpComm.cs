@@ -85,15 +85,12 @@ namespace NTerm
         {
             //https://learn.microsoft.com/en-us/dotnet/api/system.net.sockets.udpclient
 
-            UdpClient client = new(_host, _port);
-            CommState state = CommState.None;
-
             while (!token.IsCancellationRequested)
             {
                 try
                 {
                     //=========== Connect ============//
-                    state = CommState.Connect;
+                    using UdpClient client = new(_host, _port);
 
 
                     //=========== Send ============//
@@ -101,8 +98,6 @@ namespace NTerm
 
 
                     //=========== Receive ==========//
-                    state = CommState.Recv;
-
                     bool rcvDone = false;
                     while (!rcvDone)
                     {

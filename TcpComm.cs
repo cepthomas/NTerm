@@ -20,8 +20,8 @@ namespace NTerm
     internal class TcpComm : IComm
     {
         #region Fields
-        string _host;
-        int _port;
+        readonly string _host;
+        readonly int _port;
         readonly ConcurrentQueue<string> _qSend = new();
         readonly ConcurrentQueue<byte[]> _qRecv = new();
         const int CONNECT_TIME = 50;
@@ -85,15 +85,11 @@ namespace NTerm
         /// <see cref="IComm"/>
         public void Run(CancellationToken token)
         {
-            CommState state = CommState.None;
-
             while (!token.IsCancellationRequested)
             {
                 try
                 {
                     //=========== Connect ============//
-                    state = CommState.Connect;
-
                     using var client = new TcpClient();
                     client.SendTimeout = RESPONSE_TIME;
                     client.SendBufferSize = BUFFER_SIZE;
@@ -109,8 +105,6 @@ namespace NTerm
 
 
                     //=========== Send ============//
-                    state = CommState.Send;
-
                     if (_qSend.TryDequeue(out string? s))
                     {
                         bool sendDone = false;
@@ -132,8 +126,6 @@ namespace NTerm
                     }
 
                     //=========== Receive ==========//
-                    state = CommState.Recv;
-
                     bool rcvDone = false;
                     byte[] rxData = new byte[BUFFER_SIZE];
 
@@ -151,7 +143,6 @@ namespace NTerm
                             rcvDone = true;
                         }
                     }
-                
                 }
                 catch (Exception e)
                 {
@@ -181,7 +172,7 @@ namespace NTerm
                     
                     switch (e)
                     {
-                        case OperationCanceledException ex: // Usually connect timeout. Ignore and retry later.
+                        case OperationCanceledException: // Usually connect timeout. Ignore and retry later.
                             break;
 
                         case SocketException ex: // Some are expected and recoverable. https://learn.microsoft.com/en-us/windows/win32/winsock/windows-sockets-error-codes-2
@@ -197,7 +188,7 @@ namespace NTerm
                             }
                             break;
 
-                        case IOException ex: // Usually receive timeout. Ignore and retry later.
+                        case IOException: // Usually receive timeout. Ignore and retry later.
                             break;
 
                         default: // All other errors are considered fatal - bubble up to App to handle.

@@ -122,31 +122,23 @@ namespace NTerm
         /// <see cref="IComm"/>
         public void Run(CancellationToken token)
         {
-            CommState state = CommState.None;
-
             while (!token.IsCancellationRequested)
             {
                 try
                 {
                     //=========== Connect ============//
-                    state = CommState.Connect;
-
                     if (!_serialPort.IsOpen)
                     {
                         _serialPort.Open();
                     }
 
                     //=========== Send ============//
-                    state = CommState.Send;
-
                     while (_qSend.TryDequeue(out string? s))
                     {
                         _serialPort.Write(s);
                     }
 
                     //=========== Receive ==========//
-                    state = CommState.Recv;
-
                     var rxdata = new byte[BUFFER_SIZE];
                     int byteCount = _serialPort.Read(rxdata, 0, BUFFER_SIZE);
 
