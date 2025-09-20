@@ -7,34 +7,26 @@ using System.Net.Sockets;
 using System.Numerics;
 using System.Text;
 using System.Collections.Generic;
-using Ephemera.NBagOfTricks;
-using Ephemera.NBagOfTricks.PNUT;
-using NTerm;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Net;
+using Ephemera.NBagOfTricks;
+using Ephemera.NBagOfTricks.PNUT;
+using NTerm;
 
 
 namespace Test
 {
     public partial class MainForm : Form
     {
-
         // TODO1 run using explicit cl args.
 
-
         #region Fields
-
-
         readonly string me = @"C:\Dev\Apps\NTerm\Test\bin\net8.0-windows\Test.exe";
         readonly string exe = @"C:\Dev\Apps\NTerm\bin\net8.0-windows\win-x64\NTerm.exe";
         readonly string cfile = @"C:\Dev\Apps\NTerm\Test\test.ini";
-
         readonly ConsoleColorEx clr = ConsoleColorEx.None;
-
-
         CancellationTokenSource ts = new();
-
         #endregion
 
         /// <summary>
@@ -45,20 +37,18 @@ namespace Test
             InitializeComponent();
 
             //BtnGo.Click += (_, __) => DoAsync();
-
             BtnGo.Click += (_, __) => DoTcpCmdResp();
         }
 
 
-
         //////////////////////////////////////////////////////////////////////
         //////////////////////////////////////////////////////////////////////
         //////////////////////////////////////////////////////////////////////
-
+        //  https://stackoverflow.com/a/53403824   c# 7.0 in a nutshell
+        const int packet_length = 2;  // user defined packet length
 
         void DoAsync()
         {
-
             // Tweak config.
             var config = BuildConfig("tcp 127.0.0.1 59120");
             File.WriteAllLines(cfile, config);
@@ -67,12 +57,6 @@ namespace Test
 
             Go(cfile);
         }
-
-
-
-        //  https://stackoverflow.com/a/53403824   c# 7.0 in a nutshell
-
-        const int packet_length = 2;  // user defined packet length
 
         async void RunServerAsync()
         {
@@ -83,7 +67,6 @@ namespace Test
                 while (true)
                 {
                     // was await Accept(await listner.AcceptTcpClientAsync());
-
                     TcpClient client = await listner.AcceptTcpClientAsync();
                     await Accept(client);
                 }
@@ -107,7 +90,9 @@ namespace Test
                     int chunkSize = 1;
 
                     while (bytesRead < data.Length && chunkSize > 0)
+                    {
                         bytesRead += chunkSize = await n.ReadAsync(data, bytesRead, data.Length - bytesRead);
+                    }
 
                     // get data
                     string str = Encoding.Default.GetString(data);
@@ -314,7 +299,6 @@ namespace Test
 
             Go(cfile);
 
-            
             // Start client.
             int port = 59140;
 

@@ -5,12 +5,19 @@ using System.Net.Sockets;
 using System.Security.Cryptography;
 using System.Text;
 
-namespace Server
+namespace TestX
 {
     internal class Program
     {
         static void Main(string[] args)
         {
+            TcpServer srv = new();
+
+            srv.BasicExample([]);
+
+            return;
+
+
             TcpListener server = null;
             byte _delim = 10; // LF
 
@@ -55,7 +62,7 @@ namespace Server
                             Console.WriteLine($"Received: {data}");
 
                             // Echo the data back to the client
-                            var secho = $"GOT: {data}";
+                            var secho = $"GOT {data}";
                             Console.WriteLine($"Replying: {secho}");
 
                             byte[] msg = Encoding.Default.GetBytes(secho).Append(_delim).ToArray();
@@ -70,22 +77,6 @@ namespace Server
                             done = true;
                         }
                     }
-
-                    // original:
-                    //int bytesRead;
-                    //while ((bytesRead = stream.Read(buffer, 0, buffer.Length)) != 0)
-                    //{
-                    //    // Convert the received data to a string
-                    //    string data = Encoding.UTF8.GetString(buffer, 0, bytesRead);
-                    //    Console.WriteLine($"Received: {data}");
-
-                    //    // Echo the data back to the client
-                    //    var secho = $"GOT: {data}";
-                    //    Console.WriteLine($"Replying: {secho}");
-                    //    byte[] msg = Encoding.UTF8.GetBytes(secho + _delim);
-                    //    stream.Write(msg, 0, msg.Length);
-                    //    Console.WriteLine($"Reply done");
-                    //}
 
                     // Close the client connection
                     client.Close();

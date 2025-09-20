@@ -12,6 +12,10 @@
     <!-- <NoWarn>1701;1702;CA1816;CA1822</NoWarn> -->
   </PropertyGroup>
 
+  <ItemGroup>
+    <Compile Remove="Server_orig.cs" />
+  </ItemGroup>
+
     <ItemGroup>
         <Compile Include="..\Common.cs" Link="Common.cs" />
         <Compile Include="..\SerialComm.cs" Link="SerialComm.cs" />

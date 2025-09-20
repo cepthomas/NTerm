@@ -20,14 +20,17 @@
     <Compile Remove="lib\**" />
     <Compile Remove="Server\**" />
     <Compile Remove="stuff\**" />
+    <Compile Remove="TestX\**" />
     <Compile Remove="Test\**" />
     <EmbeddedResource Remove="lib\**" />
     <EmbeddedResource Remove="Server\**" />
     <EmbeddedResource Remove="stuff\**" />
+    <EmbeddedResource Remove="TestX\**" />
     <EmbeddedResource Remove="Test\**" />
     <None Remove="lib\**" />
     <None Remove="Server\**" />
     <None Remove="stuff\**" />
+    <None Remove="TestX\**" />
     <None Remove="Test\**" />
   </ItemGroup>
 
