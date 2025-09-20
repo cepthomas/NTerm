@@ -60,7 +60,7 @@ namespace NTerm
         #region IComm implementation
         /// <summary>IComm implementation.</summary>
         /// <see cref="IComm"/>
-        public void Send(string req)
+        public void Send(byte[] td)
         {
             throw new NotSupportedException();
         }

@@ -22,7 +22,7 @@ namespace NTerm
         #region Fields
         readonly string _host;
         readonly int _port;
-        readonly ConcurrentQueue<string> _qSend = new();
+        readonly ConcurrentQueue<byte[]> _qSend = new();
         readonly ConcurrentQueue<byte[]> _qRecv = new();
         const int CONNECT_TIME = 50;
         const int RESPONSE_TIME = 1000;
@@ -62,7 +62,7 @@ namespace NTerm
         #region IComm implementation
         /// <summary>IComm implementation.</summary>
         /// <see cref="IComm"/>
-        public void Send(string req)
+        public void Send(byte[] req)
         {
             _qSend.Enqueue(req);
         }
@@ -89,58 +89,62 @@ namespace NTerm
             {
                 try
                 {
-                    //=========== Connect ============//
-                    using var client = new TcpClient();
-                    client.SendTimeout = RESPONSE_TIME;
-                    client.SendBufferSize = BUFFER_SIZE;
 
-                    var task = client.ConnectAsync(_host, _port);
-
-                    if (!task.Wait(CONNECT_TIME, token))
-                    {
-                        //return (OpStatus.ConnectTimeout, "", resp);
-                    }
-
-                    using var stream = client.GetStream();
-
-
-                    //=========== Send ============//
-                    if (_qSend.TryDequeue(out string? s))
+                    //=========== Work? ============//
+                    if (_qSend.TryDequeue(out byte[]? td))
                     {
                         bool sendDone = false;
-                        var txData = Encoding.Default.GetBytes(s);
-                        int numToSend = txData.Length;
+                        int numToSend = td.Length;
                         int ind = 0;
 
+
+                        //=========== Connect ============//
+                        using var client = new TcpClient();
+                        client.SendTimeout = RESPONSE_TIME;
+                        client.SendBufferSize = BUFFER_SIZE;
+
+                        var task = client.ConnectAsync(_host, _port);
+
+                        if (!task.Wait(CONNECT_TIME, token)) // TODO1 ?
+                        {
+                           //return (OpStatus.ConnectTimeout, "", resp);
+                        }
+
+                        using var stream = client.GetStream();
+
+
+                        //=========== Send ============//
                         while (!sendDone)
                         {
                             // Do a chunk.
                             int tosend = numToSend - ind >= client!.SendBufferSize ? client.SendBufferSize : numToSend - ind;
 
                             // If the send time-out expires, Write() throws SocketException.
-                            stream.Write(txData, ind, tosend);
+                            stream.Write(td, ind, tosend);
 
                             ind += tosend;
                             sendDone = ind >= numToSend;
                         }
-                    }
 
-                    //=========== Receive ==========//
-                    bool rcvDone = false;
-                    byte[] rxData = new byte[BUFFER_SIZE];
+                        //=========== Receive ==========//
+                        bool rcvDone = false;
+                        byte[] rxData = new byte[BUFFER_SIZE];
 
-                    while (!rcvDone)
-                    {
-                        // Get response. If the read time-out expires, Read() throws IOException.
-                        int byteCount = stream.Read(rxData, 0, BUFFER_SIZE);
-
-                        if (byteCount > 0)
+                        while (!rcvDone)
                         {
-                            _qRecv.Enqueue(rxData);
-                        }
-                        else
-                        {
-                            rcvDone = true;
+                            // Get response. If the read time-out expires, Read() throws IOException.
+                            int byteCount = stream.Read(rxData, 0, BUFFER_SIZE);
+
+                            if (byteCount > 0)
+                            {
+                                var rx = rxData.Subset(0, byteCount);
+
+                                _qRecv.Enqueue(rx);
+                            }
+                            else
+                            {
+                                rcvDone = true;
+                            }
                         }
                     }
                 }

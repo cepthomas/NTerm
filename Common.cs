@@ -25,7 +25,7 @@ namespace NTerm
 
         /// <summary>Send to the server.</summary>
         /// <param name="msg">What to send</param>
-        void Send(string msg);
+        void Send(byte[] msg);
 
         /// <summary>Receive from the server.</summary>
         /// <returns>Received message or null if none.</returns>

@@ -32,11 +32,15 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Compile Remove="App_orig.cs" />
+    <Compile Remove="TcpComm_orig.cs" />
     <Compile Remove="_async.cs" />
     <Compile Remove="_temp.cs" />
   </ItemGroup>
 
   <ItemGroup>
+    <None Remove="App_orig.cs" />
+    <None Remove="TcpComm_orig.cs" />
     <None Remove="NTerm_old.zip" />
     <None Remove="NTerm_old_settings_log.zip" />
   </ItemGroup>

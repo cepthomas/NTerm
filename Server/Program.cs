@@ -1,6 +1,8 @@
 ﻿using System;
+using System.Linq;
 using System.Net;
 using System.Net.Sockets;
+using System.Security.Cryptography;
 using System.Text;
 
 namespace Server
@@ -10,6 +12,7 @@ namespace Server
         static void Main(string[] args)
         {
             TcpListener server = null;
+            byte _delim = 10; // LF
 
             try
             {
@@ -22,9 +25,9 @@ namespace Server
 
                 // Start listening for client requests
                 server.Start();
-                Console.WriteLine("TCP Server started. Listening on {0}:{1}", localAddr, port);
+                Console.WriteLine($"TCP Server started. Listening on {localAddr}:{port}");
 
-                // Enter the listening loop
+                // Enter the listening loop. TODO1 forever.
                 while (true)
                 {
                     Console.WriteLine("Waiting for a client connection...");
@@ -37,20 +40,52 @@ namespace Server
                     NetworkStream stream = client.GetStream();
 
                     byte[] buffer = new byte[256];
-                    int bytesRead;
 
                     // Loop to receive all the data sent by the client
-                    while ((bytesRead = stream.Read(buffer, 0, buffer.Length)) != 0)
-                    {
-                        // Convert the received data to a string
-                        string data = Encoding.UTF8.GetString(buffer, 0, bytesRead);
-                        Console.WriteLine("Received: {0}", data);
+                    bool done = false;
 
-                        // Echo the data back to the client
-                        byte[] msg = Encoding.UTF8.GetBytes("Server received: " + data);
-                        stream.Write(msg, 0, msg.Length);
-                        Console.WriteLine("Sent: Server received: {0}", data);
+                    while (!done)
+                    {
+                        var numRead = stream.Read(buffer, 0, buffer.Length);
+
+                        if (numRead > 0) // TODO1 and/or look for delim
+                        {
+                            // Convert the received data to a string
+                            string data = Encoding.UTF8.GetString(buffer, 0, numRead);
+                            Console.WriteLine($"Received: {data}");
+
+                            // Echo the data back to the client
+                            var secho = $"GOT: {data}";
+                            Console.WriteLine($"Replying: {secho}");
+
+                            byte[] msg = Encoding.Default.GetBytes(secho).Append(_delim).ToArray();
+                            stream.Write(msg, 0, msg.Length);
+                            Console.WriteLine($"Reply done");
+
+                            done = true;
+                        }
+                        else
+                        {
+                            Console.WriteLine($"GOT nada");
+                            done = true;
+                        }
                     }
+
+                    // original:
+                    //int bytesRead;
+                    //while ((bytesRead = stream.Read(buffer, 0, buffer.Length)) != 0)
+                    //{
+                    //    // Convert the received data to a string
+                    //    string data = Encoding.UTF8.GetString(buffer, 0, bytesRead);
+                    //    Console.WriteLine($"Received: {data}");
+
+                    //    // Echo the data back to the client
+                    //    var secho = $"GOT: {data}";
+                    //    Console.WriteLine($"Replying: {secho}");
+                    //    byte[] msg = Encoding.UTF8.GetBytes(secho + _delim);
+                    //    stream.Write(msg, 0, msg.Length);
+                    //    Console.WriteLine($"Reply done");
+                    //}
 
                     // Close the client connection
                     client.Close();
@@ -59,7 +94,11 @@ namespace Server
             }
             catch (SocketException e)
             {
-                Console.WriteLine("SocketException: {0}", e);
+                Console.WriteLine($"SocketException: {e}");
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine($"Other Exception: {e}");
             }
             finally
             {
@@ -67,7 +106,7 @@ namespace Server
                 server?.Stop();
             }
 
-            Console.WriteLine("\nPress Enter to continue...");
+            Console.WriteLine("Press Enter to continue...");
             Console.Read();
         }
     }

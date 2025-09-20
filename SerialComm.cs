@@ -16,11 +16,11 @@ namespace NTerm
 {
     /// <summary>Serial port comm.</summary>
     /// <see cref="IComm"/>
-    public class SerialComm : IComm // TODO needs finishing with hardware.
+    public class SerialComm : IComm // TODO needs hardware.
     {
         #region Fields
         readonly SerialPort _serialPort;
-        readonly ConcurrentQueue<string> _qSend = new();
+        readonly ConcurrentQueue<byte[]> _qSend = new();
         readonly ConcurrentQueue<byte[]> _qRecv = new();
         const int RESPONSE_TIME = 10;
         const int BUFFER_SIZE = 4096;
@@ -99,7 +99,7 @@ namespace NTerm
         #region IComm implementation
         /// <summary>IComm implementation.</summary>
         /// <see cref="IComm"/>
-        public void Send(string req)
+        public void Send(byte[] req)
         {
             _qSend.Enqueue(req);
         }
@@ -133,9 +133,9 @@ namespace NTerm
                     }
 
                     //=========== Send ============//
-                    while (_qSend.TryDequeue(out string? s))
+                    while (_qSend.TryDequeue(out byte[]? td))
                     {
-                        _serialPort.Write(s);
+                        _serialPort.Write(td, 0, td.Length);
                     }
 
                     //=========== Receive ==========//

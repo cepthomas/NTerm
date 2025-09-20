@@ -9,6 +9,7 @@ using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Windows.Forms;
 using Ephemera.NBagOfTricks;
 using Ephemera.NBagOfUis;
 
@@ -48,7 +49,7 @@ namespace NTerm
         char _meta = '!'; // default
 
         /// <summary>Message delimiter: LF|CR|NUL.</summary>
-        byte _delim = 10; // default LF (or 13 00)
+        byte _delim = 10; // default LF
 
         /// <summary>User macros.</summary>
         readonly Dictionary<string, string> _macros = [];
@@ -149,7 +150,12 @@ namespace NTerm
                                     default: // user macro?
                                         if (_macros.TryGetValue(mk, out var sk))
                                         {
-                                            _comm.Send(sk);
+                                            //var txData = Encoding.Default.GetBytes(sk);
+                                            //txData.Append(_delim);
+                                            var td = Encoding.Default.GetBytes(sk).Append(_delim);
+                                            //var ggg = ttt.Append(_delim);
+                                            _comm.Send([.. td]);
+                                            //_comm.Send(sk + _delim);
                                         }
                                         else
                                         {
@@ -164,7 +170,15 @@ namespace NTerm
                         else
                         {
                             Log(Cat.Send, s);
-                            _comm.Send(s);
+
+                            var td = Encoding.Default.GetBytes(s).Append(_delim);
+                            //var ggg = ttt.Append(_delim);
+                            _comm.Send([.. td]);
+
+
+                            //var txData = Encoding.Default.GetBytes(s);
+                            //txData.Append(_delim);
+                            //_comm.Send(txData);
                         }
                     }
 

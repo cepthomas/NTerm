@@ -14,8 +14,9 @@ namespace NTerm
     public class NullComm : IComm
     {
         #region Fields
-        readonly ConcurrentQueue<string> _qSend = new();
+        readonly ConcurrentQueue<byte[]> _qSend = new();
         readonly ConcurrentQueue<byte[]> _qRecv = new();
+        byte[] _loopbackMarker = [(byte)'X', (byte)'Y', (byte)'Z'];
         #endregion
 
         #region Lifecycle
@@ -39,9 +40,9 @@ namespace NTerm
         #region IComm implementation
         /// <summary>IComm implementation.</summary>
         /// <see cref="IComm"/>
-        public void Send(string req)
+        public void Send(byte[] req)
         {
-            _qSend.Enqueue(req + '\n');
+            _qSend.Enqueue(req);
         }
 
         /// <summary>IComm implementation.</summary>
@@ -64,10 +65,11 @@ namespace NTerm
         {
             while (!token.IsCancellationRequested)
             {
-                if (_qSend.TryDequeue(out string? s))
+                if (_qSend.TryDequeue(out byte[]? rd))
                 {
-                    // Loopback. TODO modify it for test
-                    _qRecv.Enqueue(Encoding.Default.GetBytes(s));
+                    // Loopback. Can modify it for test.
+                    _qRecv.Enqueue(_loopbackMarker);
+                    _qRecv.Enqueue(rd);
                 }
 
                 // Don't be greedy.
