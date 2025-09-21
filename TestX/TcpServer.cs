@@ -7,186 +7,77 @@ using System.Net.Sockets;
 using System.Security.Cryptography;
 using System.Text;
 using System.Threading;
+using Ephemera.NBagOfTricks;
+using NTerm;
+
 
 namespace TestX
 {
     public class TcpServer
     {
-        public enum Cat { None, Send, Receive, Error, Info }
+        int _port = 0; // 59120
+        byte _delim = 10; // LF
+        CancellationTokenSource _ts;
 
-        /// <summary>
-        /// Show the user.
-        /// </summary>
-        /// <param name="cat"></param>
-        /// <param name="text"></param>
-        /// <exception cref="NotImplementedException"></exception>
-        void PrintLine(Cat cat, string text)
+        // const int CONNECT_TIME = 50;
+        // const int RESPONSE_TIME = 1000;
+        // const int BUFFER_SIZE = 4096;
+
+        public TcpServer(int port, byte delim, CancellationTokenSource ts)
         {
-            var scat = cat switch
-            {
-                Cat.Send => ">>>",
-                Cat.Receive => "<<<",
-                Cat.Error => "!!!",
-                Cat.Info => "---",
-                _ => throw new NotImplementedException(),
-            };
+            _port = port;
+            _delim = delim;
+            _ts = ts;
 
-            var s = $"{scat} {text}{Environment.NewLine}";
-
-            Console.Write(s);
+            PrintLine(Cat.Info, $"Tcp using port: {_port}");
         }
-
-
-
-
-
-
-
-
-
-        ///// From online example. /////
-        public void BasicExample(List<string> args)
-        {
-            TcpListener server = null;
-            byte _delim = 10; // LF
-
-            try
-            {
-                // Set the IP address and port for the server to listen on
-                IPAddress localAddr = IPAddress.Parse("127.0.0.1"); // Or IPAddress.Any for any available IP
-                int port = 59120;
-
-                // Create a TcpListener object
-                server = new TcpListener(localAddr, port);
-
-                // Start listening for client requests
-                server.Start();
-                Console.WriteLine($"TCP Server started. Listening on {localAddr}:{port}");
-
-                // Enter the listening loop. TODO1 forever.
-                while (true)
-                {
-                    Console.WriteLine("Waiting for a client connection...");
-
-                    // Accept a pending client connection
-                    TcpClient client = server.AcceptTcpClient();
-                    Console.WriteLine("Client connected!");
-
-                    // Get a network stream for reading and writing
-                    NetworkStream stream = client.GetStream();
-
-                    byte[] buffer = new byte[256];
-
-                    // Loop to receive all the data sent by the client
-                    bool done = false;
-
-                    while (!done)
-                    {
-                        var numRead = stream.Read(buffer, 0, buffer.Length);
-
-                        if (numRead > 0) // TODO1 look for delim and remove it!
-                        {
-                            // Convert the received data to a string
-                            string data = Encoding.UTF8.GetString(buffer, 0, numRead);
-                            Console.WriteLine($"Received: {data}");
-
-                            // Echo the data back to the client
-                            var secho = $"GOT {data}";
-                            Console.WriteLine($"Replying: {secho}");
-
-                            byte[] msg = Encoding.Default.GetBytes(secho).Append(_delim).ToArray();
-                            stream.Write(msg, 0, msg.Length);
-                            Console.WriteLine($"Reply done");
-
-                            done = true;
-                        }
-                        else
-                        {
-                            Console.WriteLine($"GOT nada");
-                            done = true;
-                        }
-                    }
-
-                    // Close the client connection
-                    client.Close();
-                    Console.WriteLine("Client disconnected.");
-                }
-            }
-            catch (SocketException e)
-            {
-                Console.WriteLine($"SocketException: {e}");
-            }
-            catch (Exception e)
-            {
-                Console.WriteLine($"Other Exception: {e}");
-            }
-            finally
-            {
-                // Stop listening for new client requests
-                server?.Stop();
-            }
-
-            Console.WriteLine("Press Enter to continue...");
-            Console.Read();
-        }
-
-
-
-
-/////////////////////////////////////////////////////////////////////////////////
-/////////////////////////////////////////////////////////////////////////////////
-/////////////////////////////////////////////////////////////////////////////////
-/////////////////////////////////////////////////////////////////////////////////
-
 
         /// <summary>
         /// Test tcp in command/response mode.
         /// </summary>
-        public void DoTcpCmdResp()
+        public bool Run()
         {
-            // Start server.
-            int port = 59120;
+            bool err = false;
 
-            PrintLine(Cat.Info, $"Tcp using port: {port}");
-
-            //Go(cfile);
-
-
-            using CancellationTokenSource ts = new();
-
-
-            while (!ts.Token.IsCancellationRequested)
+            while (!_ts.Token.IsCancellationRequested)
             {
                 try
                 {
                     //=========== Connect ============//
-                    //https://learn.microsoft.com/en-us/dotnet/api/system.net.sockets.tcplistener
-
-                    using var server = TcpListener.Create(port);
+                    using var server = TcpListener.Create(_port);
                     // listener.SendTimeout = RESPONSE_TIME;
                     // listener.SendBufferSize = BUFFER_SIZE;
                     server.Start();
 
 
                     using var client = server.AcceptTcpClient();
-
                     PrintLine(Cat.Info, "Client has connected");
-
                     using var stream = client.GetStream();
 
 
                     //=========== Receive ============//
-                    var rx = new byte[4096];
-                    var byteCount = stream.Read(rx, 0, rx.Length);
-                    var request = Encoding.Default.GetString(rx[..byteCount], 0, byteCount); // or? BytesToStringReadable
-                    PrintLine(Cat.Info, $"Client request [{request}]");
+                    string? cmd = null;
+                    var rx = new byte[256]; // Fixed max message. Really should buffer.
+                    var numRead = stream.Read(rx, 0, rx.Length); // blocks
 
-
-                    //=========== Send ===============//
-                    string response = "";
-                    switch (request)
+                    if (numRead > 0)
                     {
-                        case "l": // large payload
+                        for (int i = 0; i < numRead; i++)
+                        {
+                            if (rx[i] == _delim)
+                            {
+                                // Convert the received data to a string.
+                                cmd = Encoding.Default.GetString(rx, 0, i);
+                            }
+                        }
+                    }
+
+
+                    //=========== Respond ============//
+                    string response = "";
+                    switch (cmd)
+                    {
+                        case "l": // large payload  TODO1 continuous
                             response = File.ReadAllText(@"C:\Dev\Apps\NTerm\Test\ross_1.txt");
                             break;
 
@@ -195,97 +86,69 @@ namespace TestX
                             break;
 
                         case "e": // echo
-                            response = $"You said [{request}]";
+                            response = $"You said [{cmd}]";
                             break;
 
                         case "c": // ansi color
                             response = $"\u001b[91mRED \u001b[92m GREEN \u001b[94mBLUE \u001b[0mNONE";
                             break;
 
-                        case "x":
+                        case "q":
                             ts.Cancel();
                             break;
 
+                        case null:
+                            response = $"Got a null";
+                            break;
+
                         default: // Always respond with something to prevent timeouts.
-                            response = $"Unknown request: {request}";
+                            response = $"Unknown cmd: {cmd}";
                             break;
                     }
 
-                    byte[] bytes = Encoding.Default.GetBytes(response + Environment.NewLine);
+                    byte[] bytes = Encoding.Default.GetBytes(response).Append(_delim).ToArray();
                     stream.Write(bytes, 0, bytes.Length);
-                    PrintLine(Cat.Info, $"Server response: [{response.Substring(0, Math.Min(32, response.Length))}]");
+                    PrintLine(Cat.Info, $"Response: [{response.Substring(0, Math.Min(32, response.Length))}]");
 
                     // System.Threading.Thread.Sleep(10);
                 }
                 catch (Exception e)
                 {
                     PrintLine(Cat.Error, $"Exception: {e}");
+                    err = true;
                     ts.Cancel();
+
+                    // case SocketException ex: // Some are expected and recoverable. https://learn.microsoft.com/en-us/windows/win32/winsock/windows-sockets-error-codes-2
+                    //     int[] valid = [10053, 10054, 10060, 10061, 10064];
+                    //     if (valid.Contains(ex.NativeErrorCode))
+                    //     {
+                    //         // Ignore and retry later.
+                    //     }
+                    //     else
+                    //     {
+                    //         // All other errors are considered fatal - bubble up to App to handle.
+                    //         throw;
+                    //     }
+                    //     break;
+
+                    // case OperationCanceledException: // Usually connect timeout. Ignore and retry later.
+                    //     break;
+
+                    // case IOException: // Usually receive timeout. Ignore and retry later.
+                    //     break;
+
+                    // default: // All other errors are considered fatal - bubble up to App to handle.
+                    //     throw;
                 }
-                // catch (SocketException e)
-                // catch (IOException e)
-            }
-        }
 
-        /// <summary>
-        /// Test tcp in continuous mode.
-        /// </summary>
-        public void DoTcpContinuous()
-        {
-            //// Tweak config.
-            //var config = BuildConfig("tcp 127.0.0.1 59130");
-            //File.WriteAllLines(cfile, config);
-            //Go(cfile);
-
-
-            // Start server.
-            int port = 59130;
-
-            PrintLine(Cat.Info, $"Tcp using port: {port}");
-
-            using CancellationTokenSource ts = new();
-
-            var lines = File.ReadAllLines(@"C:\Dev\Apps\NTerm\Test\ross_1.txt");
-            int ind = 0;
-
-            //=========== Connect ============//
-            using var listener = TcpListener.Create(port);
-            // listener.SendTimeout = RESPONSE_TIME;
-            // listener.SendBufferSize = BUFFER_SIZE;
-            listener.Start();
-            using var client = listener.AcceptTcpClient();
-            PrintLine(Cat.Info, "Client has connected");
-            using var stream = client.GetStream();
-
-            while (!ts.Token.IsCancellationRequested && ind < lines.Length)
-            {
-                try
+                finally
                 {
-                    //=========== Send ===============//
-                    string send = lines[ind++];
-
-                    byte[] bytes = Encoding.Default.GetBytes(send + Environment.NewLine);
-                    stream.Write(bytes, 0, bytes.Length);
-                    PrintLine(Cat.Info, $"Server send: [{send.Substring(0, Math.Min(32, send.Length))}]");
-
-                    // Pacing.
-                    System.Threading.Thread.Sleep(500);
+                    // Stop listening for this iteration.
+                    _server?.Stop();
                 }
-                catch (Exception e)
-                {
-                    PrintLine(Cat.Error, $"Exception: {e}");
-                    ts.Cancel();
-                }
-                // catch (SocketException e)
-                // catch (IOException e)
             }
+
+            return err;
         }
-
-
-
-
-
-
-
     }
 }

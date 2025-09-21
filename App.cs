@@ -48,8 +48,8 @@ namespace NTerm
         /// <summary>Indicator for application functions.</summary>
         char _meta = '!'; // default
 
-        /// <summary>Message delimiter: LF|CR|NUL.</summary>
-        byte _delim = 10; // default LF
+        /// <summary>Message delimiter: LF=10 CR=13 NUL=0.</summary>
+        byte _delim = 0; // default
 
         /// <summary>User macros.</summary>
         readonly Dictionary<string, string> _macros = [];
