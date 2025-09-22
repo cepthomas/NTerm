@@ -12,7 +12,6 @@ using Ephemera.NBagOfTricks;
 
 // https://learn.microsoft.com/en-us/dotnet/api/system.net.sockets.tcpclient
 
-
 namespace NTerm
 {
     /// <summary>TCP comm.</summary>
@@ -89,8 +88,7 @@ namespace NTerm
             {
                 try
                 {
-
-                    //=========== Work? ============//
+                    //=========== Work to do? ============//
                     if (_qSend.TryDequeue(out byte[]? td))
                     {
                         bool sendDone = false;
@@ -104,12 +102,10 @@ namespace NTerm
                         client.SendBufferSize = BUFFER_SIZE;
 
                         var task = client.ConnectAsync(_host, _port);
-
                         if (!task.Wait(CONNECT_TIME, token)) // TODO1 ?
                         {
                            //return (OpStatus.ConnectTimeout, "", resp);
                         }
-
                         using var stream = client.GetStream();
 
 
@@ -126,6 +122,7 @@ namespace NTerm
                             sendDone = ind >= numToSend;
                         }
 
+
                         //=========== Receive ==========//
                         bool rcvDone = false;
                         byte[] rxData = new byte[BUFFER_SIZE];
@@ -138,7 +135,6 @@ namespace NTerm
                             if (byteCount > 0)
                             {
                                 var rx = rxData.Subset(0, byteCount);
-
                                 _qRecv.Enqueue(rx);
                             }
                             else
@@ -150,59 +146,90 @@ namespace NTerm
                 }
                 catch (Exception e)
                 {
+                    //ProcessException(e);
+
                     // Async ops carry the original exception in inner.
                     if (e is AggregateException)
                     {
                         e = e.InnerException ?? e;
                     }
 
-                    // ConnectAsync:
-                    // - ArgumentNullException - The host parameter is null. 
-                    // - ArgumentOutOfRangeException - The port parameter is not between MinPort and MaxPort.
-                    // - SocketException - An error occurred when accessing the socket.
-                    // - ObjectDisposedException - TcpClient is closed.
-                    // - OperationCanceledException - The cancellation token was canceled. Ex in returned task. NORMAL-ignore
-                    // GetStream:
-                    // - InvalidOperationException - The TcpClient is not connected to a remote host.  RETRY?
-                    // - ObjectDisposedException - The TcpClient has been closed.
-                    // stream.Write:
-                    // - InvalidOperationException - The NetworkStream does not support writing.
-                    // - IOException - An error occurred when accessing the socket. -or- There was a failure while writing to the network.  RETRY?
-                    // - ObjectDisposedException - The NetworkStream is closed.  RETRY?
-                    // stream.Read:
-                    // - InvalidOperationException - The NetworkStream does not support reading.
-                    // - IOException - An error occurred when accessing the socket. -or- There is a failure reading from the network.  RETRY?
-                    // - ObjectDisposedException - The NetworkStream is closed.  RETRY?
+                    // Just Notify/log and carry on. TODO1 these components can't Print/Log!
                     
-                    switch (e)
-                    {
-                        case OperationCanceledException: // Usually connect timeout. Ignore and retry later.
-                            break;
 
-                        case SocketException ex: // Some are expected and recoverable. https://learn.microsoft.com/en-us/windows/win32/winsock/windows-sockets-error-codes-2
-                            int[] valid = [10053, 10054, 10060, 10061, 10064];
-                            if (valid.Contains(ex.NativeErrorCode))
-                            {
-                                // Ignore and retry later.
-                            }
-                            else
-                            {
-                                // All other errors are considered fatal - bubble up to App to handle.
-                                throw;
-                            }
-                            break;
 
-                        case IOException: // Usually receive timeout. Ignore and retry later.
-                            break;
 
-                        default: // All other errors are considered fatal - bubble up to App to handle.
-                            throw;
-                    }
+
                 }
 
                 // Don't be greedy.
                 Thread.Sleep(5);
             }
+        }
+        #endregion
+
+        #region Internals
+        /// <summary>
+        /// Handle errors.
+        /// </summary>
+        /// <param name="e"></param>
+        /// <returns></returns>
+        bool ProcessException(Exception e)
+        {
+            // ConnectAsync:
+            // - ArgumentNullException - The host parameter is null. 
+            // - ArgumentOutOfRangeException - The port parameter is not between MinPort and MaxPort.
+            // - SocketException - An error occurred when accessing the socket.
+            // - ObjectDisposedException - TcpClient is closed.
+            // - OperationCanceledException - The cancellation token was canceled. Ex in returned task. NORMAL-ignore
+            // GetStream:
+            // - InvalidOperationException - The TcpClient is not connected to a remote host.  RETRY?
+            // - ObjectDisposedException - The TcpClient has been closed.
+            // stream.Write:
+            // - InvalidOperationException - The NetworkStream does not support writing.
+            // - IOException - An error occurred when accessing the socket. -or- There was a failure while writing to the network.  RETRY?
+            // - ObjectDisposedException - The NetworkStream is closed.  RETRY?
+            // stream.Read:
+            // - InvalidOperationException - The NetworkStream does not support reading.
+            // - IOException - An error occurred when accessing the socket. -or- There is a failure reading from the network.  RETRY?
+            // - ObjectDisposedException - The NetworkStream is closed.  RETRY?
+
+            bool fatal = false;
+
+            // Async ops carry the original exception in inner.
+            if (e is AggregateException)
+            {
+                e = e.InnerException ?? e;
+            }
+
+            switch (e)
+            {
+                case OperationCanceledException: // Usually connect timeout. Ignore and retry later.
+                    break;
+
+                case SocketException ex: // Some are expected and recoverable. https://learn.microsoft.com/en-us/windows/win32/winsock/windows-sockets-error-codes-2
+                    int[] valid = [10053, 10054, 10060, 10061, 10064];
+                    if (valid.Contains(ex.NativeErrorCode))
+                    {
+                        // Ignore and retry later.
+                    }
+                    else
+                    {
+                        // All other errors are considered fatal - bubble up to App to handle.
+                        fatal = true;
+                        throw e;
+                    }
+                    break;
+
+                case IOException: // Usually receive timeout. Ignore and retry later.
+                    break;
+
+                default: // All other errors are considered fatal - bubble up to App to handle.
+                    fatal = true;
+                    throw e;
+            }
+
+            return fatal;
         }
         #endregion
     }

@@ -11,7 +11,7 @@ using Ephemera.NBagOfTricks;
 //using NTerm;
 
 
-namespace TestX
+namespace Test
 {
     public class TcpServer
     {
@@ -150,7 +150,7 @@ namespace TestX
                     // System.Threading.Thread.Sleep(10);
                 }
             }
-            catch (Exception e)
+            catch (Exception e) // TODO1 reset and keep going.
             {
                 Console.WriteLine($"Exception: {e}");
                 err = true;

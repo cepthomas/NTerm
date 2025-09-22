@@ -22,9 +22,9 @@ namespace Test
         // TODO1 run using explicit cl args.
 
         #region Fields
-        readonly string me = @"C:\Dev\Apps\NTerm\Test\bin\net8.0-windows\Test.exe";
-        readonly string exe = @"C:\Dev\Apps\NTerm\bin\net8.0-windows\win-x64\NTerm.exe";
-        readonly string cfile = @"C:\Dev\Apps\NTerm\Test\test.ini";
+        // Generated test-specific config file.
+        const string CONFIG_FILE = @"C:\Dev\Apps\NTerm\Test\test_config.ini";
+        const string NTERM_EXE = @"C:\Dev\Apps\NTerm\bin\net8.0-windows\win-x64\NTerm.exe";
         readonly ConsoleColorEx clr = ConsoleColorEx.None;
         CancellationTokenSource ts = new();
         #endregion
@@ -39,86 +39,6 @@ namespace Test
             //BtnGo.Click += (_, __) => DoAsync();
             BtnGo.Click += (_, __) => DoTcpCmdResp();
         }
-
-
-        //////////////////////////////////////////////////////////////////////
-        //////////////////////////////////////////////////////////////////////
-        //////////////////////////////////////////////////////////////////////
-        //  https://stackoverflow.com/a/53403824   c# 7.0 in a nutshell
-        const int packet_length = 2;  // user defined packet length
-
-        void DoAsync()
-        {
-            // Tweak config.
-            var config = BuildConfig("tcp 127.0.0.1 59120");
-            File.WriteAllLines(cfile, config);
-
-            RunServerAsync();
-
-            Go(cfile);
-        }
-
-        async void RunServerAsync()
-        {
-            var listner = new TcpListener(IPAddress.Any, 59120);
-            listner.Start();
-            try
-            {
-                while (true)
-                {
-                    // was await Accept(await listner.AcceptTcpClientAsync());
-                    TcpClient client = await listner.AcceptTcpClientAsync();
-                    await Accept(client);
-                }
-            }
-            finally
-            {
-                listner.Stop();
-            }
-        }
-
-        async Task Accept(TcpClient client)
-        {
-            await Task.Yield();
-            try
-            {
-                using (client)
-                using (NetworkStream n = client.GetStream())
-                {
-                    byte[] data = new byte[packet_length];
-                    int bytesRead = 0;
-                    int chunkSize = 1;
-
-                    while (bytesRead < data.Length && chunkSize > 0)
-                    {
-                        bytesRead += chunkSize = await n.ReadAsync(data, bytesRead, data.Length - bytesRead);
-                    }
-
-                    // get data
-                    string str = Encoding.Default.GetString(data);
-                    Console.WriteLine("[server] received : {0}", str);
-
-                    // To do
-                    // ...
-
-                    // send the result to client
-                    string send_str = "server_send_test";
-                    byte[] send_data = Encoding.ASCII.GetBytes(send_str);
-                    await n.WriteAsync(send_data, 0, send_data.Length);
-                }
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine(ex.Message);
-            }
-        }
-
-        //////////////////////////////////////////////////////////////////////
-        //////////////////////////////////////////////////////////////////////
-        //////////////////////////////////////////////////////////////////////
-
-
-
 
         /// <summary>
         /// Simple first test.
@@ -135,9 +55,9 @@ namespace Test
         {
             // Tweak config.
             var config = BuildConfig("null");
-            File.WriteAllLines(cfile, config);
+            File.WriteAllLines(CONFIG_FILE, config);
 
-            Go(cfile);
+            Go(CONFIG_FILE);
         }
 
         /// <summary>
@@ -147,14 +67,14 @@ namespace Test
         {
             // Tweak config.
             var config = BuildConfig("tcp 127.0.0.1 59120");
-            File.WriteAllLines(cfile, config);
+            File.WriteAllLines(CONFIG_FILE, config);
 
             // Start server.
             int port = 59120;
 
             PrintLine(Cat.Info, $"Tcp using port: {port}");
 
-            Go(cfile);
+            Go(CONFIG_FILE);
 
 
             using CancellationTokenSource tsxxx = new();
@@ -239,10 +159,10 @@ namespace Test
         {
             // Tweak config.
             var config = BuildConfig("tcp 127.0.0.1 59130");
-            File.WriteAllLines(cfile, config);
+            File.WriteAllLines(CONFIG_FILE, config);
 
 
-            Go(cfile);
+            Go(CONFIG_FILE);
 
 
             // Start server.
@@ -295,9 +215,9 @@ namespace Test
         {
             // Tweak config.
             var config = BuildConfig("udp 127.0.0.1 59140");
-            File.WriteAllLines(cfile, config);
+            File.WriteAllLines(CONFIG_FILE, config);
 
-            Go(cfile);
+            Go(CONFIG_FILE);
 
             // Start client.
             int port = 59140;
@@ -344,7 +264,7 @@ namespace Test
         /// <param name="args"></param>
         void Go(string args)
         {
-            ProcessStartInfo pinfo = new(exe, args)
+            ProcessStartInfo pinfo = new(NTERM_EXE, args)
             {
             };
 
@@ -365,7 +285,7 @@ namespace Test
         /// <param name="args"></param>
         void GoSteal(string args)
         {
-            ProcessStartInfo pinfo = new(exe, args)
+            ProcessStartInfo pinfo = new(NTERM_EXE, args)
             {
                 UseShellExecute = false,
                 //CreateNoWindow = true,
@@ -405,7 +325,7 @@ namespace Test
             List<string> defaultConfig = [
                 "[nterm]",
                 //"comm_type = null",
-                "delim = LF",
+                "delim = NUL",
                 "prompt = >",
                 "meta = -",
                 "info_color = darkcyan",

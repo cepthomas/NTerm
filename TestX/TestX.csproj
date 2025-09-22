@@ -12,10 +12,6 @@
         <!-- <NoWarn>1701;1702;CA1816;CA1822</NoWarn> -->
     </PropertyGroup>
 
-<!--     <ItemGroup>
-        <Compile Include="..\Common.cs" Link="Common.cs" />
-    </ItemGroup>
- -->
     <ItemGroup>
         <Reference Include="Ephemera.NBagOfTricks">
             <HintPath>..\lib\Ephemera.NBagOfTricks.dll</HintPath>

@@ -11,7 +11,6 @@ using System.Threading.Tasks;
 using Ephemera.NBagOfTricks;
 
 
-
 namespace NTerm
 {
     /// <summary>UDP comm.</summary>
@@ -115,40 +114,64 @@ namespace NTerm
                 }
                 catch (Exception e)
                 {
-                    //var stat = Utils.ProcessException(e, _logger);
+                    //ProcessException(e);
 
-                    // Connect:
-                    // - SocketException - An error occurred when accessing the socket.
-                    // - ArgumentNullException - endPoint is null.
-                    // - ObjectDisposedException - The UdpClient is closed.
-                    // 
-                    // ReceiveAsync:
-                    // - ObjectDisposedException - The underlying Socket has been closed.
-                    // - SocketException - An error occurred when accessing the socket.
-
-                    switch (e)
+                    // Async ops carry the original exception in inner.
+                    if (e is AggregateException)
                     {
-                        case SocketException ex: // Some are expected and recoverable. https://learn.microsoft.com/en-us/windows/win32/winsock/windows-sockets-error-codes-2
-                            int[] valid = [10053, 10054, 10060, 10061, 10064];
-                            if (valid.Contains(ex.NativeErrorCode))
-                            {
-                                // Ignore and retry later.
-                            }
-                            else
-                            {
-                                // All others are considered fatal - bubble up to App to handle.
-                                throw;
-                            }
-                            break;
-
-                        default: // All others are considered fatal - bubble up to App to handle.
-                            throw;
+                        e = e.InnerException ?? e;
                     }
+
+                    // Just Notify/log and carry on. TODO1 these components can't Print/Log!
                 }
 
                 // Don't be greedy.
                 Thread.Sleep(5);
             }
+        }
+        #endregion
+
+        #region Internals
+        /// <summary>
+        /// Handle errors.
+        /// </summary>
+        /// <param name="e"></param>
+        /// <returns></returns>
+        bool ProcessException(Exception e)
+        {
+            // Connect:
+            // - SocketException - An error occurred when accessing the socket.
+            // - ArgumentNullException - endPoint is null.
+            // - ObjectDisposedException - The UdpClient is closed.
+            // 
+            // ReceiveAsync:
+            // - ObjectDisposedException - The underlying Socket has been closed.
+            // - SocketException - An error occurred when accessing the socket.
+
+            bool fatal = false;
+
+            switch (e)
+            {
+                case SocketException ex: // Some are expected and recoverable. https://learn.microsoft.com/en-us/windows/win32/winsock/windows-sockets-error-codes-2
+                    int[] valid = [10053, 10054, 10060, 10061, 10064];
+                    if (valid.Contains(ex.NativeErrorCode))
+                    {
+                        // Ignore and retry later.
+                    }
+                    else
+                    {
+                        // All others are considered fatal - bubble up to App to handle.
+                        fatal = true;
+                        throw e;
+                    }
+                    break;
+
+                default: // All others are considered fatal - bubble up to App to handle.
+                    fatal = true;
+                    throw e;
+            }
+
+            return fatal;
         }
         #endregion
     }

@@ -14,7 +14,7 @@ using System.Linq;
 //using NTerm;
 
 
-namespace TestX
+namespace Test
 {
     public class UdpSender
     {
@@ -73,7 +73,7 @@ namespace TestX
                     }
                 }
             }
-            catch (Exception e)
+            catch (Exception e) // TODO1 reset and keep going.
             {
                 Console.WriteLine($"Exception: {e}");
                 err = true;

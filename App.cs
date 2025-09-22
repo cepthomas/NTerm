@@ -49,7 +49,7 @@ namespace NTerm
         char _meta = '!'; // default
 
         /// <summary>Message delimiter: LF=10 CR=13 NUL=0.</summary>
-        byte _delim = 0; // default
+        byte _delim = 0; // default NUL
 
         /// <summary>User macros.</summary>
         readonly Dictionary<string, string> _macros = [];
@@ -103,6 +103,7 @@ namespace NTerm
         public void Dispose()
         {
             _comm?.Dispose();
+            _logStream?.Flush();
             _logStream?.Dispose();
         }
 
@@ -430,11 +431,10 @@ namespace NTerm
         /// </summary>
         void About()
         {
-            //var docs = File.ReadLines("xxREADME.md").ToList();
-            List<string> docs = ["Main doc at github.com/cepthomas/NTerm/blob/main/README.md"];
+            List<string> docs = ["Main doc at https://github.com/cepthomas/NTerm/blob/main/README.md"];
 
-            //docs.Add("");
-            docs.Add("# Current Configuration");
+            docs.Add(Environment.NewLine);
+            docs.Add($"# Current Configuration");
             docs.Add($"- comm_type:{_comm}");
             docs.Add($"- delim:{_delim}");
             docs.Add($"- prompt:{_prompt}");
@@ -444,14 +444,14 @@ namespace NTerm
 
             if (_macros.Count > 0)
             {
-                docs.Add("");
+                docs.Add(Environment.NewLine);
                 docs.Add($"macros:");
                 _macros.ForEach(m => docs.Add($"- {m.Key}:{m.Value}"));
             }
 
             if (_matchers.Count > 0)
             {
-                docs.Add("");
+                docs.Add(Environment.NewLine);
                 docs.Add($"matchers:");
                 _matchers.ForEach(m => docs.Add($"- {m.Key}:{m.Value}"));
             }
@@ -459,8 +459,8 @@ namespace NTerm
             var sp = SerialPort.GetPortNames().ToList();
             if (sp.Count > 0)
             {
-                docs.Add("");
-                docs.Add("serial ports:");
+                docs.Add(Environment.NewLine);
+                docs.Add($"serial ports:");
                 sp.ForEach(s => { docs.Add($"- {s}"); });
             }
 
@@ -469,3 +469,24 @@ namespace NTerm
         }
     }
 }
+
+
+
+// // Check for something to do. =========> peek doesn't work!
+// if (Console.KeyAvailable)
+// {
+//   //int ikey = Console.In.Peek();
+//   var conkey = Console.ReadKey(false);
+//   char key = conkey.KeyChar;
+
+//   // Check for meta key.
+//   if (MatchMods(_settings.MetaMarker, conkey.Modifiers))
+//   {
+//       _qUserCli.Enqueue(new(_metaKeys[(char)conkey.Key], conkey.Modifiers));
+//   }
+//   else // Ordinary, get the rest of the line - blocks.
+//   {
+//       var rest = Console.ReadLine();
+//       _qUserCli.Enqueue(new(key + rest, conkey.Modifiers));
+//   }
+// }

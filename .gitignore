@@ -400,9 +400,10 @@ FodyWeavers.xsd
 # Project stuff
 bin/
 obj/
-ibin/
-iobj/
-/Script
-test_out.txt
-/Test/*.json
+# ibin/
+# iobj/
+# /Script
+# test_out.txt
+# /Test/*.json
 /Properties/launchSettings.json
+nterm.log
