@@ -20,12 +20,17 @@ namespace Test
         readonly int _port;
         readonly byte _delim;
         readonly CancellationTokenSource _ts;
-        const int CONNECT_TIME = 50;
-        const int RESPONSE_TIME = 1000;
-        const int BUFFER_SIZE = 4096;
+        //const int CONNECT_TIME = 50;
+        //const int RESPONSE_TIME = 1000;
+        //const int BUFFER_SIZE = 4096;
         #endregion
 
-
+        /// <summary>
+        /// Constructor.
+        /// </summary>
+        /// <param name="port"></param>
+        /// <param name="delim"></param>
+        /// <param name="ts"></param>
         public TcpServer(int port, byte delim, CancellationTokenSource ts)
         {
             _port = port;
@@ -43,21 +48,21 @@ namespace Test
         {
             bool err = false;
 
-            try
+            while (!_ts.Token.IsCancellationRequested)
             {
-                //=========== Connect ============//
-                using var server = TcpListener.Create(_port); // TODO1 put outside try and test for valid/connected
-                // listener.SendTimeout = RESPONSE_TIME;
-                // listener.SendBufferSize = BUFFER_SIZE;
-                server.Start();
-
-                using var client = server.AcceptTcpClient();
-                Console.WriteLine("Client has connected");
-                using var stream = client.GetStream();
-
-
-                while (!_ts.Token.IsCancellationRequested)
+                try
                 {
+                    //=========== Connect ============//
+                    //https://learn.microsoft.com/en-us/dotnet/api/system.net.sockets.tcplistener
+
+                    using var server = TcpListener.Create(_port);
+                    server.Start();
+
+                    using var client = server.AcceptTcpClient(); // TODO1 AcceptTcpClientAsync(token)
+                    Console.WriteLine("Client has connected");
+                    using var stream = client.GetStream();
+
+
                     //=========== Receive ============//
                     string? cmd = null;
                     var rx = new byte[256]; // Max rx message for test.
@@ -77,8 +82,6 @@ namespace Test
 
 
                     //=========== Respond ============//
-                    // string response = null;
-                    // List<string> lines = null;
                     List<string>? response = null;
 
                     switch (cmd)
@@ -117,12 +120,6 @@ namespace Test
 
                     if (response is not null && response.Count > 0)
                     {
-                        // plain
-                        // byte[] bytes = Encoding.Default.GetBytes(response).Append(_delim).ToArray();
-                        // stream.Write(bytes, 0, bytes.Length);
-                        // Console.WriteLine($"Response: [{response.Substring(0, Math.Min(32, response.Length))}]");
-
-
                         // Pace response messages. Simulates continuous operationn too.
                         int ind = 0;
                         while (!_ts.Token.IsCancellationRequested)
@@ -133,7 +130,8 @@ namespace Test
                             ind += 1;
                             if (ind >= response.Count)
                             {
-                                _ts.Cancel();
+                                //_ts.Cancel();
+                                break;
                             }
                             else
                             {
@@ -142,26 +140,22 @@ namespace Test
                             }
                         }
                     }
-                    //else
-                    //{
-                    //    Console.WriteLine("Bad delimiter (probably)");
-                    //}
 
                     // System.Threading.Thread.Sleep(10);
                 }
+                catch (Exception e)
+                {
+                    // Log and try to recover - keep going.
+                    Console.WriteLine($"Exception: {e}");
+                    // err = true;
+                    // _ts.Cancel();
+                }
+                // finally
+                // {
+                //     // Stop listening for this iteration.
+                //     _server?.Stop();
+                // }
             }
-            catch (Exception e) // TODO1 reset and keep going.
-            {
-                Console.WriteLine($"Exception: {e}");
-                err = true;
-                _ts.Cancel();
-            }
-
-            // finally
-            // {
-            //     // Stop listening for this iteration.
-            //     _server?.Stop();
-            // }
 
             return err;
         }

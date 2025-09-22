@@ -18,11 +18,19 @@ namespace Test
 {
     public class UdpSender
     {
+        #region Fields
         readonly string _host;
         readonly int _port;
         readonly byte _delim;
         readonly CancellationTokenSource _ts;
+        #endregion
 
+        /// <summary>
+        /// Constructor.
+        /// </summary>
+        /// <param name="port"></param>
+        /// <param name="delim"></param>
+        /// <param name="ts"></param>
         public UdpSender(int port, byte delim, CancellationTokenSource ts)
         {
             _port = port;
@@ -33,7 +41,6 @@ namespace Test
             Console.WriteLine($"Udp using {_host}:{_port}");
         }
 
-
         /// <summary>
         /// Test udp in continuous mode.
         /// </summary>
@@ -41,18 +48,18 @@ namespace Test
         {
             bool err = false;
 
-            try
+            while (!_ts.Token.IsCancellationRequested)
             {
-                var lines = File.ReadAllLines(@"C:\Dev\Apps\NTerm\Test\ross_2.txt").ToList();
-                int ind = 0;
-
-                //=========== Connect ============//
-                using UdpClient client = new();
-                client.Connect(_host, _port);
-                Console.WriteLine("Client has connected");
-
-                while (!_ts.Token.IsCancellationRequested)
+                try
                 {
+                    var lines = File.ReadAllLines(@"C:\Dev\Apps\NTerm\Test\ross_2.txt").ToList();
+                    int ind = 0;
+
+                    //=========== Connect ============//
+                    using UdpClient client = new();
+                    client.Connect(_host, _port);
+                    Console.WriteLine("Client has connected");
+
                     //=========== Send ===============//
                     // Send a burst of X messages spaced Y apart every Z seconds.
 
@@ -72,12 +79,12 @@ namespace Test
                         Thread.Sleep(ind % 10 == 0 ? 500 : 5);
                     }
                 }
-            }
-            catch (Exception e) // TODO1 reset and keep going.
-            {
-                Console.WriteLine($"Exception: {e}");
-                err = true;
-                _ts.Cancel();
+                catch (Exception e)
+                {
+                    Console.WriteLine($"Exception: {e}");
+                    err = false;
+                    _ts.Cancel();
+                }
             }
 
             return err;
