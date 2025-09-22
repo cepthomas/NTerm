@@ -155,10 +155,6 @@ namespace NTerm
                     }
 
                     // Just Notify/log and carry on. TODO1 these components can't Print/Log!
-                    
-
-
-
 
                 }
 
