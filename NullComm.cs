@@ -59,6 +59,11 @@ namespace NTerm
         {
         }
 
+        /// <summary>Main work loop.</summary>
+        /// <see cref="IComm"/>
+        public event EventHandler<NotifEventArgs>? Notif;
+        #endregion
+
         /// <summary>IComm implementation.</summary>
         /// <see cref="IComm"/>
         public void Run(CancellationToken token)
@@ -76,6 +81,5 @@ namespace NTerm
                 Thread.Sleep(5);
             }
         }
-        #endregion
     }
 }

@@ -54,7 +54,7 @@ namespace NTerm
         /// <summary>What am I.</summary>
         public override string ToString()
         {
-            return ($"TcpComm {_host} {_port}");
+            return ($"TcpComm {_host}:{_port}");
         }
         #endregion
 
@@ -81,6 +81,11 @@ namespace NTerm
         }
 
         /// <summary>IComm implementation.</summary>
+        /// <see cref="IComm"/>
+        public event EventHandler<NotifEventArgs>? Notif;
+        #endregion
+
+        /// <summary>Main work loop.</summary>
         /// <see cref="IComm"/>
         public void Run(CancellationToken token)
         {
@@ -146,23 +151,13 @@ namespace NTerm
                 }
                 catch (Exception e)
                 {
-                    //ProcessException(e);
-
-                    // Async ops carry the original exception in inner.
-                    if (e is AggregateException)
-                    {
-                        e = e.InnerException ?? e;
-                    }
-
-                    // Just Notify/log and carry on. TODO1 these components can't Print/Log!
-
+                    ProcessException(e);
                 }
 
                 // Don't be greedy.
                 Thread.Sleep(5);
             }
         }
-        #endregion
 
         #region Internals
         /// <summary>
@@ -211,18 +206,26 @@ namespace NTerm
                     }
                     else
                     {
-                        // All other errors are considered fatal - bubble up to App to handle.
-                        fatal = true;
-                        throw e;
+                        // Just Notify/log and carry on.
+                        Notif?.Invoke(this, new(Cat.None, e.Message));
+
+                        // // All other errors are considered fatal - bubble up to App to handle.
+                        // fatal = true;
+                        // throw e;
                     }
                     break;
 
                 case IOException: // Usually receive timeout. Ignore and retry later.
                     break;
 
-                default: // All other errors are considered fatal - bubble up to App to handle.
-                    fatal = true;
-                    throw e;
+                default:
+                    // Just Notify/log and carry on.
+                    Notif?.Invoke(this, new(Cat.None, e.Message));
+                    break;
+
+                    // // All other errors are considered fatal - bubble up to App to handle.
+                    // fatal = true;
+                    // throw e;
             }
 
             return fatal;

@@ -21,8 +21,8 @@ namespace NTerm
         readonly string _host;
         readonly int _port;
         readonly ConcurrentQueue<byte[]> _qRecv = new();
-        const int CONNECT_TIME = 50;
-        const int RESPONSE_TIME = 1000;
+        //const int CONNECT_TIME = 50;
+        //const int RESPONSE_TIME = 1000;
         const int BUFFER_SIZE = 4096;
         #endregion
 
@@ -52,7 +52,7 @@ namespace NTerm
         /// <summary>What am I.</summary>
         public override string ToString()
         {
-            return ($"UdpComm {_host} {_port}");
+            return ($"UdpComm {_host}:{_port}");
         }
         #endregion
 
@@ -80,6 +80,11 @@ namespace NTerm
 
         /// <summary>IComm implementation.</summary>
         /// <see cref="IComm"/>
+        public event EventHandler<NotifEventArgs>? Notif;
+        #endregion
+
+        /// <summary>Main work loop.</summary>
+        /// <see cref="IComm"/>
         public void Run(CancellationToken token)
         {
             //https://learn.microsoft.com/en-us/dotnet/api/system.net.sockets.udpclient
@@ -98,38 +103,38 @@ namespace NTerm
 
                     //=========== Receive ==========//
                     bool rcvDone = false;
+                    byte[] rxData = new byte[BUFFER_SIZE];
                     while (!rcvDone)
                     {
                         // Get data.
-                        var bytes = client.ReceiveAsync(token);
-                        if (bytes.Result.Buffer.Length > 0)
+
+                        int byteCount = client.Client.Receive(rxData);
+                        if (byteCount > 0)
                         {
-                            _qRecv.Enqueue(bytes.Result.Buffer);
+                            _qRecv.Enqueue(rxData[..byteCount]);//    bytes.Result.Buffer);
                         }
-                        else
-                        {
-                            rcvDone = true;
-                        }
+
+                        // async
+                        //var bytes = client.ReceiveAsync(token);
+                        //if (bytes.Result.Buffer.Length > 0)
+                        //{
+                        //    _qRecv.Enqueue(bytes.Result.Buffer);
+                        //}
+                        //else
+                        //{
+                        //    rcvDone = true;
+                        //}
                     }
                 }
                 catch (Exception e)
                 {
-                    //ProcessException(e);
-
-                    // Async ops carry the original exception in inner.
-                    if (e is AggregateException)
-                    {
-                        e = e.InnerException ?? e;
-                    }
-
-                    // Just Notify/log and carry on. TODO1 these components can't Print/Log!
+                    ProcessException(e);
                 }
 
                 // Don't be greedy.
                 Thread.Sleep(5);
             }
         }
-        #endregion
 
         #region Internals
         /// <summary>
@@ -160,15 +165,23 @@ namespace NTerm
                     }
                     else
                     {
-                        // All others are considered fatal - bubble up to App to handle.
-                        fatal = true;
-                        throw e;
+                        // Just Notify/log and carry on.
+                        Notif?.Invoke(this, new(Cat.None, e.Message));
+
+                        // // All others are considered fatal - bubble up to App to handle.
+                        // fatal = true;
+                        // throw e;
                     }
                     break;
 
-                default: // All others are considered fatal - bubble up to App to handle.
-                    fatal = true;
-                    throw e;
+                default:
+                    // Just Notify/log and carry on.
+                    Notif?.Invoke(this, new(Cat.None, e.Message));
+                    break;
+
+                    //  // All others are considered fatal - bubble up to App to handle.
+                    // fatal = true;
+                    // throw e;
             }
 
             return fatal;

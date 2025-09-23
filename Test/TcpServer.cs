@@ -4,11 +4,9 @@ using System.IO;
 using System.Linq;
 using System.Net;
 using System.Net.Sockets;
-using System.Security.Cryptography;
 using System.Text;
 using System.Threading;
-using Ephemera.NBagOfTricks;
-//using NTerm;
+//using Ephemera.NBagOfTricks;
 
 
 namespace Test
@@ -58,7 +56,7 @@ namespace Test
                     using var server = TcpListener.Create(_port);
                     server.Start();
 
-                    using var client = server.AcceptTcpClient(); // TODO1 AcceptTcpClientAsync(token)
+                    using var client = server.AcceptTcpClient(); // TODO? AcceptTcpClientAsync(token)
                     Console.WriteLine("Client has connected");
                     using var stream = client.GetStream();
 
@@ -103,7 +101,7 @@ namespace Test
                             break;
 
                         case "c": // ansi color
-                            response = [$"\u001b[91mRED \u001b[92m GREEN \u001b[94mBLUE \u001b[0mNONE"];
+                            response = [$"Colors!!! \u001b[91mRED \u001b[92m GREEN \u001b[94mBLUE \u001b[0mNONE"];
                             break;
 
                         case "q":
@@ -145,16 +143,12 @@ namespace Test
                 }
                 catch (Exception e)
                 {
-                    // Log and try to recover - keep going.
+                    // Log, reset, keep going.
                     Console.WriteLine($"Exception: {e}");
+                    //server?.Stop();
                     // err = true;
                     // _ts.Cancel();
                 }
-                // finally
-                // {
-                //     // Stop listening for this iteration.
-                //     _server?.Stop();
-                // }
             }
 
             return err;

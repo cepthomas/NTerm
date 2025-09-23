@@ -59,7 +59,7 @@ namespace NTerm
         #endregion
 
         /// <summary>
-        /// Build me one.
+        /// Build me one and make it go.
         /// </summary>
         public App()
         {
@@ -76,22 +76,23 @@ namespace NTerm
                 // Go forever.
                 Run();
             }
-            catch (ConfigException ex)
+            // Any exception that arrivess here is considered fatal. Inform and exit.
+            catch (ConfigException ex) // ini content error
             {
                 Print(Cat.Error, $"{ex.Message}");
                 Environment.Exit(1);
             }
-            catch (IniSyntaxException ex)
+            catch (IniSyntaxException ex) // ini structure error
             {
                 Print(Cat.Error, $"Ini syntax error at {ex.LineNum}: {ex.Message}");
                 Log(Cat.Error, ex.ToString());
-                Environment.Exit(1);
+                Environment.Exit(2);
             }
-            catch (Exception ex)
+            catch (Exception ex) // other error
             {
                 Print(Cat.Error, $"{ex.GetType()}: {ex.Message}");
                 Log(Cat.Error, ex.ToString());
-                Environment.Exit(2);
+                Environment.Exit(3);
             }
 
             Environment.Exit(0);
@@ -201,17 +202,19 @@ namespace NTerm
                                 }
                                 else
                                 {
-                                    // Add to buffer. Make non-readable friendlier.
-                                    var c = b[i];
-                                    if (c.IsReadable())
-                                    {
-                                        rcvBuffer.Add((char)c);
-                                    }
-                                    else
-                                    {
-                                        var s = $"<{c:0X}>";
-                                        rcvBuffer.AddRange(s);
-                                    }
+                                    // Add to buffer.
+                                    rcvBuffer.Add((char)b[i]);
+
+                                    // TODO Make non-readable friendlier - option?
+                                    //if (b[i].IsReadable())
+                                    //{
+                                    //    rcvBuffer.Add((char)b[i]);
+                                    //}
+                                    //else
+                                    //{
+                                    //    var s = $"<{b[i]:0X}>";
+                                    //    rcvBuffer.AddRange(s);
+                                    //}
                                 }
                             }
                         }
@@ -259,7 +262,7 @@ namespace NTerm
         }
 
         /// <summary>s
-        /// Process user command line input. Could be explicit comm spec or a config file name.
+        /// Process user command line input.
         /// </summary>
         /// <exception cref="ConfigException"></exception>
         void ProcessAppCommandLine()
@@ -347,6 +350,8 @@ namespace NTerm
                     "serial" => new SerialComm(commSpec),
                     _ => throw new ConfigException($"Invalid comm type: [{commSpec[0]}]"),
                 };
+
+                _comm.Notif += (object? _, NotifEventArgs e) => { Print(e.Cat, e.Message); };
             }
         }
 
@@ -469,24 +474,3 @@ namespace NTerm
         }
     }
 }
-
-
-
-// // Check for something to do. =========> peek doesn't work!
-// if (Console.KeyAvailable)
-// {
-//   //int ikey = Console.In.Peek();
-//   var conkey = Console.ReadKey(false);
-//   char key = conkey.KeyChar;
-
-//   // Check for meta key.
-//   if (MatchMods(_settings.MetaMarker, conkey.Modifiers))
-//   {
-//       _qUserCli.Enqueue(new(_metaKeys[(char)conkey.Key], conkey.Modifiers));
-//   }
-//   else // Ordinary, get the rest of the line - blocks.
-//   {
-//       var rest = Console.ReadLine();
-//       _qUserCli.Enqueue(new(key + rest, conkey.Modifiers));
-//   }
-// }

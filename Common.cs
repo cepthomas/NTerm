@@ -14,8 +14,15 @@ namespace NTerm
     /// <summary>General categories, mainly for logging.</summary>
     public enum Cat { None, Send, Receive, Error, Info }
 
-    /// <summary>Reporting user errors.</summary>
+    /// <summary>Reporting user config errors.</summary>
     public class ConfigException(string message) : Exception(message);
+
+    /// <summary>Comm has something to tell the user.</summary>
+    public class NotifEventArgs(Cat cat, string msg) : EventArgs
+    {
+        public Cat Cat { get; init; } = cat;
+        public string Message { get; init; } = msg;
+    }
 
     /// <summary>Comm type abstraction.</summary>
     interface IComm : IDisposable
@@ -33,6 +40,9 @@ namespace NTerm
 
         /// <summary>Reset comms, resource management.</summary>
         void Reset();
+
+        /// <summary>I have something to say.</summary>
+        event EventHandler<NotifEventArgs>? Notif;
     }
     #endregion
 }

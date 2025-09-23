@@ -1,17 +1,13 @@
 ﻿using System;
-//using System.Diagnostics;
-using System.Drawing;
 using System.IO;
 using System.Net.Sockets;
-using System.Numerics;
 using System.Text;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Net;
-using Ephemera.NBagOfTricks;
 using System.Linq;
-//using NTerm;
+//using Ephemera.NBagOfTricks;
 
 
 namespace Test
@@ -53,39 +49,67 @@ namespace Test
                 try
                 {
                     var lines = File.ReadAllLines(@"C:\Dev\Apps\NTerm\Test\ross_2.txt").ToList();
-                    int ind = 0;
 
                     //=========== Connect ============//
                     using UdpClient client = new();
                     client.Connect(_host, _port);
-                    Console.WriteLine("Client has connected");
+                    //Console.WriteLine("Client has connected");
 
                     //=========== Send ===============//
-                    // Send a burst of X messages spaced Y apart every Z seconds.
 
-                    string send = lines[ind];
-                    byte[] bytes = [.. Encoding.Default.GetBytes(send), _delim];
-                    client.Send(bytes, bytes.Length);
+                    //int ind = 0;
+                    //string send = lines[ind];
+                    //byte[] bytes = [.. Encoding.Default.GetBytes(send), _delim];
+                    //client.Send(bytes, bytes.Length);
+                    //// Next.
+                    //ind += 1;
+                    //if (ind >= lines.Count)
+                    //{
+                    //    //_ts.Cancel();
+                    //    break;
+                    //}
+                    //else
+                    //{
+                    //    // Pacing.
+                    //    Thread.Sleep(ind % 10 == 0 ? 500 : 5);
+                    //}
 
-                    // Next.
-                    ind += 1;
-                    if (ind >= lines.Count)
+
+
+                    // Pace response messages. Simulates continuous operationn too.
+                    int ind = 0;
+                    while (!_ts.Token.IsCancellationRequested)
                     {
-                        _ts.Cancel();
+                        string send = lines[ind];
+                        byte[] bytes = [.. Encoding.Default.GetBytes(send), _delim];
+                        client.Send(bytes, bytes.Length);
+                        ind += 1;
+                        if (ind >= lines.Count)
+                        {
+                            //_ts.Cancel();
+                            break;
+                        }
+                        else
+                        {
+                            // Pacing.
+                            Thread.Sleep(ind % 10 == 0 ? 500 : 5);
+                        }
                     }
-                    else
-                    {
-                        // Pacing.
-                        Thread.Sleep(ind % 10 == 0 ? 500 : 5);
-                    }
+
+
+
+
+
                 }
                 catch (Exception e)
                 {
                     Console.WriteLine($"Exception: {e}");
-                    err = false;
+                    err = true;
                     _ts.Cancel();
                 }
             }
+
+            Console.WriteLine($"Udp done");
 
             return err;
         }
