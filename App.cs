@@ -84,7 +84,7 @@ namespace NTerm
             }
             catch (IniSyntaxException ex) // ini structure error
             {
-                Print(Cat.Error, $"Ini syntax error at {ex.LineNum}: {ex.Message}");
+                Print(Cat.Error, $"Ini syntax error at line {ex.LineNum}: {ex.Message}");
                 Log(Cat.Error, ex.ToString());
                 Environment.Exit(2);
             }
@@ -152,12 +152,8 @@ namespace NTerm
                                     default: // user macro?
                                         if (_macros.TryGetValue(mk, out var sk))
                                         {
-                                            //var txData = Encoding.Default.GetBytes(sk);
-                                            //txData.Append(_delim);
                                             var td = Encoding.Default.GetBytes(sk).Append(_delim);
-                                            //var ggg = ttt.Append(_delim);
                                             _comm.Send([.. td]);
-                                            //_comm.Send(sk + _delim);
                                         }
                                         else
                                         {
@@ -171,16 +167,10 @@ namespace NTerm
                         }
                         else
                         {
-                            Log(Cat.Send, s);
+                            Log(Cat.Send, $"[{s}]");
 
                             var td = Encoding.Default.GetBytes(s).Append(_delim);
-                            //var ggg = ttt.Append(_delim);
                             _comm.Send([.. td]);
-
-
-                            //var txData = Encoding.Default.GetBytes(s);
-                            //txData.Append(_delim);
-                            //_comm.Send(txData);
                         }
                     }
 
@@ -196,7 +186,7 @@ namespace NTerm
                                 if (b[i] == _delim)
                                 {
                                     // End line.
-                                    Print(Cat.Receive, string.Concat(rcvBuffer));
+                                    Print(Cat.Receive, $"[{string.Concat(rcvBuffer)}]");
                                     rcvBuffer.Clear();
                                     Prompt();
                                 }
@@ -205,7 +195,7 @@ namespace NTerm
                                     // Add to buffer.
                                     rcvBuffer.Add((char)b[i]);
 
-                                    // TODO Make non-readable friendlier - option?
+                                    // TODO Make non-readable option?
                                     //if (b[i].IsReadable())
                                     //{
                                     //    rcvBuffer.Add((char)b[i]);
@@ -288,7 +278,7 @@ namespace NTerm
                 // OK process it.
                 var inrdr = new IniReader(args[0]);
 
-                // [nterm] section
+                // [nterm] section section TODO1 =======================
                 foreach (var nval in inrdr.Contents["nterm"].Values)
                 {
                     switch (nval.Key.ToLower())
@@ -328,10 +318,10 @@ namespace NTerm
                     }
                 }
 
-                // [macros] section
+                // [macros] section TODO1 =======================
                 inrdr.Contents["macros"].Values.ForEach(val => _macros[val.Key] = val.Value.Replace("\"", ""));
 
-                // [matchers] section
+                // [matchers] section TODO1 =======================
                 inrdr.Contents["matchers"].Values.ForEach(val => _matchers[val.Key.Replace("\"", "")] = Enum.Parse<ConsoleColorEx>(val.Value, true));
             }
             else // assume explicit cl spec

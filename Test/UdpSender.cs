@@ -7,7 +7,6 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Net;
 using System.Linq;
-//using Ephemera.NBagOfTricks;
 
 
 namespace Test
@@ -18,7 +17,6 @@ namespace Test
         readonly string _host;
         readonly int _port;
         readonly byte _delim;
-        readonly CancellationTokenSource _ts;
         #endregion
 
         /// <summary>
@@ -26,25 +24,30 @@ namespace Test
         /// </summary>
         /// <param name="port"></param>
         /// <param name="delim"></param>
-        /// <param name="ts"></param>
-        public UdpSender(int port, byte delim, CancellationTokenSource ts)
+        public UdpSender(int port, byte delim)
         {
             _port = port;
             _delim = delim;
-            _ts = ts;
             _host = "127.0.0.1";
 
             Console.WriteLine($"Udp using {_host}:{_port}");
         }
 
         /// <summary>
-        /// Test udp in continuous mode.
+        /// Do one broadcast cycle.
         /// </summary>
-        public bool Run()
+        public bool Run(CancellationTokenSource _ts)
         {
             bool err = false;
+            bool done = false;
 
-            while (!_ts.Token.IsCancellationRequested)
+            // UdpClient udpClient = new UdpClient();
+            // string message = "Hello UDP!";
+            // byte[] data = Encoding.UTF8.GetBytes(message);
+            // udpClient.Send(data, data.Length, "127.0.0.1", 11000); // Send to localhost on port 11000
+            // udpClient.Close();        
+
+            while (!done && !_ts.Token.IsCancellationRequested)
             {
                 try
                 {
@@ -53,32 +56,13 @@ namespace Test
                     //=========== Connect ============//
                     using UdpClient client = new();
                     client.Connect(_host, _port);
-                    //Console.WriteLine("Client has connected");
+                    Console.WriteLine("Client has connected");
 
                     //=========== Send ===============//
 
-                    //int ind = 0;
-                    //string send = lines[ind];
-                    //byte[] bytes = [.. Encoding.Default.GetBytes(send), _delim];
-                    //client.Send(bytes, bytes.Length);
-                    //// Next.
-                    //ind += 1;
-                    //if (ind >= lines.Count)
-                    //{
-                    //    //_ts.Cancel();
-                    //    break;
-                    //}
-                    //else
-                    //{
-                    //    // Pacing.
-                    //    Thread.Sleep(ind % 10 == 0 ? 500 : 5);
-                    //}
-
-
-
-                    // Pace response messages. Simulates continuous operationn too.
+                    // Pace response messages to simulate continuous operationn.
                     int ind = 0;
-                    while (!_ts.Token.IsCancellationRequested)
+                    while (!done && !_ts.Token.IsCancellationRequested)
                     {
                         string send = lines[ind];
                         byte[] bytes = [.. Encoding.Default.GetBytes(send), _delim];
@@ -86,8 +70,8 @@ namespace Test
                         ind += 1;
                         if (ind >= lines.Count)
                         {
+                            done = true;
                             //_ts.Cancel();
-                            break;
                         }
                         else
                         {
@@ -95,17 +79,13 @@ namespace Test
                             Thread.Sleep(ind % 10 == 0 ? 500 : 5);
                         }
                     }
-
-
-
-
-
                 }
                 catch (Exception e)
                 {
                     Console.WriteLine($"Exception: {e}");
                     err = true;
-                    _ts.Cancel();
+                    done = true;
+                    // _ts.Cancel();
                 }
             }
 

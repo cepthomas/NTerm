@@ -35,7 +35,7 @@ comm_type = tcp 127.0.0.1 59120
 comm_type = udp 127.0.0.1 59140
 comm_type = serial COM1 9600 8N1 ; => 6|7|8 bits E|O|N parity 0|1 stop bits
 
-; Message delimiter: LF|CR|NUL. Default is `NUL`.
+; Message delimiter: LF|CR|NUL. Default is `NUL` to allow embedded `LF` for line string separation.
 delim = LF
 
 ; Prompt string. If not provided, there is no prompt other than default cursor.

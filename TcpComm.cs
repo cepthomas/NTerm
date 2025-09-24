@@ -107,7 +107,7 @@ namespace NTerm
                         client.SendBufferSize = BUFFER_SIZE;
 
                         var task = client.ConnectAsync(_host, _port);
-                        if (!task.Wait(CONNECT_TIME, token)) // TODO1 ?
+                        if (!task.Wait(CONNECT_TIME, token)) // TODO ?
                         {
                            //return (OpStatus.ConnectTimeout, "", resp);
                         }
@@ -198,7 +198,8 @@ namespace NTerm
                 case OperationCanceledException: // Usually connect timeout. Ignore and retry later.
                     break;
 
-                case SocketException ex: // Some are expected and recoverable. https://learn.microsoft.com/en-us/windows/win32/winsock/windows-sockets-error-codes-2
+                case SocketException ex: // Some are expected and recoverable.
+                    // https://learn.microsoft.com/en-us/windows/win32/winsock/windows-sockets-error-codes-2
                     int[] valid = [10053, 10054, 10060, 10061, 10064];
                     if (valid.Contains(ex.NativeErrorCode))
                     {
@@ -208,10 +209,6 @@ namespace NTerm
                     {
                         // Just Notify/log and carry on.
                         Notif?.Invoke(this, new(Cat.None, e.Message));
-
-                        // // All other errors are considered fatal - bubble up to App to handle.
-                        // fatal = true;
-                        // throw e;
                     }
                     break;
 
@@ -222,10 +219,6 @@ namespace NTerm
                     // Just Notify/log and carry on.
                     Notif?.Invoke(this, new(Cat.None, e.Message));
                     break;
-
-                    // // All other errors are considered fatal - bubble up to App to handle.
-                    // fatal = true;
-                    // throw e;
             }
 
             return fatal;

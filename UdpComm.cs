@@ -21,8 +21,6 @@ namespace NTerm
         readonly string _host;
         readonly int _port;
         readonly ConcurrentQueue<byte[]> _qRecv = new();
-        //const int CONNECT_TIME = 50;
-        //const int RESPONSE_TIME = 1000;
         const int BUFFER_SIZE = 4096;
         #endregion
 
@@ -85,7 +83,7 @@ namespace NTerm
 
         /// <summary>Main work loop.</summary>
         /// <see cref="IComm"/>
-        public void Run(CancellationToken token)
+        public void Run_orig(CancellationToken token)
         {
             //https://learn.microsoft.com/en-us/dotnet/api/system.net.sockets.udpclient
 
@@ -98,7 +96,7 @@ namespace NTerm
 
 
                     //=========== Send ============//
-                    // Not supported.
+                    // Not implemented.
 
 
                     //=========== Receive ==========//
@@ -111,14 +109,14 @@ namespace NTerm
                         int byteCount = client.Client.Receive(rxData);
                         if (byteCount > 0)
                         {
-                            _qRecv.Enqueue(rxData[..byteCount]);//    bytes.Result.Buffer);
+                            _qRecv.Enqueue(rxData[..byteCount]);
                         }
 
                         // async
-                        //var bytes = client.ReceiveAsync(token);
-                        //if (bytes.Result.Buffer.Length > 0)
+                        //var task = client.ReceiveAsync(token);
+                        //if (task.Result.Buffer.Length > 0)
                         //{
-                        //    _qRecv.Enqueue(bytes.Result.Buffer);
+                        //    _qRecv.Enqueue(task.Result.Buffer);
                         //}
                         //else
                         //{
@@ -133,6 +131,32 @@ namespace NTerm
 
                 // Don't be greedy.
                 Thread.Sleep(5);
+            }
+        }
+
+        public void Run(CancellationToken token)
+        {
+            UdpClient listener = new(_port);
+            IPEndPoint groupEP = new(IPAddress.Any, _port);
+
+            try
+            {
+                while (true)
+                {
+                    Console.WriteLine("Waiting for broadcast");
+                    byte[] bytes = listener.Receive(ref groupEP);
+
+                    Console.WriteLine($"Received broadcast from {groupEP} :");
+                    Console.WriteLine($" {Encoding.ASCII.GetString(bytes, 0, bytes.Length)}");
+                }
+            }
+            catch (SocketException e)
+            {
+                Console.WriteLine(e);
+            }
+            finally
+            {
+                listener.Close();
             }
         }
 
@@ -157,7 +181,8 @@ namespace NTerm
 
             switch (e)
             {
-                case SocketException ex: // Some are expected and recoverable. https://learn.microsoft.com/en-us/windows/win32/winsock/windows-sockets-error-codes-2
+                case SocketException ex: // Some are expected and recoverable.
+                    // https://learn.microsoft.com/en-us/windows/win32/winsock/windows-sockets-error-codes-2
                     int[] valid = [10053, 10054, 10060, 10061, 10064];
                     if (valid.Contains(ex.NativeErrorCode))
                     {
@@ -167,10 +192,6 @@ namespace NTerm
                     {
                         // Just Notify/log and carry on.
                         Notif?.Invoke(this, new(Cat.None, e.Message));
-
-                        // // All others are considered fatal - bubble up to App to handle.
-                        // fatal = true;
-                        // throw e;
                     }
                     break;
 
@@ -178,10 +199,6 @@ namespace NTerm
                     // Just Notify/log and carry on.
                     Notif?.Invoke(this, new(Cat.None, e.Message));
                     break;
-
-                    //  // All others are considered fatal - bubble up to App to handle.
-                    // fatal = true;
-                    // throw e;
             }
 
             return fatal;

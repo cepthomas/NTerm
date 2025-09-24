@@ -16,7 +16,6 @@ namespace NTerm
         #region Fields
         readonly ConcurrentQueue<byte[]> _qSend = new();
         readonly ConcurrentQueue<byte[]> _qRecv = new();
-        byte[] _loopbackMarker = [(byte)'X', (byte)'Y', (byte)'Z'];
         #endregion
 
         #region Lifecycle
@@ -73,7 +72,7 @@ namespace NTerm
                 if (_qSend.TryDequeue(out byte[]? rd))
                 {
                     // Loopback. Can modify it for test.
-                    _qRecv.Enqueue(_loopbackMarker);
+                    _qRecv.Enqueue(Encoding.Default.GetBytes("LP:"));
                     _qRecv.Enqueue(rd);
                 }
 

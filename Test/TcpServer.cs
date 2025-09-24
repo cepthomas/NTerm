@@ -6,7 +6,6 @@ using System.Net;
 using System.Net.Sockets;
 using System.Text;
 using System.Threading;
-//using Ephemera.NBagOfTricks;
 
 
 namespace Test
@@ -17,7 +16,6 @@ namespace Test
         readonly string _host;
         readonly int _port;
         readonly byte _delim;
-        readonly CancellationTokenSource _ts;
         //const int CONNECT_TIME = 50;
         //const int RESPONSE_TIME = 1000;
         //const int BUFFER_SIZE = 4096;
@@ -29,11 +27,10 @@ namespace Test
         /// <param name="port"></param>
         /// <param name="delim"></param>
         /// <param name="ts"></param>
-        public TcpServer(int port, byte delim, CancellationTokenSource ts)
+        public TcpServer(int port, byte delim)
         {
             _port = port;
             _delim = delim;
-            _ts = ts;
             _host = "127.0.0.1";
 
             Console.WriteLine($"Tcp using {_host}:{_port}");
@@ -42,7 +39,7 @@ namespace Test
         /// <summary>
         /// Test tcp in command/response mode.
         /// </summary>
-        public bool Run()
+        public bool Run(CancellationTokenSource _ts)
         {
             bool err = false;
 
@@ -56,7 +53,7 @@ namespace Test
                     using var server = TcpListener.Create(_port);
                     server.Start();
 
-                    using var client = server.AcceptTcpClient(); // TODO? AcceptTcpClientAsync(token)
+                    using var client = server.AcceptTcpClient(); // TODO1? AcceptTcpClientAsync(token)
                     Console.WriteLine("Client has connected");
                     using var stream = client.GetStream();
 
