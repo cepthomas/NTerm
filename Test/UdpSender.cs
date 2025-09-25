@@ -41,12 +41,6 @@ namespace Test
             bool err = false;
             bool done = false;
 
-            // UdpClient udpClient = new UdpClient();
-            // string message = "Hello UDP!";
-            // byte[] data = Encoding.UTF8.GetBytes(message);
-            // udpClient.Send(data, data.Length, "127.0.0.1", 11000); // Send to localhost on port 11000
-            // udpClient.Close();        
-
             while (!done && !_ts.Token.IsCancellationRequested)
             {
                 try

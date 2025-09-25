@@ -195,7 +195,7 @@ namespace NTerm
                                     // Add to buffer.
                                     rcvBuffer.Add((char)b[i]);
 
-                                    // TODO Make non-readable option?
+                                    // TODO non-readable option?
                                     //if (b[i].IsReadable())
                                     //{
                                     //    rcvBuffer.Add((char)b[i]);
@@ -278,7 +278,12 @@ namespace NTerm
                 // OK process it.
                 var inrdr = new IniReader(args[0]);
 
-                // [nterm] section section TODO1 =======================
+                if (!inrdr.Contents.ContainsKey("nterm"))
+                {
+                    throw new ConfigException($"Section [nterm] is required");
+                }
+
+                // [nterm] section
                 foreach (var nval in inrdr.Contents["nterm"].Values)
                 {
                     switch (nval.Key.ToLower())
@@ -318,11 +323,17 @@ namespace NTerm
                     }
                 }
 
-                // [macros] section TODO1 =======================
-                inrdr.Contents["macros"].Values.ForEach(val => _macros[val.Key] = val.Value.Replace("\"", ""));
+                // [macros] section
+                if (inrdr.Contents.ContainsKey("macros"))
+                {
+                    inrdr.Contents["macros"].Values.ForEach(val => _macros[val.Key] = val.Value.Replace("\"", ""));
+                }
 
-                // [matchers] section TODO1 =======================
-                inrdr.Contents["matchers"].Values.ForEach(val => _matchers[val.Key.Replace("\"", "")] = Enum.Parse<ConsoleColorEx>(val.Value, true));
+                // [matchers] section
+                if (inrdr.Contents.ContainsKey("matchers"))
+                {
+                    inrdr.Contents["matchers"].Values.ForEach(val => _matchers[val.Key.Replace("\"", "")] = Enum.Parse<ConsoleColorEx>(val.Value, true));
+                }
             }
             else // assume explicit cl spec
             {

@@ -83,80 +83,30 @@ namespace NTerm
 
         /// <summary>Main work loop.</summary>
         /// <see cref="IComm"/>
-        public void Run_orig(CancellationToken token)
-        {
-            //https://learn.microsoft.com/en-us/dotnet/api/system.net.sockets.udpclient
-
-            while (!token.IsCancellationRequested)
-            {
-                try
-                {
-                    //=========== Connect ============//
-                    using UdpClient client = new(_host, _port);
-
-
-                    //=========== Send ============//
-                    // Not implemented.
-
-
-                    //=========== Receive ==========//
-                    bool rcvDone = false;
-                    byte[] rxData = new byte[BUFFER_SIZE];
-                    while (!rcvDone)
-                    {
-                        // Get data.
-
-                        int byteCount = client.Client.Receive(rxData);
-                        if (byteCount > 0)
-                        {
-                            _qRecv.Enqueue(rxData[..byteCount]);
-                        }
-
-                        // async
-                        //var task = client.ReceiveAsync(token);
-                        //if (task.Result.Buffer.Length > 0)
-                        //{
-                        //    _qRecv.Enqueue(task.Result.Buffer);
-                        //}
-                        //else
-                        //{
-                        //    rcvDone = true;
-                        //}
-                    }
-                }
-                catch (Exception e)
-                {
-                    ProcessException(e);
-                }
-
-                // Don't be greedy.
-                Thread.Sleep(5);
-            }
-        }
-
         public void Run(CancellationToken token)
         {
-            UdpClient listener = new(_port);
-            IPEndPoint groupEP = new(IPAddress.Any, _port);
+            //=========== Connect ============//
+            using var listener = new UdpClient(_port);
+            IPEndPoint ep = new(IPAddress.Any, _port);
 
             try
             {
-                while (true)
+                while (!token.IsCancellationRequested)
                 {
-                    Console.WriteLine("Waiting for broadcast");
-                    byte[] bytes = listener.Receive(ref groupEP);
+                    //=========== Receive ==========//
+                    // sync
+                    byte[] bytes = listener.Receive(ref ep);
+                    //Console.WriteLine($"Received broadcast from {ep} :");
+                    Console.WriteLine($"{Encoding.ASCII.GetString(bytes, 0, bytes.Length)}");
 
-                    Console.WriteLine($"Received broadcast from {groupEP} :");
-                    Console.WriteLine($" {Encoding.ASCII.GetString(bytes, 0, bytes.Length)}");
+                    // TODO async?
+                    //var task = await udpClient.ReceiveAsync();
+                    //s = Encoding.ASCII.GetString(task.Buffer);
                 }
             }
-            catch (SocketException e)
+            catch (Exception e)
             {
-                Console.WriteLine(e);
-            }
-            finally
-            {
-                listener.Close();
+                ProcessException(e);
             }
         }
 

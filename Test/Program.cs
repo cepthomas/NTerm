@@ -38,15 +38,14 @@ namespace Test
         {
             using CancellationTokenSource ts = new();
             //using Task taskKeyboard = Task.Run(() => _qUserCli.Enqueue(Console.ReadLine() ?? ""));
-            //using Task taskKeyboard = Task.Run(() => DoKeyboard(ts.Token));
 
             try
             {;
-                //DoBasicTarget();
+                DoBasicTarget();
 
                 //DoConfigTarget();
 
-                DoTcpTarget();
+                //DoTcpTarget();
 
                 //DoUdpTarget();
 

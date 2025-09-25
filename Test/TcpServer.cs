@@ -16,9 +16,6 @@ namespace Test
         readonly string _host;
         readonly int _port;
         readonly byte _delim;
-        //const int CONNECT_TIME = 50;
-        //const int RESPONSE_TIME = 1000;
-        //const int BUFFER_SIZE = 4096;
         #endregion
 
         /// <summary>
