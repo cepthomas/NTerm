@@ -19,6 +19,9 @@ namespace NTerm
     public class App : IDisposable
     {
         #region Fields
+        /// <summary>Current config.</summary>
+        Config _config = new();
+
         /// <summary>Client comm flavor.</summary>
         IComm _comm = new NullComm();
 
@@ -35,29 +38,6 @@ namespace NTerm
         readonly TimeIt _tmit = new();
         #endregion
 
-        #region Config
-        /// <summary>Color for error messages.</summary>
-        ConsoleColorEx _errorColor = ConsoleColorEx.Red; // default
-
-        /// <summary>Color for internal messages.</summary>
-        ConsoleColorEx _infoColor = ConsoleColorEx.Blue; // default
-
-        /// <summary>Prompt. Can be empty for continuous receiving.</summary>
-        string _prompt = ""; // default
-
-        /// <summary>Indicator for application functions.</summary>
-        char _meta = '!'; // default
-
-        /// <summary>Message delimiter: LF=10 CR=13 NUL=0.</summary>
-        byte _delim = 0; // default NUL
-
-        /// <summary>User macros.</summary>
-        readonly Dictionary<string, string> _macros = [];
-
-        /// <summary>Colorizing text.</summary>
-        readonly Dictionary<string, ConsoleColorEx> _matchers = [];
-        #endregion
-
         /// <summary>
         /// Build me one and make it go.
         /// </summary>
@@ -71,12 +51,12 @@ namespace NTerm
 
                 ProcessAppCommandLine();
 
-                Print(Cat.None, $"NTerm using {_comm}");
+                Print(Cat.None, $"NTerm using {_comm} {DateTime.Now}");
 
                 // Go forever.
                 Run();
             }
-            // Any exception that arrivess here is considered fatal. Inform and exit.
+            // Any exception that arrives here is considered fatal. Inform and exit.
             catch (ConfigException ex) // ini content error
             {
                 Print(Cat.Error, $"{ex.Message}");
@@ -90,6 +70,7 @@ namespace NTerm
             }
             catch (Exception ex) // other error
             {
+                Console.WriteLine($"{ex.GetType()}: {ex.Message}");
                 Print(Cat.Error, $"{ex.GetType()}: {ex.Message}");
                 Log(Cat.Error, ex.ToString());
                 Environment.Exit(3);
@@ -131,7 +112,7 @@ namespace NTerm
                         if (s.Length == 0) return;
 
                         // Check for meta key.
-                        if (s[0] == _meta)
+                        if (s[0] == _config.MetaInd)
                         {
                             if (s.Length > 1)
                             {
@@ -150,9 +131,9 @@ namespace NTerm
                                         break;
 
                                     default: // user macro?
-                                        if (_macros.TryGetValue(mk, out var sk))
+                                        if (_config.Macros.TryGetValue(mk, out var sk))
                                         {
-                                            var td = Encoding.Default.GetBytes(sk).Append(_delim);
+                                            var td = Encoding.Default.GetBytes(sk).Append(_config.Delim);
                                             _comm.Send([.. td]);
                                         }
                                         else
@@ -169,7 +150,7 @@ namespace NTerm
                         {
                             Log(Cat.Send, $"[{s}]");
 
-                            var td = Encoding.Default.GetBytes(s).Append(_delim);
+                            var td = Encoding.Default.GetBytes(s).Append(_config.Delim);
                             _comm.Send([.. td]);
                         }
                     }
@@ -183,7 +164,7 @@ namespace NTerm
                             // Look for delimiter or just buffer it.
                             for (int i = 0; i < b.Length; i++)
                             {
-                                if (b[i] == _delim)
+                                if (b[i] == _config.Delim)
                                 {
                                     // End line.
                                     Print(Cat.Receive, $"[{string.Concat(rcvBuffer)}]");
@@ -195,7 +176,7 @@ namespace NTerm
                                     // Add to buffer.
                                     rcvBuffer.Add((char)b[i]);
 
-                                    // TODO non-readable option?
+                                    // TODO format non-readable option?
                                     //if (b[i].IsReadable())
                                     //{
                                     //    rcvBuffer.Add((char)b[i]);
@@ -265,95 +246,20 @@ namespace NTerm
                 return;
             }
 
-            List<string> commSpec = [];
-
-            // Check for ini file first.
-            if (args[0].EndsWith(".ini"))
-            {
-                if (!File.Exists(args[0]))
-                {
-                    throw new ConfigException($"Invalid config file: [{args[0]}]");
-                }
-
-                // OK process it.
-                var inrdr = new IniReader(args[0]);
-
-                if (!inrdr.Contents.ContainsKey("nterm"))
-                {
-                    throw new ConfigException($"Section [nterm] is required");
-                }
-
-                // [nterm] section
-                foreach (var nval in inrdr.Contents["nterm"].Values)
-                {
-                    switch (nval.Key.ToLower())
-                    {
-                        case "comm_type":
-                            commSpec = nval.Value.SplitByToken(" ");
-                            break;
-
-                        case "err_color":
-                            _errorColor = Enum.Parse<ConsoleColorEx>(nval.Value, true);
-                            break;
-
-                        case "info_color":
-                            _infoColor = Enum.Parse<ConsoleColorEx>(nval.Value, true);
-                            break;
-
-                        case "prompt":
-                            _prompt = nval.Value;
-                            break;
-
-                        case "meta":
-                            _meta = nval.Value[0];
-                            break;
-
-                        case "delim":
-                            _delim = nval.Value switch
-                            {
-                                "LF" => 10,
-                                "CR" => 13,
-                                "NUL" => 0,
-                                _ => throw new ConfigException($"Invalid delim: [{nval.Value}]"),
-                            };
-                            break;
-
-                        default:
-                            throw new ConfigException($"Invalid [nterm] section key: [{nval.Key}]");
-                    }
-                }
-
-                // [macros] section
-                if (inrdr.Contents.ContainsKey("macros"))
-                {
-                    inrdr.Contents["macros"].Values.ForEach(val => _macros[val.Key] = val.Value.Replace("\"", ""));
-                }
-
-                // [matchers] section
-                if (inrdr.Contents.ContainsKey("matchers"))
-                {
-                    inrdr.Contents["matchers"].Values.ForEach(val => _matchers[val.Key.Replace("\"", "")] = Enum.Parse<ConsoleColorEx>(val.Value, true));
-                }
-            }
-            else // assume explicit cl spec
-            {
-                commSpec = args;
-            }
+            _config = new();
+            _config.Load(args);
 
             // Process comm spec.
-            if (commSpec.Count > 0)
+            _comm = _config.CommType[0].ToLower() switch
             {
-                _comm = commSpec[0].ToLower() switch
-                {
-                    "null" => new NullComm(),
-                    "tcp" => new TcpComm(commSpec),
-                    "udp" => new UdpComm(commSpec),
-                    "serial" => new SerialComm(commSpec),
-                    _ => throw new ConfigException($"Invalid comm type: [{commSpec[0]}]"),
-                };
+                "null" => new NullComm(),
+                "tcp" => new TcpComm(_config.CommType),
+                "udp" => new UdpComm(_config.CommType),
+                "serial" => new SerialComm(_config.CommType),
+                _ => throw new ConfigException($"Invalid comm type: [{_config.CommType[0]}]"),
+            };
 
-                _comm.Notif += (object? _, NotifEventArgs e) => { Print(e.Cat, e.Message); };
-            }
+            _comm.Notif += (object? _, NotifEventArgs e) => { Print(e.Cat, e.Message); };
         }
 
         /// <summary>
@@ -365,15 +271,15 @@ namespace NTerm
         {
             var catColor = cat switch
             {
-                Cat.Error => _errorColor,
-                Cat.Info => _infoColor,
+                Cat.Error => _config.ErrorColor,
+                Cat.Info => _config.InfoColor,
                 _ => ConsoleColorEx.None
             };
 
             //  If color not explicitly specified, look for text matches.
             if (catColor == ConsoleColorEx.None)
             {
-                foreach (var m in _matchers)
+                foreach (var m in _config.Matchers)
                 {
                     if (text.Contains(m.Key)) // faster than compiled regexes
                     {
@@ -429,7 +335,7 @@ namespace NTerm
         /// </summary>
         void Prompt()
         {
-            Console.Write(_prompt);
+            Console.Write(_config.Prompt);
         }
 
         /// <summary>
@@ -439,28 +345,7 @@ namespace NTerm
         {
             List<string> docs = ["Main doc at https://github.com/cepthomas/NTerm/blob/main/README.md"];
 
-            docs.Add(Environment.NewLine);
-            docs.Add($"# Current Configuration");
-            docs.Add($"- comm_type:{_comm}");
-            docs.Add($"- delim:{_delim}");
-            docs.Add($"- prompt:{_prompt}");
-            docs.Add($"- meta:{_meta}");
-            docs.Add($"- info_color:{_infoColor}");
-            docs.Add($"- err_color:{_errorColor}");
-
-            if (_macros.Count > 0)
-            {
-                docs.Add(Environment.NewLine);
-                docs.Add($"macros:");
-                _macros.ForEach(m => docs.Add($"- {m.Key}:{m.Value}"));
-            }
-
-            if (_matchers.Count > 0)
-            {
-                docs.Add(Environment.NewLine);
-                docs.Add($"matchers:");
-                _matchers.ForEach(m => docs.Add($"- {m.Key}:{m.Value}"));
-            }
+            docs.AddRange(_config.Doc());
 
             var sp = SerialPort.GetPortNames().ToList();
             if (sp.Count > 0)

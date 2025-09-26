@@ -31,7 +31,7 @@ namespace NTerm
         #region Lifecycle
         /// <summary>Constructor.</summary>
         /// <param name="config"></param>
-        /// <exception cref="IniSyntaxException"></exception>
+        /// <exception cref="ConfigException"></exception>
         public TcpComm(List<string> config)
         {
             try
@@ -42,7 +42,7 @@ namespace NTerm
             catch (Exception e)
             {
                 var msg = $"Invalid args: {e.Message}";
-                throw new IniSyntaxException(msg, -1);
+                throw new ConfigException(msg);
             }
         }
 

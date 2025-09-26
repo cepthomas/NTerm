@@ -27,7 +27,7 @@ namespace NTerm
         #region Lifecycle
         /// <summary>Constructor.</summary>
         /// <param name="config"></param>
-        /// <exception cref="ArgumentException"></exception>
+        /// <exception cref="ConfigException"></exception>
         public UdpComm(List<string> config)
         {
            try
@@ -38,7 +38,7 @@ namespace NTerm
            catch (Exception e)
            {
                var msg = $"Invalid args: {e.Message}";
-               throw new ArgumentException(msg);
+               throw new ConfigException(msg);
            }
         }
 
@@ -95,13 +95,14 @@ namespace NTerm
                 {
                     //=========== Receive ==========//
                     // sync
-                    byte[] bytes = listener.Receive(ref ep);
+                    //byte[] bytes = listener.Receive(ref ep);
                     //Console.WriteLine($"Received broadcast from {ep} :");
-                    Console.WriteLine($"{Encoding.ASCII.GetString(bytes, 0, bytes.Length)}");
 
-                    // TODO async?
-                    //var task = await udpClient.ReceiveAsync();
-                    //s = Encoding.ASCII.GetString(task.Buffer);
+                    // async
+                    var task = listener.ReceiveAsync(token);
+                    byte[] bytes = task.Result.Buffer;
+
+                    Console.WriteLine($"{Encoding.ASCII.GetString(bytes, 0, bytes.Length)}");
                 }
             }
             catch (Exception e)

@@ -50,7 +50,7 @@ namespace Test
                     using var server = TcpListener.Create(_port);
                     server.Start();
 
-                    using var client = server.AcceptTcpClient(); // TODO1? AcceptTcpClientAsync(token)
+                    using var client = server.AcceptTcpClient(); // TODO? AcceptTcpClientAsync(token)
                     Console.WriteLine("Client has connected");
                     using var stream = client.GetStream();
 

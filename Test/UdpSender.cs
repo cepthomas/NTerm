@@ -36,12 +36,11 @@ namespace Test
         /// <summary>
         /// Do one broadcast cycle.
         /// </summary>
-        public bool Run(CancellationTokenSource _ts)
+        public void Run(CancellationTokenSource ts)
         {
-            bool err = false;
             bool done = false;
 
-            while (!done && !_ts.Token.IsCancellationRequested)
+            while (!done && !ts.Token.IsCancellationRequested)
             {
                 try
                 {
@@ -53,10 +52,9 @@ namespace Test
                     Console.WriteLine("Client has connected");
 
                     //=========== Send ===============//
-
                     // Pace response messages to simulate continuous operationn.
                     int ind = 0;
-                    while (!done && !_ts.Token.IsCancellationRequested)
+                    while (!done && !ts.Token.IsCancellationRequested)
                     {
                         string send = lines[ind];
                         byte[] bytes = [.. Encoding.Default.GetBytes(send), _delim];
@@ -77,15 +75,12 @@ namespace Test
                 catch (Exception e)
                 {
                     Console.WriteLine($"Exception: {e}");
-                    err = true;
                     done = true;
                     // _ts.Cancel();
                 }
             }
 
             Console.WriteLine($"Udp done");
-
-            return err;
         }
     }
 }

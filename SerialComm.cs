@@ -30,7 +30,7 @@ namespace NTerm
         #region Lifecycle
         /// <summary>Constructor.</summary>
         /// <param name="config"></param>
-        /// <exception cref="IniSyntaxException"></exception>
+        /// <exception cref="ConfigException"></exception>
         public SerialComm(List<string> config)
         {
             _serialPort = new();
@@ -48,7 +48,7 @@ namespace NTerm
                     '6' => 6,
                     '7' => 7,
                     '8' => 8,
-                    _ => throw new ArgumentException($"Invalid data bits:{config[2]}"),
+                    _ => throw new ConfigException($"Invalid data bits:{config[2]}"),
                 };
 
                 _serialPort.Parity = config[3][1] switch
@@ -56,7 +56,7 @@ namespace NTerm
                     'E' => Parity.Even,
                     'O' => Parity.Odd,
                     'N' => Parity.None,
-                    _ => throw new ArgumentException($"Invalid parity:{config[2]}"),
+                    _ => throw new ConfigException($"Invalid parity:{config[2]}"),
                 };
 
                 _serialPort.StopBits = config[3][2] switch
@@ -64,7 +64,7 @@ namespace NTerm
                     '0' => StopBits.None,
                     '1' => StopBits.One,
                     //'15' => StopBits.OnePointFive,
-                    _ => throw new ArgumentException($"Invalid stop bits:{config[2]}"),
+                    _ => throw new ConfigException($"Invalid stop bits:{config[2]}"),
                 };
 
                 // Other params.
@@ -78,7 +78,7 @@ namespace NTerm
             {
                 var msg = $"Invalid args: {e.Message}";
                 _config = "invalid";
-                throw new IniSyntaxException(msg, -1);
+                throw new ConfigException(msg);
             }
         }
 

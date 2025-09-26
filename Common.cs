@@ -14,9 +14,6 @@ namespace NTerm
     /// <summary>General categories, mainly for logging.</summary>
     public enum Cat { None, Send, Receive, Error, Info }
 
-    /// <summary>Reporting user config errors.</summary>
-    public class ConfigException(string message) : Exception(message);
-
     /// <summary>Comm has something to tell the user.</summary>
     public class NotifEventArgs(Cat cat, string msg) : EventArgs
     {
