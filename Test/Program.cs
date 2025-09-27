@@ -1,3 +1,4 @@
+using Ephemera.NBagOfTricks;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -14,8 +15,11 @@ using System.Threading.Tasks;
 
 namespace Test
 {
+
     internal class Program
     {
+        static void Main() { new Program().Run(); }
+
         #region Fields
         /// <summary>User input</summary>
         readonly ConcurrentQueue<string> _qUserCli = new();
@@ -23,11 +27,11 @@ namespace Test
         /// <summary>LF=10  CR=13  NUL=0</summary>
         byte _delim = 0;
 
-        /// <summary>For _runTarget</summary>
-        const string CONFIG_FILE = @"C:\Dev\Apps\NTerm\Test\test_config.ini";
+        /// <summary>Config to use</summary>
+        string _configFile = "???";
 
-        /// <summary>For _runTarget</summary>
-        const string NTERM_EXE = @"C:\Dev\Apps\NTerm\bin\net8.0-windows\win-x64\NTerm.exe";
+        /// <summary>Target executable</summary>
+        string _ntermExe = "???";
         #endregion
 
         /// <summary>
@@ -35,9 +39,12 @@ namespace Test
         /// </summary>
         public void Run()
         {
+            Console.WriteLine($"========= Test =========");
+            _configFile = Path.Combine(MiscUtils.GetSourcePath(), "test_config.ini");
+            _ntermExe = Path.Combine(MiscUtils.GetSourcePath(), "..", "bin", "net8.0-windows", "win-x64", "NTerm.exe");
+
             using CancellationTokenSource ts = new();
             //using Task taskKeyboard = Task.Run(() => _qUserCli.Enqueue(Console.ReadLine() ?? ""));
-            Console.WriteLine($"========= Test =========");
 
             try
             {
@@ -66,8 +73,8 @@ namespace Test
             Console.WriteLine($"DoBasicTarget()");
             List<string> config = [
                 "[nterm]", "comm_type = null", "delim = NUL", "prompt = >", "meta = -"];
-            File.WriteAllLines(CONFIG_FILE, config);
-            var proc = RunTarget(CONFIG_FILE);
+            File.WriteAllLines(_configFile, config);
+            var proc = RunTarget(_configFile);
         }
 
         /// <summary>
@@ -81,8 +88,8 @@ namespace Test
                 "info_color = darkcyan", "err_color = green",
             "[macros]", "dox = \"do xxxxxxx\"", "s3 = \"hey, send 333333333\"", "tm = \"  xmagentax   -yellow-  \"",
             "[matchers]", "\"mag\" = magenta", "\"yel\" = yellow"];
-            File.WriteAllLines(CONFIG_FILE, config);
-            var proc = RunTarget(CONFIG_FILE);
+            File.WriteAllLines(_configFile, config);
+            var proc = RunTarget(_configFile);
         }
 
         /// <summary>
@@ -97,8 +104,8 @@ namespace Test
                 "info_color = darkcyan", "err_color = green",
             "[macros]", "dox = \"do xxxxxxx\"", "s3 = \"hey, send 333333333\"", "tm = \"  xmagentax   -yellow-  \"",
             "[matchers]", "\"mag\" = magenta", "\"yel\" = yellow"];
-            File.WriteAllLines(CONFIG_FILE, config);
-            var proc = RunTarget(CONFIG_FILE);
+            File.WriteAllLines(_configFile, config);
+            var proc = RunTarget(_configFile);
             TcpServer srv = new(59120, _delim);
             var err = srv.Run(ts);
         }
@@ -115,8 +122,8 @@ namespace Test
                 "info_color = darkcyan", "err_color = green",
             "[macros]", "dox = \"do xxxxxxx\"", "s3 = \"hey, send 333333333\"", "tm = \"  xmagentax   -yellow-  \"",
             "[matchers]", "\"mag\" = magenta", "\"yel\" = yellow"];
-            File.WriteAllLines(CONFIG_FILE, config);
-            var proc = RunTarget(CONFIG_FILE);
+            File.WriteAllLines(_configFile, config);
+            var proc = RunTarget(_configFile);
             UdpSender srv = new(59140, _delim);
             srv.Run(ts);
         }
@@ -149,7 +156,7 @@ namespace Test
         /// <param name="args"></param>
         Process RunTarget(string args, bool capture = false)
         {
-            ProcessStartInfo pinfo = new(NTERM_EXE, args)
+            ProcessStartInfo pinfo = new(_ntermExe, args)
             {
                 UseShellExecute = !capture,
                 RedirectStandardOutput = capture,
@@ -178,14 +185,6 @@ namespace Test
             // }
 
             return proc;
-        }
-
-        /// <summary>
-        /// Big bang.
-        /// </summary>
-        static void Main()
-        {
-            new Program().Run();
         }
     }
 }

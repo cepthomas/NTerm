@@ -107,9 +107,9 @@ namespace NTerm
                         client.SendBufferSize = BUFFER_SIZE;
 
                         var task = client.ConnectAsync(_host, _port);
-                        if (!task.Wait(CONNECT_TIME, token)) // TODO ?
+                        if (!task.Wait(CONNECT_TIME, token))
                         {
-                           //return (OpStatus.ConnectTimeout, "", resp);
+                           //return (OpStatus.ConnectTimeout, "", resp); // TODO ?
                         }
                         using var stream = client.GetStream();
 

@@ -176,7 +176,7 @@ namespace NTerm
                                     // Add to buffer.
                                     rcvBuffer.Add((char)b[i]);
 
-                                    // TODO format non-readable option?
+                                    // TODO option to format non-readable?
                                     //if (b[i].IsReadable())
                                     //{
                                     //    rcvBuffer.Add((char)b[i]);

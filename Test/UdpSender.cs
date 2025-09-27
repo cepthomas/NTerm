@@ -7,6 +7,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Net;
 using System.Linq;
+using Ephemera.NBagOfTricks;
 
 
 namespace Test
@@ -44,7 +45,8 @@ namespace Test
             {
                 try
                 {
-                    var lines = File.ReadAllLines(@"C:\Dev\Apps\NTerm\Test\ross_2.txt").ToList();
+                    var tf = Path.Combine(MiscUtils.GetSourcePath(), "ross_2.txt");
+                    var lines = File.ReadAllLines(tf).ToList();
 
                     //=========== Connect ============//
                     using UdpClient client = new();

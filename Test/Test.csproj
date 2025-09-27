@@ -15,6 +15,7 @@
         <ImplicitUsings>disable</ImplicitUsings>
         <OutputPath>bin\</OutputPath>
         <SatelliteResourceLanguages>none</SatelliteResourceLanguages>
+        <NoWarn>CA1416</NoWarn>
         <!-- <NoWarn>1701;1702;CA1816;CA1822</NoWarn> -->
 
     </PropertyGroup>

@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Ephemera.NBagOfTricks;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -83,7 +84,8 @@ namespace Test
                             break;
 
                         case "l": // large payload - continuous
-                            response = [.. File.ReadAllLines(@"C:\Dev\Apps\NTerm\Test\ross_2.txt")];
+                            var tf = Path.Combine(MiscUtils.GetSourcePath(), "ross_2.txt");
+                            response = [.. File.ReadAllLines(tf).ToList()];
                             break;
 
                         case "s": // small payload
@@ -95,7 +97,7 @@ namespace Test
                             break;
 
                         case "c": // ansi color
-                            response = [$"Colors!!! \u001b[91mRED \u001b[92m GREEN \u001b[94mBLUE \u001b[0mNONE"];
+                            response = [$"Colors!!! \u001b[91mRED \u001b[92mGREEN \u001b[94mBLUE \u001b[0mNONE"];
                             break;
 
                         case "q":

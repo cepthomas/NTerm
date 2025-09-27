@@ -16,7 +16,7 @@ namespace NTerm
 {
     /// <summary>Serial port comm.</summary>
     /// <see cref="IComm"/>
-    public class SerialComm : IComm // TODO needs hardware.
+    public class SerialComm : IComm // TODO need hardware.
     {
         #region Fields
         readonly SerialPort _serialPort;
