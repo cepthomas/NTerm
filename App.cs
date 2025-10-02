@@ -11,7 +11,6 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using Ephemera.NBagOfTricks;
-using Ephemera.NBagOfUis;
 
 
 namespace NTerm
@@ -37,6 +36,11 @@ namespace NTerm
         /// <summary>For timing measurements.</summary>
         readonly TimeIt _tmit = new();
         #endregion
+
+        static void Main(string[] args)
+        {
+            using var app = new App();
+        }
 
         /// <summary>
         /// Build me one and make it go.

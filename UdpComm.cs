@@ -98,11 +98,13 @@ namespace NTerm
                     //byte[] bytes = listener.Receive(ref ep);
                     //Console.WriteLine($"Received broadcast from {ep} :");
 
-                    // async
+                    // async(ish)
                     var task = listener.ReceiveAsync(token);
-                    byte[] bytes = task.Result.Buffer;
-
-                    Console.WriteLine($"{Encoding.ASCII.GetString(bytes, 0, bytes.Length)}");
+                    if (task.IsCompleted)
+                    {
+                        byte[] bytes = task.Result.Buffer;
+                        Console.WriteLine($"{Encoding.ASCII.GetString(bytes, 0, bytes.Length)}");
+                    }
                 }
             }
             catch (Exception e)

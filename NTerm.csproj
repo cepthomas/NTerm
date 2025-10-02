@@ -1,7 +1,6 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-
     <OutputType>Exe</OutputType>
     <UseWindowsForms>true</UseWindowsForms>
     <OutputPath>bin\</OutputPath>
@@ -13,42 +12,12 @@
     <ApplicationIcon>cucaracha.ico</ApplicationIcon>
     <SatelliteResourceLanguages>none</SatelliteResourceLanguages>
     <NoWarn>1701;1702;CA1816;CA1822</NoWarn>
-
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Remove="lib\**" />
-    <Compile Remove="Server\**" />
-    <Compile Remove="stuff\**" />
-    <Compile Remove="TestX\**" />
     <Compile Remove="Test\**" />
-    <Compile Remove="_old\**" />
-    <EmbeddedResource Remove="lib\**" />
-    <EmbeddedResource Remove="Server\**" />
-    <EmbeddedResource Remove="stuff\**" />
-    <EmbeddedResource Remove="TestX\**" />
     <EmbeddedResource Remove="Test\**" />
-    <EmbeddedResource Remove="_old\**" />
-    <None Remove="lib\**" />
-    <None Remove="Server\**" />
-    <None Remove="stuff\**" />
-    <None Remove="TestX\**" />
     <None Remove="Test\**" />
-    <None Remove="_old\**" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <Compile Remove="App_orig.cs" />
-    <Compile Remove="TcpComm_orig.cs" />
-    <Compile Remove="_async.cs" />
-    <Compile Remove="_temp.cs" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <None Remove="App_orig.cs" />
-    <None Remove="TcpComm_orig.cs" />
-    <None Remove="NTerm_old.zip" />
-    <None Remove="NTerm_old_settings_log.zip" />
   </ItemGroup>
 
   <ItemGroup>
@@ -64,30 +33,6 @@
     <Reference Include="Ephemera.NBagOfTricks">
       <HintPath>lib\Ephemera.NBagOfTricks.dll</HintPath>
     </Reference>
-    <Reference Include="Ephemera.NBagOfUis">
-      <HintPath>lib\Ephemera.NBagOfUis.dll</HintPath>
-    </Reference>
-  </ItemGroup>
-
-  <ItemGroup>
-    <Compile Update="Properties\Resources.Designer.cs">
-      <DesignTime>True</DesignTime>
-      <AutoGen>True</AutoGen>
-      <DependentUpon>Resources.resx</DependentUpon>
-    </Compile>
-  </ItemGroup>
-
-  <ItemGroup>
-    <EmbeddedResource Update="Properties\Resources.resx">
-      <Generator>ResXFileCodeGenerator</Generator>
-      <LastGenOutput>Resources.Designer.cs</LastGenOutput>
-    </EmbeddedResource>
-  </ItemGroup>
-
-  <ItemGroup>
-    <None Update="README.md">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
   </ItemGroup>
 
 </Project>
