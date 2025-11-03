@@ -50,7 +50,7 @@ namespace NTerm
         /// <summary>What am I.</summary>
         public override string ToString()
         {
-            return ($"UdpComm {_host}:{_port}");
+            return $"UdpComm {_host}:{_port}";
         }
         #endregion
 
@@ -59,7 +59,8 @@ namespace NTerm
         /// <see cref="IComm"/>
         public void Send(byte[] td)
         {
-            throw new NotSupportedException();
+            //?? throw new NotSupportedException();
+            _qRecv.Enqueue([]);
         }
 
         /// <summary>IComm implementation.</summary>
@@ -100,7 +101,7 @@ namespace NTerm
 
                     // async(ish)
                     var task = listener.ReceiveAsync(token);
-                    if (task.IsCompleted)
+                    if (task.IsCompleted && task.IsCompletedSuccessfully)
                     {
                         byte[] bytes = task.Result.Buffer;
                         Console.WriteLine($"{Encoding.ASCII.GetString(bytes, 0, bytes.Length)}");

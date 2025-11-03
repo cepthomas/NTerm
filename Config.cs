@@ -131,24 +131,23 @@ namespace NTerm
         {
             List<string> ls = [];
 
-            ls.Add($"Current Configuration");
-            ls.Add($"- comm_type:{string.Join(" ", CommType)}");
-            ls.Add($"- delim:{Delim}");
-            ls.Add($"- prompt:{Prompt}");
-            ls.Add($"- meta:{MetaInd}");
-            ls.Add($"- info_color:{InfoColor}");
-            ls.Add($"- err_color:{ErrorColor}");
+            ls.Add($"comm_type:{string.Join(" ", CommType)}");
+            ls.Add($"delim:{Delim}");
+            ls.Add($"prompt:{Prompt}");
+            ls.Add($"meta:{MetaInd}");
+            ls.Add($"info_color:{InfoColor}");
+            ls.Add($"err_color:{ErrorColor}");
 
             if (Macros.Count > 0)
             {
-                ls.Add($"Macros:");
-                Macros.ForEach(m => ls.Add($"- {m.Key}:{m.Value}"));
+                ls.Add($"macros:");
+                Macros.ForEach(m => ls.Add($"    {m.Key}:{m.Value}"));
             }
 
             if (Matchers.Count > 0)
             {
-                ls.Add($"Matchers:");
-                Matchers.ForEach(m => ls.Add($"- {m.Key}:{m.Value}"));
+                ls.Add($"matchers:");
+                Matchers.ForEach(m => ls.Add($"    {m.Key}:{m.Value}"));
             }
 
             return ls;

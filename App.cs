@@ -37,7 +37,7 @@ namespace NTerm
         readonly TimeIt _tmit = new();
         #endregion
 
-        static void Main(string[] args)
+        static void Main()
         {
             using var app = new App();
         }
@@ -113,10 +113,11 @@ namespace NTerm
                     ///// User input? /////
                     while (_qUserCli.TryDequeue(out string? s))
                     {
-                        if (s.Length == 0) return;
-
-                        // Check for meta key.
-                        if (s[0] == _config.MetaInd)
+                        if (s.Length == 0)
+                        {
+                            Prompt();
+                        }
+                        else if (s[0] == _config.MetaInd) // Check for meta key.
                         {
                             if (s.Length > 1)
                             {
@@ -129,7 +130,8 @@ namespace NTerm
                                         Task.WaitAll([taskKeyboard, taskComm]);
                                         break;
 
-                                    case "?": // help
+                                    case "h": // help
+                                    case "?":
                                         About();
                                         Prompt();
                                         break;
@@ -150,7 +152,7 @@ namespace NTerm
                             }
                             // else invalid/ignore
                         }
-                        else
+                        else // just send
                         {
                             Log(Cat.Send, $"[{s}]");
 
@@ -225,7 +227,7 @@ namespace NTerm
                 {
                     var s = Console.ReadLine();
 
-                    if (s is not null && s.Length > 0)
+                    if (s is not null) // && s.Length > 0)
                     {
                         _qUserCli.Enqueue(new(s));
                     }
@@ -347,15 +349,25 @@ namespace NTerm
         /// </summary>
         void About()
         {
-            List<string> docs = ["Main doc at https://github.com/cepthomas/NTerm/blob/main/README.md"];
+            List<string> docs = ["Execute using one of:"];
+            docs.Add("    NTerm tcp host port");
+            docs.Add("    NTerm udp host port");
+            docs.Add("    NTerm serial port baud framing (e.g. COM1 9600 8N1)");
+            docs.Add("    NTerm config_file (see https://github.com/cepthomas/NTerm/blob/main/README.md)");
 
-            docs.AddRange(_config.Doc());
+            docs.Add("Commands:");
+            docs.Add("    <meta_ind>q: quit");
+            docs.Add("    <meta_ind>h help");
+            docs.Add("    <meta_ind><user macro>");
+
+            docs.Add("Current config:");
+            _config.Doc().ForEach(d => docs.Add($"    {d}"));
 
             var sp = SerialPort.GetPortNames().ToList();
             if (sp.Count > 0)
             {
                 docs.Add(Environment.NewLine);
-                docs.Add($"serial ports:");
+                docs.Add($"Serial ports:");
                 sp.ForEach(s => { docs.Add($"- {s}"); });
             }
 

@@ -18,7 +18,7 @@ Alternatively, NTerm can run minimally without a config file by passing the comm
 
 - Tcp: `NTerm tcp 127.0.0.1 59120`
 - Udp: `NTerm udp 127.0.0.1 59120`
-- Serial: `NTerm serial serial COM1 9600 8N1`
+- Serial: `NTerm serial COM1 9600 8N1`
 - Null modem (aka loopback): `NTerm null`
 
 # Configuration file
