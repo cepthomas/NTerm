@@ -52,70 +52,63 @@ namespace NTerm
                 }
 
                 // OK process it.
-                var inrdr = new IniReader(args[0]);
-
-                if (!inrdr.Contents.TryGetValue("nterm", out IniSection? ntermSect))
-                {
-                    throw new ConfigException($"Section [nterm] is required");
-                }
+                var inrdr = new IniReader();
+                inrdr.ParseFile(args[0]);
+                var ntermSect = inrdr.GetValues("nterm");
 
                 // [nterm] section
-                foreach (var nval in ntermSect.Values)
+                foreach (var kv in ntermSect)
                 {
-                    switch (nval.Key.ToLower())
+                    switch (kv.Key.ToLower())
                     {
                         case "comm_type":
-                            CommType = nval.Value.SplitByToken(" ");
+                            CommType = kv.Value.SplitByToken(" ");
                             // Process comm spec.
                             List<string> valid = ["null", "tcp", "udp", "serial"];
                             if (CommType.Count < 1 || !valid.Contains(CommType[0]))
                             {
-                                throw new ConfigException($"Invalid comm type: [{nval}]");
+                                throw new ConfigException($"Invalid comm type: [{kv}]");
                             }
                             break;
 
                         case "err_color":
-                            ErrorColor = Enum.Parse<ConsoleColorEx>(nval.Value, true);
+                            ErrorColor = Enum.Parse<ConsoleColorEx>(kv.Value, true);
                             break;
 
                         case "info_color":
-                            InfoColor = Enum.Parse<ConsoleColorEx>(nval.Value, true);
+                            InfoColor = Enum.Parse<ConsoleColorEx>(kv.Value, true);
                             break;
 
                         case "prompt":
-                            Prompt = nval.Value;
+                            Prompt = kv.Value;
                             break;
 
                         case "meta":
-                            MetaInd = nval.Value[0];
+                            MetaInd = kv.Value[0];
                             break;
 
                         case "delim":
-                            Delim = nval.Value switch
+                            Delim = kv.Value switch
                             {
                                 "LF" => 10,
                                 "CR" => 13,
                                 "NUL" => 0,
-                                _ => throw new ConfigException($"Invalid delim: [{nval.Value}]"),
+                                _ => throw new ConfigException($"Invalid delim: [{kv.Value}]"),
                             };
                             break;
 
                         default:
-                            throw new ConfigException($"Invalid [nterm] section key: [{nval.Key}]");
+                            throw new ConfigException($"Invalid [nterm] section key: [{kv.Key}]");
                     }
                 }
 
                 // [macros] section
-                if (inrdr.Contents.TryGetValue("macros", out IniSection? macroSect))
-                {
-                    macroSect.Values.ForEach(val => Macros[val.Key] = val.Value.Replace("\"", ""));
-                }
+                ntermSect = inrdr.GetValues("macros");
+                ntermSect.ForEach(kv => Macros[kv.Key] = kv.Value.Replace("\"", ""));
 
                 // [matchers] section
-                if (inrdr.Contents.TryGetValue("matchers", out IniSection? matcherSect))
-                {
-                    matcherSect.Values.ForEach(val => Matchers[val.Key.Replace("\"", "")] = Enum.Parse<ConsoleColorEx>(val.Value, true));
-                }
+                ntermSect = inrdr.GetValues("matchers");
+                ntermSect.ForEach(val => Matchers[val.Key.Replace("\"", "")] = Enum.Parse<ConsoleColorEx>(val.Value, true));
             }
             else // assume explicit cl spec
             {
