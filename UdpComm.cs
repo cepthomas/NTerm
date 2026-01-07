@@ -59,7 +59,6 @@ namespace NTerm
         /// <see cref="IComm"/>
         public void Send(byte[] td)
         {
-            //?? throw new NotSupportedException();
             _qRecv.Enqueue([]);
         }
 
