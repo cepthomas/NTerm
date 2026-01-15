@@ -38,4 +38,12 @@
     </Reference>
   </ItemGroup>
 
+
+    <Target Name="PostBuild" AfterTargets="PostBuildEvent" Condition="'$(TOOLS_PATH)' != ''">
+        <Exec Command="copy /Y $(OutputPath)*.exe $(TOOLS_PATH)" />
+        <Exec Command="copy /Y $(OutputPath)*.dll $(TOOLS_PATH)" />
+        <Exec Command="copy /Y $(OutputPath)*.dll $(TOOLS_PATH)" />
+        <Exec Command="copy /Y $(OutputPath)System.IO.Ports.dll $(TOOLS_PATH)" />
+    </Target>
+
 </Project>
