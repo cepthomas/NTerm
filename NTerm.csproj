@@ -1,42 +1,42 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
-  <PropertyGroup>
-    <OutputType>Exe</OutputType>
-    <UseWindowsForms>true</UseWindowsForms>
-    <OutputPath>bin\</OutputPath>
-    <RuntimeIdentifier>win-x64</RuntimeIdentifier>
-    <TargetFramework>net8.0-windows</TargetFramework>
+    <PropertyGroup>
+        <OutputType>Exe</OutputType>
+        <UseWindowsForms>true</UseWindowsForms>
+        <OutputPath>bin\</OutputPath>
+        <RuntimeIdentifier>win-x64</RuntimeIdentifier>
+        <TargetFramework>net8.0-windows</TargetFramework>
 
-    <Nullable>enable</Nullable>
-    <ImplicitUsings>disable</ImplicitUsings>
-    <ApplicationIcon>cucaracha.ico</ApplicationIcon>
-    <SatelliteResourceLanguages>none</SatelliteResourceLanguages>
-    <NoWarn>1701;1702;CA1816;CA1822</NoWarn>
-  </PropertyGroup>
+        <Nullable>enable</Nullable>
+        <ImplicitUsings>disable</ImplicitUsings>
+        <ApplicationIcon>cucaracha.ico</ApplicationIcon>
+        <SatelliteResourceLanguages>none</SatelliteResourceLanguages>
+        <NoWarn>1701;1702;CA1816;CA1822</NoWarn>
+    </PropertyGroup>
 
-  <ItemGroup>
-    <Compile Remove="lib\**" />
-    <Compile Remove="Test\**" />
-    <EmbeddedResource Remove="lib\**" />
-    <EmbeddedResource Remove="Test\**" />
-    <None Remove="lib\**" />
-    <None Remove="Test\**" />
-  </ItemGroup>
+    <ItemGroup>
+        <Compile Remove="lib\**" />
+        <Compile Remove="Test\**" />
+        <EmbeddedResource Remove="lib\**" />
+        <EmbeddedResource Remove="Test\**" />
+        <None Remove="lib\**" />
+        <None Remove="Test\**" />
+    </ItemGroup>
 
-  <ItemGroup>
-    <Content Include="cucaracha.ico" />
-  </ItemGroup>
+    <ItemGroup>
+        <Content Include="cucaracha.ico" />
+    </ItemGroup>
 
-  <ItemGroup>
-    <PackageReference Include="System.IO.Ports" Version="9.0.0" />
-    <PackageReference Include="System.Management" Version="9.0.0" />
-  </ItemGroup>
+    <ItemGroup>
+        <PackageReference Include="System.IO.Ports" Version="9.0.0" />
+        <PackageReference Include="System.Management" Version="9.0.0" />
+    </ItemGroup>
 
-  <ItemGroup>
-    <Reference Include="Ephemera.NBagOfTricks">
-      <HintPath>lib\Ephemera.NBagOfTricks.dll</HintPath>
-    </Reference>
-  </ItemGroup>
+    <ItemGroup>
+        <Reference Include="Ephemera.NBagOfTricks">
+            <HintPath>lib\Ephemera.NBagOfTricks.dll</HintPath>
+        </Reference>
+    </ItemGroup>
 
 
     <Target Name="PostBuild" AfterTargets="PostBuildEvent" Condition="'$(TOOLS_PATH)' != ''">

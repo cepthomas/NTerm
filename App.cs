@@ -117,7 +117,7 @@ namespace NTerm
                         {
                             Prompt();
                         }
-                        else if (s[0] == _config.MetaInd) // Check for meta key.
+                        else if (s[0] == '\u001b') // Keys.Escape) // _config.MetaInd) // Check for meta key.
                         {
                             if (s.Length > 1)
                             {
@@ -222,14 +222,28 @@ namespace NTerm
         {
             while (!token.IsCancellationRequested)
             {
+                var cmd = "";
+
                 // Check for something to do.
                 if (Console.KeyAvailable)
                 {
-                    var s = Console.ReadLine();
+                    var k = Console.ReadKey();
+                    cmd += k.KeyChar;
 
-                    if (s is not null) // && s.Length > 0)
+                    if (k.Key == ConsoleKey.Escape)
                     {
-                        _qUserCli.Enqueue(new(s));
+                        // Meta command. Get the next char.
+                        cmd += Console.ReadKey().KeyChar;
+                        _qUserCli.Enqueue(new(cmd));
+                    }
+                    else
+                    {
+                        // Terminal command.
+                        var s = Console.ReadLine();
+                        if (s is not null) // && s.Length > 0)
+                        {
+                            _qUserCli.Enqueue(cmd + s);
+                        }
                     }
                 }
 

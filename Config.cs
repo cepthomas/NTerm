@@ -23,9 +23,6 @@ namespace NTerm
         /// <summary>Prompt. Can be empty for continuous receiving.</summary>
         public string Prompt { get; private set; } = ""; // default
 
-        /// <summary>Indicator for application functions.</summary>
-        public char MetaInd { get; private set; } = '!'; // default
-
         /// <summary>Message delimiter: LF=10 CR=13 NUL=0.</summary>
         public byte Delim { get; private set; } = 0; // default NUL
 
@@ -83,10 +80,6 @@ namespace NTerm
                             Prompt = kv.Value;
                             break;
 
-                        case "meta":
-                            MetaInd = kv.Value[0];
-                            break;
-
                         case "delim":
                             Delim = kv.Value switch
                             {
@@ -127,7 +120,6 @@ namespace NTerm
             ls.Add($"comm_type:{string.Join(" ", CommType)}");
             ls.Add($"delim:{Delim}");
             ls.Add($"prompt:{Prompt}");
-            ls.Add($"meta:{MetaInd}");
             ls.Add($"info_color:{InfoColor}");
             ls.Add($"err_color:{ErrorColor}");
 

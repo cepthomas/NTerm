@@ -15,7 +15,6 @@ using System.Threading.Tasks;
 
 namespace Test
 {
-
     internal class Program
     {
         static void Main() { new Program().Run(); }
@@ -71,8 +70,7 @@ namespace Test
         void DoBasicTarget(CancellationTokenSource ts)
         {
             Console.WriteLine($"DoBasicTarget()");
-            List<string> config = [
-                "[nterm]", "comm_type = null", "delim = NUL", "prompt = >", "meta = -"];
+            List<string> config = ["[nterm]", "comm_type = null", "delim = NUL", "prompt = >", "meta = -"];
             File.WriteAllLines(_configFile, config);
             var proc = RunTarget(_configFile);
         }

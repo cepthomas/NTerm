@@ -42,11 +42,7 @@ delim = LF
 ; This is usually better for continuous senders. Default is none.
 prompt = >
 
-; Indicator for system functions and user macros. Default is `!`.
-; System functions are: `!q` to quit and `!?` for info.
-meta = !
-
-; Simple user macros that sends text when executed.
+; Simple user macros that sends text when executed. executed by `ESC name`.
 ; Quotes can be used to maintain leading or trailing whitespace.
 [macros]
 dox = "hey server - do something with x"
