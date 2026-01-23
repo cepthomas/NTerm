@@ -37,6 +37,9 @@ namespace NTerm
         readonly TimeIt _tmit = new();
         #endregion
 
+        /// <summary>
+        /// Start here.
+        /// </summary>
         static void Main()
         {
             using var app = new App();
