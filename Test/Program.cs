@@ -39,7 +39,7 @@ namespace Test
         public void Run()
         {
             Console.WriteLine($"========= Test =========");
-            _configFile = Path.Combine(MiscUtils.GetSourcePath(), "test_config.ini");
+            _configFile = Path.Combine(MiscUtils.GetSourcePath(), "test_config.ini");xxx
             _ntermExe = Path.Combine(MiscUtils.GetSourcePath(), "..", "bin", "net8.0-windows", "win-x64", "NTerm.exe");
 
             using CancellationTokenSource ts = new();

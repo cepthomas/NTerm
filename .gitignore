@@ -407,4 +407,3 @@ obj/
 # /Test/*.json
 /Properties/launchSettings.json
 nterm.log
-/Test/test_config.ini

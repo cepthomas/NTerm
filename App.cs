@@ -156,7 +156,6 @@ namespace NTerm
                         else // just send
                         {
                             Tell(Cat.Send, $"[{s}]");
-
                             var td = Encoding.Default.GetBytes(s).Append(_config.Delim);
                             _comm.Send([.. td]);
                         }
@@ -293,6 +292,14 @@ namespace NTerm
             bool logit = cat != Cat.Info;
             bool showit = cat != Cat.Log;
 
+            var scat = cat switch
+            {
+                Cat.Send => ">>>",
+                Cat.Receive => "<<<",
+                Cat.Error => "!!!",
+                _ => "---",
+            };
+
             if (showit)
             {
                 switch (cat)
@@ -310,23 +317,13 @@ namespace NTerm
                         break;
                 }
 
-                Console.Write(text);
-                Console.Write(Environment.NewLine);
+                Console.Write($"{scat} {text}{Environment.NewLine}");
                 Console.ResetColor();
             }
 
             if (logit && _logStream is not null)
             {
                 double sec = 1.0 * (Stopwatch.GetTimestamp() - _startTick) / Stopwatch.Frequency;
-
-                var scat = cat switch
-                {
-                    Cat.Send => ">>>",
-                    Cat.Receive => "<<<",
-                    Cat.Error => "!!!",
-                    _ => "---",
-                };
-
                 var s = $"{sec:000.000} {scat} {text}{Environment.NewLine}";
                 _logStream.Write(Encoding.Default.GetBytes(s));
                 _logStream.Flush();
