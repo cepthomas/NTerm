@@ -144,13 +144,13 @@ namespace NTerm
                     else
                     {
                         // Just Notify/log and carry on.
-                        Notif?.Invoke(this, new(Cat.None, e.Message));
+                        Notif?.Invoke(this, new(Cat.Log, e.Message));
                     }
                     break;
 
                 default:
                     // Just Notify/log and carry on.
-                    Notif?.Invoke(this, new(Cat.None, e.Message));
+                    Notif?.Invoke(this, new(Cat.Log, e.Message));
                     break;
             }
 

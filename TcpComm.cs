@@ -128,7 +128,7 @@ namespace NTerm
                         }
 
 
-                        //=========== Receive ==========//
+                        //=========== Receive TODO1 outside write loop?  ==========//
                         bool rcvDone = false;
                         byte[] rxData = new byte[BUFFER_SIZE];
 
@@ -208,7 +208,7 @@ namespace NTerm
                     else
                     {
                         // Just Notify/log and carry on.
-                        Notif?.Invoke(this, new(Cat.None, e.Message));
+                        Notif?.Invoke(this, new(Cat.Log, e.Message));
                     }
                     break;
 
@@ -217,7 +217,7 @@ namespace NTerm
 
                 default:
                     // Just Notify/log and carry on.
-                    Notif?.Invoke(this, new(Cat.None, e.Message));
+                    Notif?.Invoke(this, new(Cat.Log, e.Message));
                     break;
             }
 

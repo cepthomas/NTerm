@@ -2,7 +2,6 @@ using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Drawing.Printing;
 using System.IO;
 using System.IO.Ports;
 using System.Linq;
@@ -11,6 +10,11 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using Ephemera.NBagOfTricks;
+
+
+// A UDP client sends data packets (datagrams) to a SERVER without first establishing a formal connection, 
+//   and the UDP server listens for these incoming datagrams.
+// TCP - the CLIENT initiates a connection to a listening server
 
 
 namespace NTerm
@@ -31,10 +35,7 @@ namespace NTerm
         readonly FileStream? _logStream = null;
 
         /// <summary>Logger timestamps.</summary>
-        readonly long _startTick = Stopwatch.GetTimestamp();
-
-        /// <summary>For timing measurements.</summary>
-        readonly TimeIt _tmit = new();
+        long _startTick = 0;
         #endregion
 
         /// <summary>
@@ -53,12 +54,13 @@ namespace NTerm
             try
             {
                 // Init stuff.
-                var fmode = FileMode.Create; // or .Append ??
+                _startTick = Stopwatch.GetTimestamp();
+                var fmode = FileMode.Create; // or .Append TODO1 ??
                 _logStream = File.Open(Path.Combine(MiscUtils.GetSourcePath(), "nterm.log"), fmode);
 
                 ProcessAppCommandLine();
 
-                Print(Cat.None, $"NTerm using {_comm} {DateTime.Now}");
+                Tell(Cat.Info, $"NTerm using {_comm} - started {DateTime.Now}");
 
                 // Go forever.
                 Run();
@@ -66,20 +68,17 @@ namespace NTerm
             // Any exception that arrives here is considered fatal. Inform and exit.
             catch (ConfigException ex) // ini content error
             {
-                Print(Cat.Error, $"{ex.Message}");
+                Tell(Cat.Error, $"{ex.Message}");
                 Environment.Exit(1);
             }
             catch (IniSyntaxException ex) // ini structure error
             {
-                Print(Cat.Error, $"Ini syntax error at line {ex.LineNum}: {ex.Message}");
-                Log(Cat.Error, ex.ToString());
+                Tell(Cat.Error, $"Ini syntax error at line {ex.LineNum}: {ex.Message}");
                 Environment.Exit(2);
             }
             catch (Exception ex) // other error
             {
-                Console.WriteLine($"{ex.GetType()}: {ex.Message}");
-                Print(Cat.Error, $"{ex.GetType()}: {ex.Message}");
-                Log(Cat.Error, ex.ToString());
+                Tell(Cat.Error, ex.ToString());
                 Environment.Exit(3);
             }
 
@@ -113,7 +112,7 @@ namespace NTerm
             {
                 try
                 {
-                    ///// User input? /////
+                    ///// User CLI input? /////
                     while (_qUserCli.TryDequeue(out string? s))
                     {
                         if (s.Length == 0)
@@ -134,7 +133,6 @@ namespace NTerm
                                         break;
 
                                     case "h": // help
-                                    case "?":
                                         About();
                                         Prompt();
                                         break;
@@ -147,7 +145,7 @@ namespace NTerm
                                         }
                                         else
                                         {
-                                            Print(Cat.Error, $"Unknown macro key: [{mk}]");
+                                            Tell(Cat.Error, $"Unknown macro key: [{mk}]");
                                             Prompt();
                                         }
                                         break;
@@ -157,7 +155,7 @@ namespace NTerm
                         }
                         else // just send
                         {
-                            Log(Cat.Send, $"[{s}]");
+                            Tell(Cat.Send, $"[{s}]");
 
                             var td = Encoding.Default.GetBytes(s).Append(_config.Delim);
                             _comm.Send([.. td]);
@@ -176,7 +174,7 @@ namespace NTerm
                                 if (b[i] == _config.Delim)
                                 {
                                     // End line.
-                                    Print(Cat.Receive, $"[{string.Concat(rcvBuffer)}]");
+                                    Tell(Cat.Receive, $"[{string.Concat(rcvBuffer)}]");
                                     rcvBuffer.Clear();
                                     Prompt();
                                 }
@@ -282,69 +280,51 @@ namespace NTerm
                 _ => throw new ConfigException($"Invalid comm type: [{_config.CommType[0]}]"),
             };
 
-            _comm.Notif += (object? _, NotifEventArgs e) => { Print(e.Cat, e.Message); };
+            _comm.Notif += (object? _, NotifEventArgs e) => { Tell(e.Cat, e.Message); };
         }
 
         /// <summary>
-        /// Write a line to console.
+        /// Write a line to console and/or log.
         /// </summary>
         /// <param name="cat">Category</param>
         /// <param name="text">What to print</param>
-        void Print(Cat cat, string text)
+        void Tell(Cat cat, string text)
         {
-            var catColor = cat switch
-            {
-                Cat.Error => _config.ErrorColor,
-                Cat.Info => _config.InfoColor,
-                _ => ConsoleColorEx.None
-            };
+            bool logit = cat != Cat.Info;
+            bool showit = cat != Cat.Log;
 
-            //  If color not explicitly specified, look for text matches.
-            if (catColor == ConsoleColorEx.None)
+            if (showit)
             {
-                foreach (var m in _config.Matchers)
+                switch (cat)
                 {
-                    if (text.Contains(m.Key)) // faster than compiled regexes
-                    {
-                        catColor = m.Value;
+                    case Cat.Info:
+                        Console.ForegroundColor = _config.InfoColor;
                         break;
-                    }
+                    case Cat.Error:
+                        Console.ForegroundColor = _config.ErrorColor;
+                        break;
+                    default:
+                        //  If color not explicitly specified, look for text matches.
+                        var mc = _config.Matchers.Where(m => text.Contains(m.Key)); // simple search is faster than compiled regexes
+                        if (mc.Any()) Console.ForegroundColor = mc.First().Value;
+                        break;
                 }
+
+                Console.Write(text);
+                Console.Write(Environment.NewLine);
+                Console.ResetColor();
             }
 
-            if (catColor != ConsoleColorEx.None)
+            if (logit && _logStream is not null)
             {
-                Console.ForegroundColor = (ConsoleColor)catColor;
-            }
-
-            Console.Write(text);
-            Console.Write(Environment.NewLine);
-            Console.ResetColor();
-            
-            Log(cat, text);
-        }
-
-        /// <summary>
-        /// Write to logger.
-        /// </summary>
-        /// <param name="cat">Category</param>
-        /// <param name="text">What to print</param>
-        void Log(Cat cat, string text)
-        {
-            if (_logStream is not null)
-            {
-                long tick = Stopwatch.GetTimestamp();
-                double sec = 1.0 * (tick - _startTick) / Stopwatch.Frequency;
-                //double msec = 1000.0 * (tick - _startTick) / Stopwatch.Frequency;
+                double sec = 1.0 * (Stopwatch.GetTimestamp() - _startTick) / Stopwatch.Frequency;
 
                 var scat = cat switch
                 {
                     Cat.Send => ">>>",
                     Cat.Receive => "<<<",
                     Cat.Error => "!!!",
-                    Cat.Info => "---",
-                    Cat.None => "---",
-                    _ => "???",
+                    _ => "---",
                 };
 
                 var s = $"{sec:000.000} {scat} {text}{Environment.NewLine}";
@@ -354,7 +334,7 @@ namespace NTerm
         }
 
         /// <summary>
-        /// 
+        /// User prompt.
         /// </summary>
         void Prompt()
         {
@@ -370,12 +350,12 @@ namespace NTerm
             docs.Add("    NTerm tcp host port");
             docs.Add("    NTerm udp host port");
             docs.Add("    NTerm serial port baud framing (e.g. COM1 9600 8N1)");
-            docs.Add("    NTerm config_file (see https://github.com/cepthomas/NTerm/blob/main/README.md)");
+            docs.Add("    NTerm config_file (TODO1 see https://github.com/cepthomas/NTerm/blob/main/README.md)");
 
             docs.Add("Commands:");
-            docs.Add("    <meta_ind>q: quit");
-            docs.Add("    <meta_ind>h help");
-            docs.Add("    <meta_ind><user macro>");
+            docs.Add("    ESC q: quit");
+            docs.Add("    ESC h: help");
+            docs.Add("    ESC <user macro>");
 
             docs.Add("Current config:");
             _config.Doc().ForEach(d => docs.Add($"    {d}"));
@@ -388,7 +368,7 @@ namespace NTerm
                 sp.ForEach(s => { docs.Add($"- {s}"); });
             }
 
-            docs.ForEach(d => Print(Cat.None, d));
+            docs.ForEach(d => Tell(Cat.Info, d));
             //Tools.MarkdownToHtml(docs, Tools.MarkdownMode.Simple, true); // Simple DarkApi LightApi
         }
     }

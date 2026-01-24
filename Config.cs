@@ -15,10 +15,10 @@ namespace NTerm
         public List<string> CommType { get; private set; } = [];
 
         /// <summary>Color for error messages.</summary>
-        public ConsoleColorEx ErrorColor { get; private set; } = ConsoleColorEx.Red; // default
+        public ConsoleColor ErrorColor { get; private set; } = ConsoleColor.Red; // default
 
         /// <summary>Color for internal messages.</summary>
-        public ConsoleColorEx InfoColor { get; private set; } = ConsoleColorEx.Blue; // default
+        public ConsoleColor InfoColor { get; private set; } = ConsoleColor.Blue; // default
 
         /// <summary>Prompt. Can be empty for continuous receiving.</summary>
         public string Prompt { get; private set; } = ""; // default
@@ -30,7 +30,7 @@ namespace NTerm
         public Dictionary<string, string> Macros { get; private set; } = [];
 
         /// <summary>Colorizing text.</summary>
-        public Dictionary<string, ConsoleColorEx> Matchers { get; private set; } = [];
+        public Dictionary<string, ConsoleColor> Matchers { get; private set; } = [];
         #endregion
 
         /// <summary>
@@ -69,11 +69,11 @@ namespace NTerm
                             break;
 
                         case "err_color":
-                            ErrorColor = Enum.Parse<ConsoleColorEx>(kv.Value, true);
+                            ErrorColor = Enum.Parse<ConsoleColor>(kv.Value, true);
                             break;
 
                         case "info_color":
-                            InfoColor = Enum.Parse<ConsoleColorEx>(kv.Value, true);
+                            InfoColor = Enum.Parse<ConsoleColor>(kv.Value, true);
                             break;
 
                         case "prompt":
@@ -101,7 +101,7 @@ namespace NTerm
 
                 // [matchers] section
                 ntermSect = inrdr.GetValues("matchers");
-                ntermSect.ForEach(val => Matchers[val.Key.Replace("\"", "")] = Enum.Parse<ConsoleColorEx>(val.Value, true));
+                ntermSect.ForEach(val => Matchers[val.Key.Replace("\"", "")] = Enum.Parse<ConsoleColor>(val.Value, true));
             }
             else // assume explicit cl spec
             {

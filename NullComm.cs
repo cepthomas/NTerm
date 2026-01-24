@@ -67,7 +67,7 @@ namespace NTerm
         /// <see cref="IComm"/>
         public void Run(CancellationToken token)
         {
-            Notif?.Invoke(this, new(Cat.None, "xyzzy"));
+            Notif?.Invoke(this, new(Cat.Log, "xyzzy"));
 
             while (!token.IsCancellationRequested)
             {

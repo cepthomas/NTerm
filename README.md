@@ -1,11 +1,11 @@
-# NTerm
+# NTerm TODO1
 
 Minimalist terminal for simple text-based interfaces like embedded systems.
 
 Supported protocols:
 - TCP line-oriented in a send-then-listen mode or listen to continuous messages.
-- UDP listener to continuous messages.
-- Serial port like TCP mode.
+- UDP server listens to continuous messages. TODO1 support send?
+- Serial port like TCP.
 
 A log file `nterm.log` captures all traffic and internal messages. It is overwritten with each execution
 of the application.
@@ -22,6 +22,27 @@ Alternatively, NTerm can run minimally without a config file by passing the comm
 - Null modem (aka loopback): `NTerm null`
 
 # Configuration file
+
+
+
+[nterm]
+; comm_type = null
+; comm_type = tcp 127.0.0.1 59120
+comm_type = udp 127.0.0.1 59140
+; comm_type = serial COM1 9600 8N1 ; => 6|7|8 bits E|O|N parity 0|1 stop bits
+delim = NUL
+prompt = >
+info_color = darkcyan
+err_color = green
+[macros]
+dox = "do xxxxxxx"
+s3 = "send 333333333"
+tm = "   -yel-  xmagx  "
+[matchers]
+"mag" = magenta
+"yel" = yellow
+
+
 
 Example config file.
 
