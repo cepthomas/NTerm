@@ -20,6 +20,7 @@ namespace NTerm
         #region Fields
         readonly string _host;
         readonly int _port;
+        readonly ConcurrentQueue<byte[]> _qSend = new();
         readonly ConcurrentQueue<byte[]> _qRecv = new();
         const int BUFFER_SIZE = 4096;
         #endregion
@@ -59,7 +60,8 @@ namespace NTerm
         /// <see cref="IComm"/>
         public void Send(byte[] td)
         {
-            _qRecv.Enqueue([]);
+            throw new NotImplementedException();
+            _qSend.Enqueue([]);
         }
 
         /// <summary>IComm implementation.</summary>
