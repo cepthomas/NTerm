@@ -38,6 +38,12 @@
         </Reference>
     </ItemGroup>
 
+    <ItemGroup>
+      <None Update="default.ini">
+        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      </None>
+    </ItemGroup>
+
     <Target Name="PostBuild" AfterTargets="PostBuildEvent" Condition="'$(TOOLS_PATH)' != ''">
         <Exec Command="copy /Y $(OutputPath)NTerm.exe $(TOOLS_PATH)" />
         <Exec Command="copy /Y $(OutputPath)NTerm.dll $(TOOLS_PATH)" />

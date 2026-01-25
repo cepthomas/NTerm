@@ -16,7 +16,7 @@ ERR = '\033[91m'
 INFO = '\033[96m'
 ENDC = '\033[0m'
 
-# TODO1 make custom versions for real test. Put these in PBOT?
+# TODO1 make custom versions for real test. Put these in PBOT? w/remlog.py?
 
 # Uses file-like object - rfile and wfile. Socket will be auto closed.
 class LineHandler(socketserver.StreamRequestHandler):
