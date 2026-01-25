@@ -55,7 +55,7 @@ namespace NTerm
             {
                 // Init stuff.
                 _startTick = Stopwatch.GetTimestamp();
-                var fmode = FileMode.Create; // or .Append TODO1 ??
+                var fmode = FileMode.Create; // or .Append TODO?
                 _logStream = File.Open(Path.Combine(MiscUtils.GetSourcePath(), "nterm.log"), fmode);
 
                 ProcessAppCommandLine();
@@ -119,7 +119,7 @@ namespace NTerm
                         {
                             Prompt();
                         }
-                        else if (s[0] == '\u001b') // Keys.Escape) // _config.MetaInd) // Check for meta key.
+                        else if (s[0] == '\u001b') // Check for escape key.
                         {
                             if (s.Length > 1)
                             {
@@ -182,16 +182,9 @@ namespace NTerm
                                     // Add to buffer.
                                     rcvBuffer.Add((char)b[i]);
 
-                                    // TODO option to format non-readable?
-                                    //if (b[i].IsReadable())
-                                    //{
-                                    //    rcvBuffer.Add((char)b[i]);
-                                    //}
-                                    //else
-                                    //{
-                                    //    var s = $"<{b[i]:0X}>";
-                                    //    rcvBuffer.AddRange(s);
-                                    //}
+                                    // // Format non-readable?
+                                    // if (b[i].IsReadable()) { rcvBuffer.Add((char)b[i]); }
+                                    // else { rcvBuffer.AddRange($"<{b[i]:0X}>"); }
                                 }
                             }
                         }
@@ -248,7 +241,7 @@ namespace NTerm
                 }
 
                 // Don't be greedy.
-                Thread.Sleep(20);
+                Thread.Sleep(50);
             }
         }
 
@@ -270,13 +263,13 @@ namespace NTerm
             _config.Load(args);
 
             // Process comm spec.
-            _comm = _config.CommType[0].ToLower() switch
+            _comm = _config.CommConfig[0].ToLower() switch
             {
                 "null" => new NullComm(),
-                "tcp" => new TcpComm(_config.CommType),
-                "udp" => new UdpComm(_config.CommType),
-                "serial" => new SerialComm(_config.CommType),
-                _ => throw new ConfigException($"Invalid comm type: [{_config.CommType[0]}]"),
+                "tcp" => new TcpComm(_config.CommConfig),
+                "udp" => new UdpComm(_config.CommConfig),
+                "serial" => new SerialComm(_config.CommConfig),
+                _ => throw new ConfigException($"Invalid comm type: [{_config.CommConfig[0]}]"),
             };
 
             _comm.Notif += (object? _, NotifEventArgs e) => { Tell(e.Cat, e.Message); };
@@ -290,15 +283,7 @@ namespace NTerm
         void Tell(Cat cat, string text)
         {
             bool logit = cat != Cat.Info;
-            bool showit = cat != Cat.Log;
-
-            var scat = cat switch
-            {
-                Cat.Send => ">>>",
-                Cat.Receive => "<<<",
-                Cat.Error => "!!!",
-                _ => "---",
-            };
+            bool showit = cat != Cat.Log || cat != Cat.Send;
 
             if (showit)
             {
@@ -317,12 +302,20 @@ namespace NTerm
                         break;
                 }
 
-                Console.Write($"{scat} {text}{Environment.NewLine}");
+                Console.WriteLine(text);
                 Console.ResetColor();
             }
 
             if (logit && _logStream is not null)
             {
+                var scat = cat switch
+                {
+                    Cat.Send => ">>>",
+                    Cat.Receive => "<<<",
+                    Cat.Error => "!!!",
+                    _ => "---",
+                };
+
                 double sec = 1.0 * (Stopwatch.GetTimestamp() - _startTick) / Stopwatch.Frequency;
                 var s = $"{sec:000.000} {scat} {text}{Environment.NewLine}";
                 _logStream.Write(Encoding.Default.GetBytes(s));
@@ -343,16 +336,17 @@ namespace NTerm
         /// </summary>
         void About()
         {
-            List<string> docs = ["Execute using one of:"];
-            docs.Add("    NTerm tcp host port");
-            docs.Add("    NTerm udp host port");
-            docs.Add("    NTerm serial port baud framing (e.g. COM1 9600 8N1)");
-            docs.Add("    NTerm config_file (TODO1 see https://github.com/cepthomas/NTerm/blob/main/README.md)");
+            List<string> docs = ["See https://github.com/cepthomas/NTerm/blob/main/README.md)"];
+            docs.Add("Execute using one of:");
+            docs.Add("    NTerm <config_file> - See https://github.com/cepthomas/NTerm/blob/main/README.md)");
+            docs.Add("    NTerm tcp <host> <port>");
+            docs.Add("    NTerm udp <host> <port>");
+            docs.Add("    NTerm serial <port> <baud> <framing> - e.g. COM1 9600 8N1)";
 
             docs.Add("Commands:");
             docs.Add("    ESC q: quit");
             docs.Add("    ESC h: help");
-            docs.Add("    ESC <user macro>");
+            docs.Add("    ESC <macro>");
 
             docs.Add("Current config:");
             _config.Doc().ForEach(d => docs.Add($"    {d}"));
@@ -366,7 +360,6 @@ namespace NTerm
             }
 
             docs.ForEach(d => Tell(Cat.Info, d));
-            //Tools.MarkdownToHtml(docs, Tools.MarkdownMode.Simple, true); // Simple DarkApi LightApi
         }
     }
 }

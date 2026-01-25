@@ -1,7 +1,8 @@
-using Ephemera.NBagOfTricks;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using Ephemera.NBagOfTricks;
+
 
 namespace NTerm
 {
@@ -12,7 +13,7 @@ namespace NTerm
     {
         #region Config properties
         /// <summary>Comm parameters.</summary>
-        public List<string> CommType { get; private set; } = [];
+        public List<string> CommConfig { get; private set; } = [];
 
         /// <summary>Color for error messages.</summary>
         public ConsoleColor ErrorColor { get; private set; } = ConsoleColor.Red; // default
@@ -21,7 +22,7 @@ namespace NTerm
         public ConsoleColor InfoColor { get; private set; } = ConsoleColor.Blue; // default
 
         /// <summary>Prompt. Can be empty for continuous receiving.</summary>
-        public string Prompt { get; private set; } = ""; // default
+        public string Prompt { get; private set; } = ""; // default is none
 
         /// <summary>Message delimiter: LF=10 CR=13 NUL=0.</summary>
         public byte Delim { get; private set; } = 0; // default NUL
@@ -58,11 +59,11 @@ namespace NTerm
                 {
                     switch (kv.Key.ToLower())
                     {
-                        case "comm_type":
-                            CommType = kv.Value.SplitByToken(" ");
+                        case "comm":
+                            CommConfig = kv.Value.SplitByToken(" ");
                             // Process comm spec.
                             List<string> valid = ["null", "tcp", "udp", "serial"];
-                            if (CommType.Count < 1 || !valid.Contains(CommType[0]))
+                            if (CommConfig.Count < 1 || !valid.Contains(CommConfig[0]))
                             {
                                 throw new ConfigException($"Invalid comm type: [{kv}]");
                             }
@@ -105,7 +106,7 @@ namespace NTerm
             }
             else // assume explicit cl spec
             {
-                CommType = args;
+                CommConfig = args;
             }
         }
 
@@ -117,7 +118,7 @@ namespace NTerm
         {
             List<string> ls = [];
 
-            ls.Add($"comm_type:{string.Join(" ", CommType)}");
+            ls.Add($"comm:{string.Join(" ", CommConfig)}");
             ls.Add($"delim:{Delim}");
             ls.Add($"prompt:{Prompt}");
             ls.Add($"info_color:{InfoColor}");

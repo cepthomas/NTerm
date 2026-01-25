@@ -128,7 +128,7 @@ namespace NTerm
                         }
 
 
-                        //=========== Receive TODO1 outside write loop?  ==========//
+                        //=========== Receive TODO1 outside write loop? -> continuous messages ==========//
                         bool rcvDone = false;
                         byte[] rxData = new byte[BUFFER_SIZE];
 

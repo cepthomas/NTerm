@@ -1,4 +1,3 @@
-using Ephemera.NBagOfTricks;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -11,9 +10,10 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using Ephemera.NBagOfTricks;
 
 
-namespace Test
+namespace Test // TODO1 delete these cs.
 {
     internal class Program
     {
@@ -70,7 +70,7 @@ namespace Test
         void DoBasicTarget(CancellationTokenSource ts)
         {
             Console.WriteLine($"DoBasicTarget()");
-            List<string> config = ["[nterm]", "comm_type = null", "delim = NUL", "prompt = >", "meta = -"];
+            List<string> config = ["[nterm]", "comm = null", "delim = NUL", "prompt = >", "meta = -"];
             File.WriteAllLines(_configFile, config);
             var proc = RunTarget(_configFile);
         }
@@ -82,7 +82,7 @@ namespace Test
         {
             Console.WriteLine($"DoConfigTarget()");
             List<string> config = [
-                "[nterm]", "comm_type = null", "delim = NUL", "prompt = >", "meta = -",
+                "[nterm]", "comm = null", "delim = NUL", "prompt = >", "meta = -",
                 "info_color = darkcyan", "err_color = green",
             "[macros]", "dox = \"do xxxxxxx\"", "s3 = \"hey, send 333333333\"", "tm = \"  xmagentax   -yellow-  \"",
             "[matchers]", "\"mag\" = magenta", "\"yel\" = yellow"];
@@ -98,7 +98,7 @@ namespace Test
             Console.WriteLine($"DoTcpTarget()");
             // Tweak config.
             List<string> config = [
-                "[nterm]", "comm_type = tcp 127.0.0.1 59120", "delim = NUL", "prompt = >", "meta = -",
+                "[nterm]", "comm = tcp 127.0.0.1 59120", "delim = NUL", "prompt = >", "meta = -",
                 "info_color = darkcyan", "err_color = green",
             "[macros]", "dox = \"do xxxxxxx\"", "s3 = \"hey, send 333333333\"", "tm = \"  xmagentax   -yellow-  \"",
             "[matchers]", "\"mag\" = magenta", "\"yel\" = yellow"];
@@ -116,7 +116,7 @@ namespace Test
             Console.WriteLine($"DoUdpTarget()");
             // Tweak config.
             List<string> config = [
-                "[nterm]", "comm_type = udp 127.0.0.1 59140", "delim = NUL", "prompt = >", "meta = -",
+                "[nterm]", "comm = udp 127.0.0.1 59140", "delim = NUL", "prompt = >", "meta = -",
                 "info_color = darkcyan", "err_color = green",
             "[macros]", "dox = \"do xxxxxxx\"", "s3 = \"hey, send 333333333\"", "tm = \"  xmagentax   -yellow-  \"",
             "[matchers]", "\"mag\" = magenta", "\"yel\" = yellow"];
