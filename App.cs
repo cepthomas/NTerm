@@ -60,7 +60,6 @@ namespace NTerm
                 LogManager.LogMessage += LogManager_LogMessage;
                 LogManager.Run(logFileName, 100000);
 
-
                 // Process user command line input.
                 var args = Environment.GetCommandLineArgs().ToList()[1..];
 
@@ -138,12 +137,13 @@ namespace NTerm
 
             Prompt();
 
+
             while (!ts.Token.IsCancellationRequested)
             {
                 try
                 {
                     //=========== Check state ============//
-                    // TODO1 - retries etc.
+                    // TODO1 - state/retries etc.
 
 
                     ///// User CLI input? /////
@@ -164,6 +164,11 @@ namespace NTerm
                                     case "q": // quit
                                         ts.Cancel();
                                         Task.WaitAll([taskKeyboard, taskComm]);
+                                        break;
+
+                                    case "c": // clear TODO1
+                                        Console.Clear();
+                                        Prompt();
                                         break;
 
                                     case "h": // help
@@ -267,7 +272,7 @@ namespace NTerm
                     {
                         // Terminal command.
                         var s = Console.ReadLine();
-                        if (s is not null) // && s.Length > 0)
+                        if (s is not null)
                         {
                             _qUserCli.Enqueue(cmd + s);
                         }
@@ -299,12 +304,15 @@ namespace NTerm
                 case LogLevel.Info:
                     Console.ForegroundColor = _config.InfoColor;
                     break;
+                
                 case LogLevel.Error:
                     Console.ForegroundColor = _config.ErrorColor;
                     break;
+                
                 case LogLevel.Debug:
                     Console.ForegroundColor = _config.DebugColor;
                     break;
+                
                 default:
                     //  If color not explicitly specified, look for text matches.
                     var mc = _config.Matchers.Where(m => e.Message.Contains(m.Key)); // simple search is faster than compiled regexes
@@ -319,6 +327,7 @@ namespace NTerm
         /// <summary>
         /// Show me everything.
         /// </summary>
+        /// <param name="fail">Flavor of infodump</param>
         void About(bool fail)
         {
             List<string> docs = [];
@@ -342,6 +351,7 @@ namespace NTerm
             {
                 docs.Add("Commands:");
                 docs.Add("    ESC q: quit");
+                docs.Add("    ESC c: clear");
                 docs.Add("    ESC h: help");
                 docs.Add("    ESC <macro>: execute macro defined in config file");
 
@@ -357,9 +367,8 @@ namespace NTerm
                 }
             }
 
-            var s = string.Join(Environment.NewLine, docs);
             Console.ForegroundColor = _config.InfoColor;
-            Console.WriteLine(s);
+            Console.WriteLine(string.Join(Environment.NewLine, docs));
             Console.ResetColor();
         }
 
@@ -371,26 +380,23 @@ namespace NTerm
             //ConsoleOps.Move(50, 50, 1000, 900);
 
             var cvals = Enum.GetValues(typeof(ConsoleColor));
+
+            Console.BackgroundColor = ConsoleColor.Black;
             Console.WriteLine($"--------------------------------------------------------");
             for (int i = 0; i < cvals.Length; i++)
             {
                 var conclr = (ConsoleColor)i;
-                Console.BackgroundColor = ConsoleColor.Black;
                 Console.ForegroundColor = conclr;
                 Console.WriteLine($"ForegroundColor:{conclr}");
-                //Console.ResetColor();
             }
 
-
-            //Console.ResetColor();
+            Console.ForegroundColor = ConsoleColor.White;
             Console.WriteLine($"--------------------------------------------------------");
             for (int i = 0; i < cvals.Length; i++)
             {
                 var conclr = (ConsoleColor)i;
-                Console.ForegroundColor = ConsoleColor.White;
                 Console.BackgroundColor = conclr;
                 Console.WriteLine($"BackgroundColor:{conclr}");
-                //Console.ResetColor();
             }
             Console.ResetColor();
         }

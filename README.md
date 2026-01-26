@@ -67,5 +67,6 @@ s3 = "send me a three"
 # Runtime Commands TODO1 c for clear term
 
 - `ESC q` - quit application
+- `ESC c` - clear terminal
 - `ESC h` - show some info
 - `ESC <macro>` - execute macro defined in config file
