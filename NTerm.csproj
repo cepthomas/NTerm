@@ -11,7 +11,8 @@
         <ImplicitUsings>disable</ImplicitUsings>
         <ApplicationIcon>cucaracha.ico</ApplicationIcon>
         <SatelliteResourceLanguages>none</SatelliteResourceLanguages>
-        <NoWarn>1701;1702;CA1816;CA1822</NoWarn>
+        <NoWarn>1701;1702;CA1816;CA1822;SYSLIB1054</NoWarn>
+        <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     </PropertyGroup>
 
     <ItemGroup>
@@ -36,12 +37,6 @@
         <Reference Include="Ephemera.NBagOfTricks">
             <HintPath>lib\Ephemera.NBagOfTricks.dll</HintPath>
         </Reference>
-    </ItemGroup>
-
-    <ItemGroup>
-      <None Update="default.ini">
-        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-      </None>
     </ItemGroup>
 
     <Target Name="PostBuild" AfterTargets="PostBuildEvent" Condition="'$(TOOLS_PATH)' != ''">

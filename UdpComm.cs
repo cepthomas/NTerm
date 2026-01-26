@@ -25,6 +25,9 @@ namespace NTerm
         const int BUFFER_SIZE = 4096;
         #endregion
 
+        /// <summary>Module logger.</summary>
+        readonly Logger _logger = LogManager.CreateLogger("UDP");
+
         #region Lifecycle
         /// <summary>Constructor.</summary>
         /// <param name="config"></param>
@@ -58,10 +61,14 @@ namespace NTerm
         #region IComm implementation
         /// <summary>IComm implementation.</summary>
         /// <see cref="IComm"/>
+        public CommState State { get; private set; }
+
+        /// <summary>IComm implementation.</summary>
+        /// <see cref="IComm"/>
         public void Send(byte[] td)
         {
             throw new NotImplementedException();
-            _qSend.Enqueue([]);
+            //_qSend.Enqueue([]);
         }
 
         /// <summary>IComm implementation.</summary>
@@ -78,15 +85,17 @@ namespace NTerm
         {
         }
 
-        /// <summary>IComm implementation.</summary>
-        /// <see cref="IComm"/>
-        public event EventHandler<NotifEventArgs>? Notif;
+        ///// <summary>IComm implementation.</summary>
+        ///// <see cref="IComm"/>
+        //public event EventHandler<NotifEventArgs>? Notif;
         #endregion
 
         /// <summary>Main work loop.</summary>
         /// <see cref="IComm"/>
         public void Run(CancellationToken token)
         {
+            _logger.Info("Run start");
+
             //=========== Connect ============//
             using var listener = new UdpClient(_port);
             IPEndPoint ep = new(IPAddress.Any, _port);
@@ -111,53 +120,54 @@ namespace NTerm
             }
             catch (Exception e)
             {
-                ProcessException(e);
+                _logger.Exception(e);
+                State = Utils.ProcessException(e);
             }
         }
 
-        #region Internals
-        /// <summary>
-        /// Handle errors.
-        /// </summary>
-        /// <param name="e"></param>
-        /// <returns></returns>
-        bool ProcessException(Exception e)
-        {
-            // Connect:
-            // - SocketException - An error occurred when accessing the socket.
-            // - ArgumentNullException - endPoint is null.
-            // - ObjectDisposedException - The UdpClient is closed.
-            // 
-            // ReceiveAsync:
-            // - ObjectDisposedException - The underlying Socket has been closed.
-            // - SocketException - An error occurred when accessing the socket.
+        // #region Internals
+        // /// <summary>
+        // /// Handle errors.
+        // /// </summary>
+        // /// <param name="e"></param>
+        // /// <returns></returns>
+        // bool ProcessException(Exception e)
+        // {
+        //     // Connect:
+        //     // - SocketException - An error occurred when accessing the socket.
+        //     // - ArgumentNullException - endPoint is null.
+        //     // - ObjectDisposedException - The UdpClient is closed.
+        //     // 
+        //     // ReceiveAsync:
+        //     // - ObjectDisposedException - The underlying Socket has been closed.
+        //     // - SocketException - An error occurred when accessing the socket.
 
-            bool fatal = false;
+        //     bool fatal = false;
 
-            switch (e)
-            {
-                case SocketException ex: // Some are expected and recoverable.
-                    // https://learn.microsoft.com/en-us/windows/win32/winsock/windows-sockets-error-codes-2
-                    int[] valid = [10053, 10054, 10060, 10061, 10064];
-                    if (valid.Contains(ex.NativeErrorCode))
-                    {
-                        // Ignore and retry later.
-                    }
-                    else
-                    {
-                        // Just Notify/log and carry on.
-                        Notif?.Invoke(this, new(Cat.Log, e.Message));
-                    }
-                    break;
+        //     switch (e)
+        //     {
+        //         case SocketException ex: // Some are expected and recoverable.
+        //             // https://learn.microsoft.com/en-us/windows/win32/winsock/windows-sockets-error-codes-2
+        //             int[] valid = [10053, 10054, 10060, 10061, 10064];
+        //             if (valid.Contains(ex.NativeErrorCode))
+        //             {
+        //                 // Ignore and retry later.
+        //             }
+        //             else
+        //             {
+        //                 // Just Notify/log and carry on.
+        //                 Notif?.Invoke(this, new(Cat.Log, e.Message));
+        //             }
+        //             break;
 
-                default:
-                    // Just Notify/log and carry on.
-                    Notif?.Invoke(this, new(Cat.Log, e.Message));
-                    break;
-            }
+        //         default:
+        //             // Just Notify/log and carry on.
+        //             Notif?.Invoke(this, new(Cat.Log, e.Message));
+        //             break;
+        //     }
 
-            return fatal;
-        }
-        #endregion
+        //     return fatal;
+        // }
+        // #endregion
     }
 }

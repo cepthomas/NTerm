@@ -18,14 +18,17 @@ namespace NTerm
         /// <summary>Color for error messages.</summary>
         public ConsoleColor ErrorColor { get; private set; } = ConsoleColor.Red; // default
 
+        /// <summary>Color for normal messages.</summary>
+        public ConsoleColor InfoColor { get; private set; } = ConsoleColor.White; // default
+
         /// <summary>Color for internal messages.</summary>
-        public ConsoleColor InfoColor { get; private set; } = ConsoleColor.Blue; // default
+        public ConsoleColor DebugColor { get; private set; } = ConsoleColor.Cyan; // default
 
         /// <summary>Prompt. Can be empty for continuous receiving.</summary>
-        public string Prompt { get; private set; } = ""; // default is none
+        public string Prompt { get; private set; } = "";
 
         /// <summary>Message delimiter: LF=10 CR=13 NUL=0.</summary>
-        public byte Delim { get; private set; } = 0; // default NUL
+        public byte Delim { get; private set; } = 0;
 
         /// <summary>User macros.</summary>
         public Dictionary<string, string> Macros { get; private set; } = [];
@@ -75,6 +78,10 @@ namespace NTerm
 
                         case "info_color":
                             InfoColor = Enum.Parse<ConsoleColor>(kv.Value, true);
+                            break;
+
+                        case "debug_color":
+                            DebugColor = Enum.Parse<ConsoleColor>(kv.Value, true);
                             break;
 
                         case "prompt":

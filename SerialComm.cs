@@ -27,6 +27,9 @@ namespace NTerm
         readonly string _config;
         #endregion
 
+        /// <summary>Module logger.</summary>
+        readonly Logger _logger = LogManager.CreateLogger("SER");
+
         #region Lifecycle
         /// <summary>Constructor.</summary>
         /// <param name="config"></param>
@@ -92,11 +95,15 @@ namespace NTerm
         /// <summary>What am I.</summary>
         public override string ToString()
         {
-            return ($"SerialComm {_config[1..]} ");
+            return $"SerialComm {_config[1..]} ";
         }
         #endregion
 
         #region IComm implementation
+        /// <summary>IComm implementation.</summary>
+        /// <see cref="IComm"/>
+        public CommState State { get; private set; }
+
         /// <summary>IComm implementation.</summary>
         /// <see cref="IComm"/>
         public void Send(byte[] req)
@@ -118,16 +125,17 @@ namespace NTerm
         {
         }
 
-        /// <summary>IComm implementation.</summary>
-        /// <see cref="IComm"/>
-        public event EventHandler<NotifEventArgs>? Notif;
+        ///// <summary>IComm implementation.</summary>
+        ///// <see cref="IComm"/>
+        //public event EventHandler<NotifEventArgs>? Notif;
         #endregion
 
         /// <summary>Main work loop.</summary>
         /// <see cref="IComm"/>
         public void Run(CancellationToken token)
         {
-            Notif?.Invoke(this, new(Cat.Log, "xyzzy"));
+            //Notif?.Invoke(this, new(Cat.Log, "xyzzy"));
+            _logger.Info("Run start");
 
             while (!token.IsCancellationRequested)
             {
@@ -156,32 +164,39 @@ namespace NTerm
                 }
                 catch (Exception e)
                 {
-                    // All fatal except TimeoutException.
-                    // common:
-                    // - ArgumentOutOfRangeException
-                    // - ArgumentException
-                    // - ArgumentNullException
-                    // open:
-                    // - UnauthorizedAccessException  Access is denied to the port. -or- Already open.
-                    // - IOException  The port is in an invalid state. -or- the parameters passed from this SerialPort object were invalid.
-                    // - InvalidOperationException  The specified port on the current instance of the SerialPort is already open.
-                    // write:
-                    // - InvalidOperationException - The specified port is not open.
-                    // - TimeoutException - The operation did not complete before the time-out period ended.
-                    // read:
-                    // - InvalidOperationException - The specified port is not open.
-                    // - TimeoutException - No bytes were available to read.
-
-                    if (e is TimeoutException)
-                    {
-                        // Handle timeout, or just keep trying.
-                    }
-                    else
-                    {
-                        // Fatal - bubble up to App to handle.
-                        throw;
-                    }
+                    _logger.Exception(e);
+                    State = Utils.ProcessException(e);
                 }
+
+
+                // catch (Exception e)
+                // {
+                //     // All fatal except TimeoutException.
+                //     // common:
+                //     // - ArgumentOutOfRangeException
+                //     // - ArgumentException
+                //     // - ArgumentNullException
+                //     // open:
+                //     // - UnauthorizedAccessException  Access is denied to the port. -or- Already open.
+                //     // - IOException  The port is in an invalid state. -or- the parameters passed from this SerialPort object were invalid.
+                //     // - InvalidOperationException  The specified port on the current instance of the SerialPort is already open.
+                //     // write:
+                //     // - InvalidOperationException - The specified port is not open.
+                //     // - TimeoutException - The operation did not complete before the time-out period ended.
+                //     // read:
+                //     // - InvalidOperationException - The specified port is not open.
+                //     // - TimeoutException - No bytes were available to read.
+
+                //     if (e is TimeoutException)
+                //     {
+                //         // Handle timeout, or just keep trying.
+                //     }
+                //     else
+                //     {
+                //         // Fatal - bubble up to App to handle.
+                //         throw;
+                //     }
+                // }
 
                 // Don't be greedy.
                 Thread.Sleep(5);

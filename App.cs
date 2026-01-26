@@ -9,13 +9,10 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
+using System.Runtime.InteropServices;
 using Ephemera.NBagOfTricks;
 
-
-// A UDP client sends data packets (datagrams) to a SERVER without first establishing a formal connection, 
-//   and the UDP server listens for these incoming datagrams.
-// TCP - the CLIENT initiates a connection to a listening server
-
+// TODO1 default settings ini in Ephemera. If it doesn't exist copy default there.
 
 namespace NTerm
 {
@@ -23,44 +20,70 @@ namespace NTerm
     {
         #region Fields
         /// <summary>Current config.</summary>
-        Config _config = new();
+        readonly Config _config = new();
+
+        /// <summary>Module logger.</summary>
+        readonly Logger _logger = LogManager.CreateLogger("APP");
 
         /// <summary>Client comm flavor.</summary>
-        IComm _comm = new NullComm();
+        readonly IComm _comm = new NullComm();
 
         /// <summary>Cli event queue.</summary>
         readonly ConcurrentQueue<string> _qUserCli = new();
 
-        /// <summary>Local logger.</summary>
-        readonly FileStream? _logStream = null;
-
         /// <summary>Logger timestamps.</summary>
-        long _startTick = 0;
+        readonly long _startTick = 0;
         #endregion
 
-        /// <summary>
-        /// Start here.
-        /// </summary>
-        static void Main()
-        {
-            using var app = new App();
-        }
-
+        #region Lifecycle
         /// <summary>
         /// Build me one and make it go.
         /// </summary>
         public App()
         {
+            //Dev();
+            //Environment.Exit(0);
+
             try
             {
                 // Init stuff.
                 _startTick = Stopwatch.GetTimestamp();
-                var fmode = FileMode.Create; // or .Append TODO?
-                _logStream = File.Open(Path.Combine(MiscUtils.GetSourcePath(), "nterm.log"), fmode);
 
-                ProcessAppCommandLine();
+                // Must do this first before initializing.
+                string appDir = MiscUtils.GetAppDataDir("NTerm", "Ephemera");
+                // _settings = (UserSettings)SettingsCore.Load(appDir, typeof(UserSettings));
 
-                Tell(Cat.Info, $"NTerm using {_comm} - started {DateTime.Now}");
+                // Init logging.
+                string logFileName = Path.Combine(appDir, "log.txt");
+                LogManager.MinLevelFile = LogLevel.Debug;// _settings.FileLogLevel;
+                LogManager.MinLevelNotif = LogLevel.Debug;// _settings.NotifLogLevel;
+                LogManager.LogMessage += LogManager_LogMessage;
+                LogManager.Run(logFileName, 100000);
+
+
+                // Process user command line input.
+                var args = Environment.GetCommandLineArgs().ToList()[1..];
+
+                if (args.Count == 0)
+                {
+                    About(true);
+                    Environment.Exit(1);
+                }
+
+                _config = new();
+                _config.Load(args);
+
+                // Process comm spec.
+                _comm = _config.CommConfig[0].ToLower() switch
+                {
+                    "null" => new NullComm(),
+                    "tcp" => new TcpComm(_config.CommConfig),
+                    "udp" => new UdpComm(_config.CommConfig),
+                    "serial" => new SerialComm(_config.CommConfig),
+                    _ => throw new ConfigException($"Invalid comm type: [{_config.CommConfig[0]}]"),
+                };
+
+                _logger.Info($"NTerm using {_comm} - started {DateTime.Now}");
 
                 // Go forever.
                 Run();
@@ -68,17 +91,17 @@ namespace NTerm
             // Any exception that arrives here is considered fatal. Inform and exit.
             catch (ConfigException ex) // ini content error
             {
-                Tell(Cat.Error, $"{ex.Message}");
+                _logger.Error($"{ex.Message}");
                 Environment.Exit(1);
             }
             catch (IniSyntaxException ex) // ini structure error
             {
-                Tell(Cat.Error, $"Ini syntax error at line {ex.LineNum}: {ex.Message}");
+                _logger.Error($"Ini syntax error at line {ex.LineNum}: {ex.Message}");
                 Environment.Exit(2);
             }
             catch (Exception ex) // other error
             {
-                Tell(Cat.Error, ex.ToString());
+                _logger.Error(ex.ToString());
                 Environment.Exit(3);
             }
 
@@ -91,9 +114,16 @@ namespace NTerm
         public void Dispose()
         {
             _comm?.Dispose();
-            _logStream?.Flush();
-            _logStream?.Dispose();
         }
+
+        /// <summary>
+        /// Start here.
+        /// </summary>
+        static void Main()
+        {
+            using var app = new App();
+        }
+        #endregion
 
         /// <summary>
         /// Main loop.
@@ -112,6 +142,10 @@ namespace NTerm
             {
                 try
                 {
+                    //=========== Check state ============//
+                    // TODO1 - retries etc.
+
+
                     ///// User CLI input? /////
                     while (_qUserCli.TryDequeue(out string? s))
                     {
@@ -133,7 +167,7 @@ namespace NTerm
                                         break;
 
                                     case "h": // help
-                                        About();
+                                        About(false);
                                         Prompt();
                                         break;
 
@@ -145,7 +179,7 @@ namespace NTerm
                                         }
                                         else
                                         {
-                                            Tell(Cat.Error, $"Unknown macro key: [{mk}]");
+                                            _logger.Error($"Unknown macro key: [{mk}]");
                                             Prompt();
                                         }
                                         break;
@@ -155,7 +189,7 @@ namespace NTerm
                         }
                         else // just send
                         {
-                            Tell(Cat.Send, $"[{s}]");
+                            _logger.Info($">>> [{s}]");
                             var td = Encoding.Default.GetBytes(s).Append(_config.Delim);
                             _comm.Send([.. td]);
                         }
@@ -173,7 +207,7 @@ namespace NTerm
                                 if (b[i] == _config.Delim)
                                 {
                                     // End line.
-                                    Tell(Cat.Receive, $"[{string.Concat(rcvBuffer)}]");
+                                    _logger.Info($"<<< [{string.Concat(rcvBuffer)}]");
                                     rcvBuffer.Clear();
                                     Prompt();
                                 }
@@ -245,84 +279,6 @@ namespace NTerm
             }
         }
 
-        /// <summary>s
-        /// Process user command line input.
-        /// </summary>
-        /// <exception cref="ConfigException"></exception>
-        void ProcessAppCommandLine()
-        {
-            var args = Environment.GetCommandLineArgs().ToList()[1..];
-
-            if (args.Count == 0)
-            {
-                About();
-                return;
-            }
-
-            _config = new();
-            _config.Load(args);
-
-            // Process comm spec.
-            _comm = _config.CommConfig[0].ToLower() switch
-            {
-                "null" => new NullComm(),
-                "tcp" => new TcpComm(_config.CommConfig),
-                "udp" => new UdpComm(_config.CommConfig),
-                "serial" => new SerialComm(_config.CommConfig),
-                _ => throw new ConfigException($"Invalid comm type: [{_config.CommConfig[0]}]"),
-            };
-
-            _comm.Notif += (object? _, NotifEventArgs e) => { Tell(e.Cat, e.Message); };
-        }
-
-        /// <summary>
-        /// Write a line to console and/or log.
-        /// </summary>
-        /// <param name="cat">Category</param>
-        /// <param name="text">What to print</param>
-        void Tell(Cat cat, string text)
-        {
-            bool logit = cat != Cat.Info;
-            bool showit = cat != Cat.Log || cat != Cat.Send;
-
-            if (showit)
-            {
-                switch (cat)
-                {
-                    case Cat.Info:
-                        Console.ForegroundColor = _config.InfoColor;
-                        break;
-                    case Cat.Error:
-                        Console.ForegroundColor = _config.ErrorColor;
-                        break;
-                    default:
-                        //  If color not explicitly specified, look for text matches.
-                        var mc = _config.Matchers.Where(m => text.Contains(m.Key)); // simple search is faster than compiled regexes
-                        if (mc.Any()) Console.ForegroundColor = mc.First().Value;
-                        break;
-                }
-
-                Console.WriteLine(text);
-                Console.ResetColor();
-            }
-
-            if (logit && _logStream is not null)
-            {
-                var scat = cat switch
-                {
-                    Cat.Send => ">>>",
-                    Cat.Receive => "<<<",
-                    Cat.Error => "!!!",
-                    _ => "---",
-                };
-
-                double sec = 1.0 * (Stopwatch.GetTimestamp() - _startTick) / Stopwatch.Frequency;
-                var s = $"{sec:000.000} {scat} {text}{Environment.NewLine}";
-                _logStream.Write(Encoding.Default.GetBytes(s));
-                _logStream.Flush();
-            }
-        }
-
         /// <summary>
         /// User prompt.
         /// </summary>
@@ -332,34 +288,160 @@ namespace NTerm
         }
 
         /// <summary>
+        /// Show log events.
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        void LogManager_LogMessage(object? sender, LogMessageEventArgs e)
+        {
+            switch (e.Level)
+            {
+                case LogLevel.Info:
+                    Console.ForegroundColor = _config.InfoColor;
+                    break;
+                case LogLevel.Error:
+                    Console.ForegroundColor = _config.ErrorColor;
+                    break;
+                case LogLevel.Debug:
+                    Console.ForegroundColor = _config.DebugColor;
+                    break;
+                default:
+                    //  If color not explicitly specified, look for text matches.
+                    var mc = _config.Matchers.Where(m => e.Message.Contains(m.Key)); // simple search is faster than compiled regexes
+                    if (mc.Any()) Console.ForegroundColor = mc.First().Value;
+                    break;
+            }
+
+            Console.WriteLine(e.ShortMessage);
+            Console.ResetColor();
+        }
+
+        /// <summary>
         /// Show me everything.
         /// </summary>
-        void About()
+        void About(bool fail)
         {
-            List<string> docs = ["See https://github.com/cepthomas/NTerm/blob/main/README.md)"];
+            List<string> docs = [];
+
+            if (!fail)
+            {
+                docs.Add("NTerm usage");
+            }
+            else
+            {
+                docs.Add("NTerm invalid args");
+            }
+
             docs.Add("Execute using one of:");
             docs.Add("    NTerm <config_file> - See https://github.com/cepthomas/NTerm/blob/main/README.md)");
             docs.Add("    NTerm tcp <host> <port>");
             docs.Add("    NTerm udp <host> <port>");
-            docs.Add("    NTerm serial <port> <baud> <framing> - e.g. COM1 9600 8N1)";
+            docs.Add("    NTerm serial <port> <baud> <framing> - e.g. COM1 9600 8N1");
 
-            docs.Add("Commands:");
-            docs.Add("    ESC q: quit");
-            docs.Add("    ESC h: help");
-            docs.Add("    ESC <macro>");
-
-            docs.Add("Current config:");
-            _config.Doc().ForEach(d => docs.Add($"    {d}"));
-
-            var sp = SerialPort.GetPortNames().ToList();
-            if (sp.Count > 0)
+            if (!fail)
             {
-                docs.Add(Environment.NewLine);
-                docs.Add($"Serial ports:");
-                sp.ForEach(s => { docs.Add($"- {s}"); });
+                docs.Add("Commands:");
+                docs.Add("    ESC q: quit");
+                docs.Add("    ESC h: help");
+                docs.Add("    ESC <macro>: execute macro defined in config file");
+
+                docs.Add("Current config:");
+                _config.Doc().ForEach(d => docs.Add($"    {d}"));
+
+                var sp = SerialPort.GetPortNames().ToList();
+                if (sp.Count > 0)
+                {
+                    docs.Add(Environment.NewLine);
+                    docs.Add($"Serial ports:");
+                    sp.ForEach(s => { docs.Add($"- {s}"); });
+                }
             }
 
-            docs.ForEach(d => Tell(Cat.Info, d));
+            var s = string.Join(Environment.NewLine, docs);
+            Console.ForegroundColor = _config.InfoColor;
+            Console.WriteLine(s);
+            Console.ResetColor();
+        }
+
+        /// <summary>
+        /// Screwing around.
+        /// </summary>
+        void Dev()
+        {
+            //ConsoleOps.Move(50, 50, 1000, 900);
+
+            var cvals = Enum.GetValues(typeof(ConsoleColor));
+            Console.WriteLine($"--------------------------------------------------------");
+            for (int i = 0; i < cvals.Length; i++)
+            {
+                var conclr = (ConsoleColor)i;
+                Console.BackgroundColor = ConsoleColor.Black;
+                Console.ForegroundColor = conclr;
+                Console.WriteLine($"ForegroundColor:{conclr}");
+                //Console.ResetColor();
+            }
+
+
+            //Console.ResetColor();
+            Console.WriteLine($"--------------------------------------------------------");
+            for (int i = 0; i < cvals.Length; i++)
+            {
+                var conclr = (ConsoleColor)i;
+                Console.ForegroundColor = ConsoleColor.White;
+                Console.BackgroundColor = conclr;
+                Console.WriteLine($"BackgroundColor:{conclr}");
+                //Console.ResetColor();
+            }
+            Console.ResetColor();
+        }
+    }
+
+    /// <summary>
+    /// Manipulate the console window. TODO1 set/save console size??
+    /// </summary>
+    public class ConsoleOps
+    {
+        // Structure used by GetWindowRect - pixels.
+        struct Rect
+        {
+            public int Left;
+            public int Top;
+            public int Right;
+            public int Bottom;
+        }
+
+        // Import the necessary functions from user32.dll
+        [DllImport("user32.dll")]
+        static extern IntPtr GetForegroundWindow();
+
+        [DllImport("user32.dll")]
+        static extern bool ShowWindow(IntPtr hWnd, int nCmdShow);
+
+        [DllImport("user32.dll")]
+        static extern bool GetWindowRect(IntPtr hWnd, out Rect lpRect);
+
+        [DllImport("user32.dll")]
+        static extern bool MoveWindow(IntPtr hWnd, int x, int y, int nWidth, int nHeight, bool bRepaint);
+
+        // Constants for the ShowWindow function
+        const int SW_MAXIMIZE = 3;
+
+        public static void Move(int x, int y, int w, int h)
+        {
+            // Get the handle of the console.
+            IntPtr hnd = GetForegroundWindow();
+
+            // Resize and reposition the console window to fill the screen
+            MoveWindow(hnd, x, y, w, h, true);
+
+            // Maximize the console.
+            //ShowWindow(hnd, SW_MAXIMIZE);
+
+            // Get the screen size.
+            //Rect screenRect;
+            //GetWindowRect(hnd, out screenRect);
+            //int width = screenRect.Right - screenRect.Left;
+            //int height = screenRect.Bottom - screenRect.Top;
         }
     }
 }

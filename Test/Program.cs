@@ -13,7 +13,7 @@ using System.Threading.Tasks;
 using Ephemera.NBagOfTricks;
 
 
-namespace Test // TODO1 delete these cs.
+namespace Test // TODO1 incorporate/delete these cs.  rethink tests.
 {
     internal class Program
     {
