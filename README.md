@@ -28,6 +28,7 @@ Alternatively, NTerm can run minimally without a config file by one of:
 
 
 # Configuration File Format
+// default settings ini in Ephemera. If it doesn't exist copy default there.
 
 default settings in Ephemera\NTerm\default.ini
 
@@ -64,7 +65,7 @@ s3 = "send me a three"
 "xyz" = yellow
 
 
-# Runtime Commands TODO1 c for clear term
+# Runtime Commands
 
 - `ESC q` - quit application
 - `ESC c` - clear terminal

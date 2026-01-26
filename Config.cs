@@ -40,21 +40,31 @@ namespace NTerm
         /// <summary>
         /// Decipher the user args.
         /// </summary>
-        /// <param name="args"></param>
+        /// <param name="args">From command line</param>
+        /// <param name="defaultConfig">Default config file name</param>
         /// <exception cref="ConfigException"></exception>
-        public void Load(List<string> args)
+        public void Load(List<string> args, string defaultConfig)
         {
-            // Check for ini file first.
+            // Default first.
+            ParseIni(defaultConfig);
+
+            // Then a cmd line ini file maybe.
             if (args[0].EndsWith(".ini"))
             {
-                if (!File.Exists(args[0]))
-                {
-                    throw new ConfigException($"Invalid config file: [{args[0]}]");
-                }
-
                 // OK process it.
+                ParseIni(args[0]);
+            }
+            else // assume explicit cl spec
+            {
+                CommConfig = args;
+            }
+
+            // Local fie processor.
+            void ParseIni(string iniFn)
+            {
                 var inrdr = new IniReader();
-                inrdr.ParseFile(args[0]);
+                inrdr.ParseFile(iniFn);
+
                 var ntermSect = inrdr.GetValues("nterm");
 
                 // [nterm] section
@@ -104,16 +114,18 @@ namespace NTerm
                 }
 
                 // [macros] section
-                ntermSect = inrdr.GetValues("macros");
-                ntermSect.ForEach(kv => Macros[kv.Key] = kv.Value.Replace("\"", ""));
+                if (inrdr.GetSectionNames().Contains("macros"))
+                {
+                    ntermSect = inrdr.GetValues("macros");
+                    ntermSect.ForEach(kv => Macros[kv.Key] = kv.Value.Replace("\"", ""));
+                }
 
                 // [matchers] section
-                ntermSect = inrdr.GetValues("matchers");
-                ntermSect.ForEach(val => Matchers[val.Key.Replace("\"", "")] = Enum.Parse<ConsoleColor>(val.Value, true));
-            }
-            else // assume explicit cl spec
-            {
-                CommConfig = args;
+                if (inrdr.GetSectionNames().Contains("matchers"))
+                {
+                    ntermSect = inrdr.GetValues("matchers");
+                    ntermSect.ForEach(val => Matchers[val.Key.Replace("\"", "")] = Enum.Parse<ConsoleColor>(val.Value, true));
+                }
             }
         }
 

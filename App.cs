@@ -11,8 +11,8 @@ using System.Threading.Tasks;
 using System.Windows.Forms;
 using System.Runtime.InteropServices;
 using Ephemera.NBagOfTricks;
+using NTerm.Properties;
 
-// TODO1 default settings ini in Ephemera. If it doesn't exist copy default there.
 
 namespace NTerm
 {
@@ -44,6 +44,8 @@ namespace NTerm
             //Dev();
             //Environment.Exit(0);
 
+            int exitCode = 0;
+
             try
             {
                 // Init stuff.
@@ -51,12 +53,11 @@ namespace NTerm
 
                 // Must do this first before initializing.
                 string appDir = MiscUtils.GetAppDataDir("NTerm", "Ephemera");
-                // _settings = (UserSettings)SettingsCore.Load(appDir, typeof(UserSettings));
 
                 // Init logging.
                 string logFileName = Path.Combine(appDir, "log.txt");
-                LogManager.MinLevelFile = LogLevel.Debug;// _settings.FileLogLevel;
-                LogManager.MinLevelNotif = LogLevel.Debug;// _settings.NotifLogLevel;
+                LogManager.MinLevelFile = LogLevel.Debug;// TODO1 these? _settings.FileLogLevel;
+                LogManager.MinLevelNotif = LogLevel.Info;// _settings.NotifLogLevel;
                 LogManager.LogMessage += LogManager_LogMessage;
                 LogManager.Run(logFileName, 100000);
 
@@ -69,8 +70,16 @@ namespace NTerm
                     Environment.Exit(1);
                 }
 
+                // Load config. Is there a default ini? if no, copy from resources.
+                string defaultConfig = Path.Combine(appDir, "default.ini");
+                if (!File.Exists(defaultConfig))
+                {
+                    var sc = Resources.default_config;
+                    File.WriteAllText(defaultConfig, sc.ToString());
+                }
+
                 _config = new();
-                _config.Load(args);
+                _config.Load(args, defaultConfig);
 
                 // Process comm spec.
                 _comm = _config.CommConfig[0].ToLower() switch
@@ -91,20 +100,26 @@ namespace NTerm
             catch (ConfigException ex) // ini content error
             {
                 _logger.Error($"{ex.Message}");
-                Environment.Exit(1);
+                exitCode = 1;
             }
             catch (IniSyntaxException ex) // ini structure error
             {
                 _logger.Error($"Ini syntax error at line {ex.LineNum}: {ex.Message}");
-                Environment.Exit(2);
+                exitCode = 1;
             }
             catch (Exception ex) // other error
             {
                 _logger.Error(ex.ToString());
-                Environment.Exit(3);
+                exitCode = 1;
             }
 
-            Environment.Exit(0);
+            // Wait to let logging finish.
+            //if (exitCode != 0)
+            {
+                Thread.Sleep(500);
+            }
+
+            Environment.Exit(exitCode);
         }
 
         /// <summary>
@@ -221,7 +236,7 @@ namespace NTerm
                                     // Add to buffer.
                                     rcvBuffer.Add((char)b[i]);
 
-                                    // // Format non-readable?
+                                    // Format non-readable?
                                     // if (b[i].IsReadable()) { rcvBuffer.Add((char)b[i]); }
                                     // else { rcvBuffer.AddRange($"<{b[i]:0X}>"); }
                                 }
