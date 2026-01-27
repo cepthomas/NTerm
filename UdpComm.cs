@@ -21,7 +21,7 @@ namespace NTerm
         readonly string _host;
         readonly int _port;
         readonly ConcurrentQueue<byte[]> _qSend = new();
-        readonly ConcurrentQueue<byte[]> _qRecv = new();
+        readonly ConcurrentQueue<object> _qRecv = new();
         const int BUFFER_SIZE = 4096;
         #endregion
 
@@ -73,9 +73,9 @@ namespace NTerm
 
         /// <summary>IComm implementation.</summary>
         /// <see cref="IComm"/>
-        public byte[]? Receive()
+        public object? GetReceive()
         {
-            _qRecv.TryDequeue(out byte[]? res);
+            _qRecv.TryDequeue(out object? res);
             return res;
         }
 

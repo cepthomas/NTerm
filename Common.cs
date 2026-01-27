@@ -26,8 +26,8 @@ namespace NTerm
         void Send(byte[] msg);
 
         /// <summary>Receive from the other end.</summary>
-        /// <returns>Received message or null if none.</returns>
-        byte[]? Receive();
+        /// <returns>Received message/error or null if none.</returns>
+        object? GetReceive();
 
         /// <summary>Reset comms, resource management.</summary>
         void Reset();
@@ -46,12 +46,19 @@ namespace NTerm
     //    Receive,    // to user and log   Info <<<
     //}
 
-    /// <summary>Comm has something to tell the user.</summary>
+    ///// <summary>Comm has something to tell the user.</summary>
     //public class NotifEventArgs(CommState state, string msg) : EventArgs
     //{
     //    public CommState State { get; init; } = state;
     //    public string Message { get; init; } = msg;
     //}
+
+
+    /// <summary>Comm has something to tell the app.</summary>
+    /// <param name="Message">Valid message or null</param>
+    /// <param name="Exc">Error or null</param>
+    readonly record struct Received(byte[]? Message, Exception? Exc);
+
 
     #endregion
     /// <summary>Comm error processing categories.</summary>

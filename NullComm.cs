@@ -15,7 +15,7 @@ namespace NTerm
     {
         #region Fields
         readonly ConcurrentQueue<byte[]> _qSend = new();
-        readonly ConcurrentQueue<byte[]> _qRecv = new();
+        readonly ConcurrentQueue<object> _qRecv = new();
         #endregion
 
         /// <summary>Module logger.</summary>
@@ -53,9 +53,9 @@ namespace NTerm
 
         /// <summary>IComm implementation.</summary>
         /// <see cref="IComm"/>
-        public byte[]? Receive()
+        public object? GetReceive()
         {
-            _qRecv.TryDequeue(out byte[]? res);
+            _qRecv.TryDequeue(out object? res);
             return res;
         }
 
