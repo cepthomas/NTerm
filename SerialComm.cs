@@ -28,7 +28,7 @@ namespace NTerm
         #endregion
 
         /// <summary>Module logger.</summary>
-        readonly Logger _logger = LogManager.CreateLogger("SER");
+        //readonly Logger _logger = LogManager.CreateLogger("SER");
 
         #region Lifecycle
         /// <summary>Constructor.</summary>
@@ -135,7 +135,7 @@ namespace NTerm
         public void Run(CancellationToken token)
         {
             //Notif?.Invoke(this, new(Cat.Log, "xyzzy"));
-            _logger.Info("Run start");
+            //_logger.Info("Run start");
 
             while (!token.IsCancellationRequested)
             {
@@ -164,42 +164,12 @@ namespace NTerm
                 }
                 catch (Exception e)
                 {
-                    _logger.Exception(e);
+                    //_logger.Exception(e);
                     State = Utils.ProcessException(e);
                 }
 
-
-                // catch (Exception e)
-                // {
-                //     // All fatal except TimeoutException.
-                //     // common:
-                //     // - ArgumentOutOfRangeException
-                //     // - ArgumentException
-                //     // - ArgumentNullException
-                //     // open:
-                //     // - UnauthorizedAccessException  Access is denied to the port. -or- Already open.
-                //     // - IOException  The port is in an invalid state. -or- the parameters passed from this SerialPort object were invalid.
-                //     // - InvalidOperationException  The specified port on the current instance of the SerialPort is already open.
-                //     // write:
-                //     // - InvalidOperationException - The specified port is not open.
-                //     // - TimeoutException - The operation did not complete before the time-out period ended.
-                //     // read:
-                //     // - InvalidOperationException - The specified port is not open.
-                //     // - TimeoutException - No bytes were available to read.
-
-                //     if (e is TimeoutException)
-                //     {
-                //         // Handle timeout, or just keep trying.
-                //     }
-                //     else
-                //     {
-                //         // Fatal - bubble up to App to handle.
-                //         throw;
-                //     }
-                // }
-
                 // Don't be greedy.
-                Thread.Sleep(5);
+                Thread.Sleep(10);
             }
         }
     }

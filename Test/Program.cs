@@ -23,7 +23,7 @@ namespace Test // TODO1 incorporate/delete these cs.  rethink tests.
         /// <summary>User input</summary>
         readonly ConcurrentQueue<string> _qUserCli = new();
 
-        /// <summary>LF=10  CR=13  NUL=0</summary>
+        /// <summary>LF=10  CR=13  NUL=0. TODO1 support mb like CRLF</summary>
         byte _delim = 0;
 
         /// <summary>Config to use</summary>

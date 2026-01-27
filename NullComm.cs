@@ -19,7 +19,7 @@ namespace NTerm
         #endregion
 
         /// <summary>Module logger.</summary>
-        readonly Logger _logger = LogManager.CreateLogger("NUL");
+        //readonly Logger _logger = LogManager.CreateLogger("NUL");
 
         #region Lifecycle
         /// <summary>Constructor.</summary>
@@ -75,7 +75,7 @@ namespace NTerm
         public void Run(CancellationToken token)
         {
             //Notif?.Invoke(this, new(Cat.Log, "xyzzy"));
-            _logger.Info("Run start");
+            //_logger.Info("Run start");
 
             while (!token.IsCancellationRequested)
             {

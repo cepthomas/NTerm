@@ -54,10 +54,10 @@ namespace NTerm
                 // Must do this first before initializing.
                 string appDir = MiscUtils.GetAppDataDir("NTerm", "Ephemera");
 
-                // Init logging.
+                // Init logging. TODO log levels from?
                 string logFileName = Path.Combine(appDir, "log.txt");
-                LogManager.MinLevelFile = LogLevel.Debug;// TODO1 these? _settings.FileLogLevel;
-                LogManager.MinLevelNotif = LogLevel.Info;// _settings.NotifLogLevel;
+                LogManager.MinLevelFile = LogLevel.Debug;
+                LogManager.MinLevelNotif = LogLevel.Info;
                 LogManager.LogMessage += LogManager_LogMessage;
                 LogManager.Run(logFileName, 100000);
 
@@ -113,11 +113,10 @@ namespace NTerm
                 exitCode = 1;
             }
 
+            LogManager.Stop();
+
             // Wait to let logging finish.
-            //if (exitCode != 0)
-            {
-                Thread.Sleep(500);
-            }
+            //Thread.Sleep(100);
 
             Environment.Exit(exitCode);
         }
@@ -152,7 +151,6 @@ namespace NTerm
 
             Prompt();
 
-
             while (!ts.Token.IsCancellationRequested)
             {
                 try
@@ -162,44 +160,45 @@ namespace NTerm
 
 
                     ///// User CLI input? /////
-                    while (_qUserCli.TryDequeue(out string? s))
+                    while (_qUserCli.TryDequeue(out string? sin))
                     {
-                        if (s.Length == 0)
+                        if (sin.Length == 0)
                         {
                             Prompt();
                         }
-                        else if (s[0] == '\u001b') // Check for escape key.
+                        else if (sin[0] == Defs.ESC) // Check for escape key.
                         {
-                            if (s.Length > 1)
+                            if (sin.Length > 1)
                             {
-                                var mk = s[1..];
+                                var kin = sin[1];
+                                //var mk = s[1..];
 
-                                switch (mk)
+                                switch (kin)
                                 {
-                                    case "q": // quit
+                                    case 'q': // quit
                                         ts.Cancel();
                                         Task.WaitAll([taskKeyboard, taskComm]);
                                         break;
 
-                                    case "c": // clear TODO1
+                                    case 'c': // clear TODO1
                                         Console.Clear();
                                         Prompt();
                                         break;
 
-                                    case "h": // help
+                                    case 'h': // help
                                         About(false);
                                         Prompt();
                                         break;
 
                                     default: // user macro?
-                                        if (_config.Macros.TryGetValue(mk, out var sk))
+                                        if (_config.Macros.TryGetValue(kin, out var smacro))
                                         {
-                                            var td = Encoding.Default.GetBytes(sk).Append(_config.Delim);
+                                            var td = Encoding.Default.GetBytes(smacro).Append(_config.Delim);
                                             _comm.Send([.. td]);
                                         }
                                         else
                                         {
-                                            _logger.Error($"Unknown macro key: [{mk}]");
+                                            _logger.Error($"Unknown macro key: [{Utils.FormatByte((byte)kin)}]");
                                             Prompt();
                                         }
                                         break;
@@ -209,8 +208,8 @@ namespace NTerm
                         }
                         else // just send
                         {
-                            _logger.Info($">>> [{s}]");
-                            var td = Encoding.Default.GetBytes(s).Append(_config.Delim);
+                            _logger.Debug($">>> [{sin}]");
+                            var td = Encoding.Default.GetBytes(sin).Append(_config.Delim);
                             _comm.Send([.. td]);
                         }
                     }
@@ -227,7 +226,9 @@ namespace NTerm
                                 if (b[i] == _config.Delim)
                                 {
                                     // End line.
+                                    //_logger.Info($"{string.Concat(rcvBuffer)}]");
                                     _logger.Info($"<<< [{string.Concat(rcvBuffer)}]");
+                                    //_logger.Debug($"<<< [{string.Concat(rcvBuffer)}]");
                                     rcvBuffer.Clear();
                                     Prompt();
                                 }
@@ -235,10 +236,6 @@ namespace NTerm
                                 {
                                     // Add to buffer.
                                     rcvBuffer.Add((char)b[i]);
-
-                                    // Format non-readable?
-                                    // if (b[i].IsReadable()) { rcvBuffer.Add((char)b[i]); }
-                                    // else { rcvBuffer.AddRange($"<{b[i]:0X}>"); }
                                 }
                             }
                         }
@@ -251,8 +248,12 @@ namespace NTerm
                     // Delay a bit.
                     Thread.Sleep(10);
                 }
-                catch (Exception)
+                catch (Exception e)
                 {
+                    //var state = Utils.ProcessException(e);
+
+
+
                     // Something went wrong. Must shut down gracefully before passing exception up.
                     ts.Cancel();
                     Task.WaitAll([taskKeyboard, taskComm]);
@@ -269,19 +270,19 @@ namespace NTerm
         {
             while (!token.IsCancellationRequested)
             {
-                var cmd = "";
+                var kbdin = "";
 
                 // Check for something to do.
                 if (Console.KeyAvailable)
                 {
                     var k = Console.ReadKey();
-                    cmd += k.KeyChar;
+                    kbdin += k.KeyChar;
 
                     if (k.Key == ConsoleKey.Escape)
                     {
                         // Meta command. Get the next char.
-                        cmd += Console.ReadKey().KeyChar;
-                        _qUserCli.Enqueue(new(cmd));
+                        kbdin += Console.ReadKey().KeyChar;
+                        _qUserCli.Enqueue(new(kbdin));
                     }
                     else
                     {
@@ -289,7 +290,7 @@ namespace NTerm
                         var s = Console.ReadLine();
                         if (s is not null)
                         {
-                            _qUserCli.Enqueue(cmd + s);
+                            _qUserCli.Enqueue(kbdin + s);
                         }
                     }
                 }
@@ -300,11 +301,26 @@ namespace NTerm
         }
 
         /// <summary>
+        /// General user writer.
+        /// </summary>
+        /// <param name="text"></param>
+        /// <param name="clr"></param>
+        void Print(string text, ConsoleColor? clr = null)
+        {
+            Console.ForegroundColor = clr ?? _config.InfoColor;
+            Console.WriteLine(text);
+            Console.ResetColor();
+            Prompt();
+        }
+
+        /// <summary>
         /// User prompt.
         /// </summary>
         void Prompt()
         {
+            Console.ForegroundColor = _config.InfoColor;
             Console.Write(_config.Prompt);
+            Console.ResetColor();
         }
 
         /// <summary>
@@ -314,29 +330,21 @@ namespace NTerm
         /// <param name="e"></param>
         void LogManager_LogMessage(object? sender, LogMessageEventArgs e)
         {
-            switch (e.Level)
-            {
-                case LogLevel.Info:
-                    Console.ForegroundColor = _config.InfoColor;
-                    break;
-                
-                case LogLevel.Error:
-                    Console.ForegroundColor = _config.ErrorColor;
-                    break;
-                
-                case LogLevel.Debug:
-                    Console.ForegroundColor = _config.DebugColor;
-                    break;
-                
-                default:
-                    //  If color not explicitly specified, look for text matches.
-                    var mc = _config.Matchers.Where(m => e.Message.Contains(m.Key)); // simple search is faster than compiled regexes
-                    if (mc.Any()) Console.ForegroundColor = mc.First().Value;
-                    break;
-            }
+            ConsoleColor? clr = null;
 
-            Console.WriteLine(e.ShortMessage);
-            Console.ResetColor();
+            //  Look for text matches. Note simple search is generally faster than regex.
+            var mc = _config.Matchers.Where(m => e.Message.Contains(m.Key));
+            if (mc.Any()) clr = mc.First().Value;
+
+            clr ??= e.Level switch
+            {
+                LogLevel.Info => _config.InfoColor,
+                LogLevel.Error => _config.ErrorColor,
+                LogLevel.Debug => _config.DebugColor,
+                _ => null
+            };
+
+            Print(e.ShortMessage, clr);
         }
 
         /// <summary>
@@ -382,9 +390,7 @@ namespace NTerm
                 }
             }
 
-            Console.ForegroundColor = _config.InfoColor;
-            Console.WriteLine(string.Join(Environment.NewLine, docs));
-            Console.ResetColor();
+            Print(string.Join(Environment.NewLine, docs));
         }
 
         /// <summary>
@@ -418,7 +424,7 @@ namespace NTerm
     }
 
     /// <summary>
-    /// Manipulate the console window. TODO1 set/save console size??
+    /// Manipulate the console window using win32 functions. TODO1 set/save console size??
     /// </summary>
     public class ConsoleOps
     {
@@ -431,7 +437,6 @@ namespace NTerm
             public int Bottom;
         }
 
-        // Import the necessary functions from user32.dll
         [DllImport("user32.dll")]
         static extern IntPtr GetForegroundWindow();
 

@@ -27,11 +27,11 @@ namespace NTerm
         /// <summary>Prompt. Can be empty for continuous receiving.</summary>
         public string Prompt { get; private set; } = "";
 
-        /// <summary>Message delimiter: LF=10 CR=13 NUL=0.</summary>
+        /// <summary>Message delimiter: LF=10 CR=13 NUL=0. TODO1 support mb like CRLF.</summary>
         public byte Delim { get; private set; } = 0;
 
         /// <summary>User macros.</summary>
-        public Dictionary<string, string> Macros { get; private set; } = [];
+        public Dictionary<char, string> Macros { get; private set; } = [];
 
         /// <summary>Colorizing text.</summary>
         public Dictionary<string, ConsoleColor> Matchers { get; private set; } = [];
@@ -101,9 +101,9 @@ namespace NTerm
                         case "delim":
                             Delim = kv.Value switch
                             {
-                                "LF" => 10,
-                                "CR" => 13,
-                                "NUL" => 0,
+                                "LF" => Defs.LF,
+                                "CR" => Defs.CR,
+                                "NUL" => Defs.NUL,
                                 _ => throw new ConfigException($"Invalid delim: [{kv.Value}]"),
                             };
                             break;
@@ -117,7 +117,7 @@ namespace NTerm
                 if (inrdr.GetSectionNames().Contains("macros"))
                 {
                     ntermSect = inrdr.GetValues("macros");
-                    ntermSect.ForEach(kv => Macros[kv.Key] = kv.Value.Replace("\"", ""));
+                    ntermSect.ForEach(kv => Macros[kv.Key[0]] = kv.Value.Replace("\"", ""));
                 }
 
                 // [matchers] section

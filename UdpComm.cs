@@ -26,7 +26,7 @@ namespace NTerm
         #endregion
 
         /// <summary>Module logger.</summary>
-        readonly Logger _logger = LogManager.CreateLogger("UDP");
+        //readonly Logger _logger = LogManager.CreateLogger("UDP");
 
         #region Lifecycle
         /// <summary>Constructor.</summary>
@@ -94,7 +94,7 @@ namespace NTerm
         /// <see cref="IComm"/>
         public void Run(CancellationToken token)
         {
-            _logger.Info("Run start");
+            //_logger.Info("Run start");
 
             //=========== Connect ============//
             using var listener = new UdpClient(_port);
@@ -117,10 +117,13 @@ namespace NTerm
                         Console.WriteLine($"{Encoding.ASCII.GetString(bytes, 0, bytes.Length)}");
                     }
                 }
+
+                // Don't be greedy.
+                Thread.Sleep(10);
             }
             catch (Exception e)
             {
-                _logger.Exception(e);
+                //_logger.Exception(e);
                 State = Utils.ProcessException(e);
             }
         }

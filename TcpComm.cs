@@ -29,7 +29,7 @@ namespace NTerm
         #endregion
 
         /// <summary>Module logger.</summary>
-        readonly Logger _logger = LogManager.CreateLogger("TCP");
+        //readonly Logger _logger = LogManager.CreateLogger("TCP");
 
         #region Lifecycle
         /// <summary>Constructor.</summary>
@@ -96,7 +96,7 @@ namespace NTerm
         /// <see cref="IComm"/>
         public void Run(CancellationToken token)
         {
-            _logger.Info("Run start");
+            //_logger.Info("Run start");
 
             while (!token.IsCancellationRequested)
             {
@@ -118,6 +118,7 @@ namespace NTerm
                         var task = client.ConnectAsync(_host, _port);
                         if (!task.Wait(CONNECT_TIME, token))
                         {
+                            throw new TimeoutException();
                            //return (OpStatus.ConnectTimeout, "", resp); // TODO ?
                         }
                         using var stream = client.GetStream();
@@ -160,12 +161,16 @@ namespace NTerm
                 }
                 catch (Exception e)
                 {
-                    _logger.Exception(e);
+                    //_logger.Exception(e);
+
+
                     State = Utils.ProcessException(e);
+                    encode error info and return with ESC
+
                 }
 
                 // Don't be greedy.
-                Thread.Sleep(5);
+                Thread.Sleep(10);
             }
         }
 

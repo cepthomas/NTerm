@@ -5,6 +5,7 @@ using System.Linq;
 using System.Net.Sockets;
 using System.Text;
 using System.Threading;
+using System.Windows.Forms;
 using Ephemera.NBagOfTricks;
 
 
@@ -45,10 +46,10 @@ namespace NTerm
     //    Receive,    // to user and log   Info <<<
     //}
 
-    ///// <summary>Comm has something to tell the user.</summary>
-    //public class NotifEventArgs(Cat cat, string msg) : EventArgs
+    /// <summary>Comm has something to tell the user.</summary>
+    //public class NotifEventArgs(CommState state, string msg) : EventArgs
     //{
-    //    public Cat Cat { get; init; } = cat;
+    //    public CommState State { get; init; } = state;
     //    public string Message { get; init; } = msg;
     //}
 
@@ -62,13 +63,46 @@ namespace NTerm
         Fatal,       // Config error, hard runtime error, it's dead Jim
     }
 
+    public class Defs
+    {
+        // Some interesting keys.
+        public const int LF = 10;
+        public const int CR = 13;
+        public const int NUL = 0;
+        public const int ESC = 27;
+    }
+
+
     public class Utils
     {
+        /// <summary>
+        /// Format non-readable for human consumption.
+        /// </summary>
+        /// <param name="b"></param>
+        /// <returns></returns>
+        public static string FormatByte(byte b)
+        {
+            if (b.IsReadable())
+            {
+                return ((char)b).ToString();
+            }
+            else
+            {
+                Keys k = (Keys)b;
+                return k.ToString();
+            }
+        }
+
+        /// <summary>
+        /// Common comm exception handler.
+        /// </summary>
+        /// <param name="e"></param>
+        /// <returns></returns>
         public static CommState ProcessException(Exception e)
         {
             CommState cst;
 
-            // All the ossible exceptions:
+            // All the possible exceptions:
             // Exception,Description,Module,Function,State
             // ArgumentException,,SER,common,Fatal
             // ArgumentNullException,endPoint is null.,UDP,Connect,Fatal
