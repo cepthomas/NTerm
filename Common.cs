@@ -66,7 +66,7 @@ namespace NTerm
     {
         Ok,          // Keep going
         Timeout,     // Try again later - forever
-        Recoverable, // Normal bump e.g. server down, power - retry with limit
+        Recoverable, // Normal bump e.g. server down, power - retry (with limit?)
         Fatal,       // Config error, hard runtime error, it's dead Jim
     }
 

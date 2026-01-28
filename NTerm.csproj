@@ -25,6 +25,11 @@
     </ItemGroup>
 
     <ItemGroup>
+      <None Remove="nterm.sublime-project" />
+      <None Remove="nterm.sublime-workspace" />
+    </ItemGroup>
+
+    <ItemGroup>
         <Content Include="cucaracha.ico" />
     </ItemGroup>
 

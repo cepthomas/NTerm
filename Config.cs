@@ -24,9 +24,6 @@ namespace NTerm
         /// <summary>Color for internal messages.</summary>
         public ConsoleColor DebugColor { get; private set; } = ConsoleColor.Cyan; // default
 
-        /// <summary>Prompt. Can be empty for continuous receiving.</summary>
-        public string Prompt { get; private set; } = "";
-
         /// <summary>Message delimiter: LF=10 CR=13 NUL=0. TODO1 support mb like CRLF.</summary>
         public byte Delim { get; private set; } = 0;
 
@@ -94,10 +91,6 @@ namespace NTerm
                             DebugColor = Enum.Parse<ConsoleColor>(kv.Value, true);
                             break;
 
-                        case "prompt":
-                            Prompt = kv.Value;
-                            break;
-
                         case "delim":
                             Delim = kv.Value switch
                             {
@@ -139,7 +132,6 @@ namespace NTerm
 
             ls.Add($"comm:{string.Join(" ", CommConfig)}");
             ls.Add($"delim:{Delim}");
-            ls.Add($"prompt:{Prompt}");
             ls.Add($"info_color:{InfoColor}");
             ls.Add($"err_color:{ErrorColor}");
 

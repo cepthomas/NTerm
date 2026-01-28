@@ -13,6 +13,7 @@ using System.Runtime.InteropServices;
 using Ephemera.NBagOfTricks;
 using NTerm.Properties;
 using System.Net.Sockets;
+using System.Drawing;
 
 
 namespace NTerm
@@ -31,9 +32,6 @@ namespace NTerm
 
         /// <summary>Cli event queue.</summary>
         readonly ConcurrentQueue<string> _qUserCli = new();
-
-        /// <summary>Logger timestamps.</summary>
-        readonly long _startTick = 0;
         #endregion
 
         #region Lifecycle
@@ -42,16 +40,10 @@ namespace NTerm
         /// </summary>
         public App()
         {
-            //Dev();
-            //Environment.Exit(0);
-
             int exitCode = 0;
 
             try
             {
-                // Init stuff.
-                _startTick = Stopwatch.GetTimestamp();
-
                 // Must do this first before initializing.
                 string appDir = MiscUtils.GetAppDataDir("NTerm", "Ephemera");
 
@@ -116,8 +108,7 @@ namespace NTerm
 
             LogManager.Stop();
 
-            // Wait to let logging finish.
-            //Thread.Sleep(100);
+            // Print($"Console is {ConsoleOps.GetRect()}"); // TODO set/save console size??
 
             Environment.Exit(exitCode);
         }
@@ -137,8 +128,9 @@ namespace NTerm
         {
             using var app = new App();
         }
-        #endregion
+        #endregion~
 
+        #region Main Loop
         /// <summary>
         /// Main loop.
         /// </summary>
@@ -150,29 +142,20 @@ namespace NTerm
 
             List<char> rcvBuffer = [];
 
-            Prompt();
-
             while (!ts.Token.IsCancellationRequested)
             {
+                CommState cst = CommState.Ok;
+
                 try
                 {
-                    //=========== Check state ============//
-                    // TODO1 - state/retries etc.
-
-
                     ///// User CLI input? /////
                     while (_qUserCli.TryDequeue(out string? sin))
                     {
-                        if (sin.Length == 0)
-                        {
-                            Prompt();
-                        }
-                        else if (sin[0] == Defs.ESC) // Check for escape key.
+                        if (sin[0] == Defs.ESC) // Check for escape key.
                         {
                             if (sin.Length > 1)
                             {
                                 var kin = sin[1];
-                                //var mk = s[1..];
 
                                 switch (kin)
                                 {
@@ -181,26 +164,27 @@ namespace NTerm
                                         Task.WaitAll([taskKeyboard, taskComm]);
                                         break;
 
-                                    case 'c': // clear TODO1
+                                    case 'c': // clear
                                         Console.Clear();
-                                        Prompt();
                                         break;
 
                                     case 'h': // help
+                                        NewLine();
                                         About(false);
-                                        Prompt();
                                         break;
 
                                     default: // user macro?
                                         if (_config.Macros.TryGetValue(kin, out var smacro))
                                         {
+                                            PrintX(smacro, match: false);
+                                            _logger.Debug($">>> [{smacro}]");
                                             var td = Encoding.Default.GetBytes(smacro).Append(_config.Delim);
                                             _comm.Send([.. td]);
+                                            // Show user.
                                         }
                                         else
                                         {
                                             _logger.Error($"Unknown macro key: [{Utils.FormatByte((byte)kin)}]");
-                                            Prompt();
                                         }
                                         break;
                                 }
@@ -209,6 +193,8 @@ namespace NTerm
                         }
                         else // just send
                         {
+                            // Don't Print() as it's already on the term.
+                            NewLine();
                             _logger.Debug($">>> [{sin}]");
                             var td = Encoding.Default.GetBytes(sin).Append(_config.Delim);
                             _comm.Send([.. td]);
@@ -216,11 +202,12 @@ namespace NTerm
                     }
 
                     ///// Comm receive? /////
-                    while (true)
+                    bool rcving = true;
+                    while (rcving)
                     {
                         var r = _comm.GetReceive();
-                        CommState cst;
 
+                        // Could be message or error or nada.
                         switch (r)
                         {
                             case byte[] b:
@@ -229,12 +216,11 @@ namespace NTerm
                                 {
                                     if (b[i] == _config.Delim)
                                     {
-                                        // End line.
-                                        //_logger.Info($"{string.Concat(rcvBuffer)}]");
-                                        _logger.Info($"<<< [{string.Concat(rcvBuffer)}]");
-                                        //_logger.Debug($"<<< [{string.Concat(rcvBuffer)}]");
+                                        // End line. TODO1 best way to show rx msg?
+                                        PrintX($"[{string.Concat(rcvBuffer)}]", match: true);
+                                        _logger.Debug($"<<< RCV [{string.Concat(rcvBuffer)}]");
                                         rcvBuffer.Clear();
-                                        Prompt();
+                                        NewLine();
                                     }
                                     else
                                     {
@@ -245,32 +231,144 @@ namespace NTerm
                                 break;
 
                             case Exception e:
-
                                 cst = ProcessException(e);
+
+                                switch (cst)
+                                {
+                                    case CommState.Fatal:
+                                        throw e;
+
+                                    case CommState.Timeout:
+                                    case CommState.Recoverable:
+                                        // Nothing. Could add some rety logic?
+                                        break;
+
+                                    case CommState.Ok:
+                                        // Nothing.
+                                        break;
+                                }
                                 break;
 
                             default:
+                                rcving = false;
                                 break;
                         }
-
-                        // Pace a bit.
-                        Thread.Sleep(10);
                     }
+
+                    // Pace a bit.
+                    Thread.Sleep(10);
                 }
                 catch (Exception ex)
                 {
-                    //var state = Utils.ProcessException(e);
-
-
-
-                    // Something went wrong. Must shut down gracefully before passing exception up.
+                    // Something went wrong. Log and shut down gracefully.
+                    _logger.Exception(ex);
                     ts.Cancel();
                     Task.WaitAll([taskKeyboard, taskComm]);
                     throw;
                 }
             }
         }
+        #endregion
 
+        #region User output
+        /// <summary>
+        /// General user writer.
+        /// </summary>
+        /// <param name="text"></param>
+        /// <param name="clr"></param>
+        void PrintX(string text, ConsoleColor? clr = null, bool match = false)
+        {
+            if (match)
+            {
+                //  Look for text matches. Note simple search is generally faster than regex.
+                var mc = _config.Matchers.Where(m => text.Contains(m.Key));
+                if (mc.Any())
+                {
+                    clr = mc.First().Value;
+                }
+            }
+
+            Console.ForegroundColor = clr ?? _config.InfoColor;
+            Console.WriteLine(text);
+            Console.ResetColor();
+        }
+
+        /// <summary>
+        /// New line without text.
+        /// </summary>
+        void NewLine()
+        {
+            Console.WriteLine("");
+        }
+        #endregion
+
+        #region Internal Functions
+        /// <summary>
+        /// Task to service the user input read.
+        /// </summary>
+        /// <param name="token"></param>
+        void DoKeyboard(CancellationToken token)
+        {
+            while (!token.IsCancellationRequested)
+            {
+                var kbdin = "";
+
+                // Check for something to do.
+                if (Console.KeyAvailable)
+                {
+                    var k = Console.ReadKey();
+                    kbdin += k.KeyChar;
+
+                    if (k.Key == ConsoleKey.Escape)
+                    {
+                        // Meta command. Get the next char.
+                        kbdin += Console.ReadKey().KeyChar;
+                        _qUserCli.Enqueue(new(kbdin));
+                    }
+                    else
+                    {
+                        // Terminal command.
+                        var s = Console.ReadLine();
+                        if (s is not null && s.Length != 0)
+                        {
+                            _qUserCli.Enqueue(kbdin + s);
+                        }
+                    }
+                }
+
+                // Don't be greedy.
+                Thread.Sleep(50);
+            }
+        }
+
+        /// <summary>
+        /// Show log events.
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        void LogManager_LogMessage(object? sender, LogMessageEventArgs e)
+        {
+            ConsoleColor? clr = null;
+
+            //NewLine();
+
+            clr ??= e.Level switch
+            {
+                LogLevel.Info => _config.InfoColor,
+                LogLevel.Error => _config.ErrorColor,
+                LogLevel.Debug => _config.DebugColor,
+                _ => null
+            };
+
+
+            PrintX(e.ShortMessage, clr: clr, match: true);
+        }
+
+        /// <summary>
+        /// Process what happened on the comm thread.
+        /// </summary>
+        /// <param name="e"></param>
+        /// <returns></returns>
         CommState ProcessException(Exception e)
         {
             CommState cst;
@@ -338,96 +436,6 @@ namespace NTerm
             return cst;
         }
 
-
-
-
-
-
-        /// <summary>
-        /// Task to service the user input read.
-        /// </summary>
-        /// <param name="token"></param>
-        void DoKeyboard(CancellationToken token)
-        {
-            while (!token.IsCancellationRequested)
-            {
-                var kbdin = "";
-
-                // Check for something to do.
-                if (Console.KeyAvailable)
-                {
-                    var k = Console.ReadKey();
-                    kbdin += k.KeyChar;
-
-                    if (k.Key == ConsoleKey.Escape)
-                    {
-                        // Meta command. Get the next char.
-                        kbdin += Console.ReadKey().KeyChar;
-                        _qUserCli.Enqueue(new(kbdin));
-                    }
-                    else
-                    {
-                        // Terminal command.
-                        var s = Console.ReadLine();
-                        if (s is not null)
-                        {
-                            _qUserCli.Enqueue(kbdin + s);
-                        }
-                    }
-                }
-
-                // Don't be greedy.
-                Thread.Sleep(50);
-            }
-        }
-
-        /// <summary>
-        /// General user writer.
-        /// </summary>
-        /// <param name="text"></param>
-        /// <param name="clr"></param>
-        void Print(string text, ConsoleColor? clr = null)
-        {
-            Console.ForegroundColor = clr ?? _config.InfoColor;
-            Console.WriteLine(text);
-            Console.ResetColor();
-            Prompt();
-        }
-
-        /// <summary>
-        /// User prompt.
-        /// </summary>
-        void Prompt()
-        {
-            Console.ForegroundColor = _config.InfoColor;
-            Console.Write(_config.Prompt);
-            Console.ResetColor();
-        }
-
-        /// <summary>
-        /// Show log events.
-        /// </summary>
-        /// <param name="sender"></param>
-        /// <param name="e"></param>
-        void LogManager_LogMessage(object? sender, LogMessageEventArgs e)
-        {
-            ConsoleColor? clr = null;
-
-            //  Look for text matches. Note simple search is generally faster than regex.
-            var mc = _config.Matchers.Where(m => e.Message.Contains(m.Key));
-            if (mc.Any()) clr = mc.First().Value;
-
-            clr ??= e.Level switch
-            {
-                LogLevel.Info => _config.InfoColor,
-                LogLevel.Error => _config.ErrorColor,
-                LogLevel.Debug => _config.DebugColor,
-                _ => null
-            };
-
-            Print(e.ShortMessage, clr);
-        }
-
         /// <summary>
         /// Show me everything.
         /// </summary>
@@ -471,9 +479,11 @@ namespace NTerm
                 }
             }
 
-            Print(string.Join(Environment.NewLine, docs));
+            PrintX(string.Join(Environment.NewLine, docs), match: false);
         }
+        #endregion
 
+        #region Dev Stuff
         /// <summary>
         /// Screwing around.
         /// </summary>
@@ -502,21 +512,24 @@ namespace NTerm
             }
             Console.ResetColor();
         }
+        #endregion
     }
 
     /// <summary>
-    /// Manipulate the console window using win32 functions. TODO1 set/save console size??
+    /// Manipulate the console window using win32 functions.
     /// </summary>
     public class ConsoleOps
     {
-        // Structure used by GetWindowRect - pixels.
-        struct Rect
+        struct RectNative
         {
             public int Left;
             public int Top;
             public int Right;
             public int Bottom;
         }
+
+        // Constants for the ShowWindow function
+        const int SW_MAXIMIZE = 3;
 
         [DllImport("user32.dll")]
         static extern IntPtr GetForegroundWindow();
@@ -525,30 +538,23 @@ namespace NTerm
         static extern bool ShowWindow(IntPtr hWnd, int nCmdShow);
 
         [DllImport("user32.dll")]
-        static extern bool GetWindowRect(IntPtr hWnd, out Rect lpRect);
+        static extern bool GetWindowRect(IntPtr hWnd, out RectNative lpRect);
 
         [DllImport("user32.dll")]
         static extern bool MoveWindow(IntPtr hWnd, int x, int y, int nWidth, int nHeight, bool bRepaint);
 
-        // Constants for the ShowWindow function
-        const int SW_MAXIMIZE = 3;
-
-        public static void Move(int x, int y, int w, int h)
+        public static void Move(Rectangle rect)
         {
-            // Get the handle of the console.
             IntPtr hnd = GetForegroundWindow();
+            MoveWindow(hnd, rect.Left, rect.Top, rect.Width, rect.Height, true);
+        }
 
-            // Resize and reposition the console window to fill the screen
-            MoveWindow(hnd, x, y, w, h, true);
-
-            // Maximize the console.
-            //ShowWindow(hnd, SW_MAXIMIZE);
-
-            // Get the screen size.
-            //Rect screenRect;
-            //GetWindowRect(hnd, out screenRect);
-            //int width = screenRect.Right - screenRect.Left;
-            //int height = screenRect.Bottom - screenRect.Top;
+        public static Rectangle GetRect()
+        {
+            IntPtr hnd = GetForegroundWindow();
+            RectNative nrect;
+            GetWindowRect(hnd, out nrect);
+            return new Rectangle(nrect.Left, nrect.Top, nrect.Right - nrect.Left, nrect.Bottom - nrect.Top);
         }
     }
 }
