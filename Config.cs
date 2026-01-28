@@ -24,7 +24,7 @@ namespace NTerm
         /// <summary>Color for internal messages.</summary>
         public ConsoleColor DebugColor { get; private set; } = ConsoleColor.Cyan; // default
 
-        /// <summary>Message delimiter: LF=10 CR=13 NUL=0. TODO1 support mb like CRLF.</summary>
+        /// <summary>Message delimiter: LF=10 CR=13 NUL=0.</summary>
         public byte Delim { get; private set; } = 0;
 
         /// <summary>User macros.</summary>

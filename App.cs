@@ -10,10 +10,9 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using System.Runtime.InteropServices;
-using Ephemera.NBagOfTricks;
-using NTerm.Properties;
 using System.Net.Sockets;
 using System.Drawing;
+using Ephemera.NBagOfTricks;
 
 
 namespace NTerm
@@ -25,7 +24,7 @@ namespace NTerm
         readonly Config _config = new();
 
         /// <summary>Module logger.</summary>
-        readonly Logger _logger = LogManager.CreateLogger("APP");
+        readonly Logger _logger = LogManager.CreateLogger("App");
 
         /// <summary>Client comm flavor.</summary>
         readonly IComm _comm = new NullComm();
@@ -67,7 +66,7 @@ namespace NTerm
                 string defaultConfig = Path.Combine(appDir, "default.ini");
                 if (!File.Exists(defaultConfig))
                 {
-                    var sc = Resources.default_config;
+                    var sc = NTerm.Properties.Resources.default_config;
                     File.WriteAllText(defaultConfig, sc.ToString());
                 }
 
@@ -84,7 +83,7 @@ namespace NTerm
                     _ => throw new ConfigException($"Invalid comm type: [{_config.CommConfig[0]}]"),
                 };
 
-                _logger.Info($"NTerm using {_comm} - started {DateTime.Now}");
+                _logger.Info($"NTerm using {_comm} {DateTime.Now}");
 
                 // Go forever.
                 Run();
@@ -142,6 +141,8 @@ namespace NTerm
 
             List<char> rcvBuffer = [];
 
+//TODO1 continuous rcv messages.key cmd to pause display?
+
             while (!ts.Token.IsCancellationRequested)
             {
                 CommState cst = CommState.Ok;
@@ -176,11 +177,10 @@ namespace NTerm
                                     default: // user macro?
                                         if (_config.Macros.TryGetValue(kin, out var smacro))
                                         {
-                                            PrintX(smacro, match: false);
+                                            Print(smacro, match: false);
                                             _logger.Debug($">>> [{smacro}]");
                                             var td = Encoding.Default.GetBytes(smacro).Append(_config.Delim);
                                             _comm.Send([.. td]);
-                                            // Show user.
                                         }
                                         else
                                         {
@@ -216,11 +216,15 @@ namespace NTerm
                                 {
                                     if (b[i] == _config.Delim)
                                     {
-                                        // End line. TODO1 best way to show rx msg?
-                                        PrintX($"[{string.Concat(rcvBuffer)}]", match: true);
-                                        _logger.Debug($"<<< RCV [{string.Concat(rcvBuffer)}]");
+                                        // End of the line so send it.
+                                        Print($"{string.Concat(rcvBuffer)}", match: true);
+                                        _logger.Debug($"<<< [{string.Concat(rcvBuffer)}]");
                                         rcvBuffer.Clear();
                                         NewLine();
+                                    }
+                                    else if (b[i] == Defs.CR)
+                                    {
+                                        // Skip. TODO1 support mb like CRLF.
                                     }
                                     else
                                     {
@@ -276,12 +280,15 @@ namespace NTerm
         /// </summary>
         /// <param name="text"></param>
         /// <param name="clr"></param>
-        void PrintX(string text, ConsoleColor? clr = null, bool match = false)
+        void Print(string text, ConsoleColor? clr = null, bool match = false)
         {
             if (match)
             {
-                //  Look for text matches. Note simple search is generally faster than regex.
+                //  Look for text matches. Internet says simple search is generally faster than compiled regex.
                 var mc = _config.Matchers.Where(m => text.Contains(m.Key));
+
+                mc.First();
+
                 if (mc.Any())
                 {
                     clr = mc.First().Value;
@@ -360,8 +367,7 @@ namespace NTerm
                 _ => null
             };
 
-
-            PrintX(e.ShortMessage, clr: clr, match: true);
+            Print(e.ShortMessage, clr: clr, match: true);
         }
 
         /// <summary>
@@ -479,7 +485,7 @@ namespace NTerm
                 }
             }
 
-            PrintX(string.Join(Environment.NewLine, docs), match: false);
+            Print(string.Join(Environment.NewLine, docs), match: false);
         }
         #endregion
 

@@ -1,9 +1,5 @@
 # NTerm
 
-
-TODO1 continuous rcv messages.key cmd to pause display?
-
-
 Minimalist terminal for simple text-based interfaces like embedded systems.
 
 Supported protocols:
@@ -11,8 +7,7 @@ Supported protocols:
 - UDP listener displays continuous messages. Currently doesn't send.
 - Serial port client sends line then listens for one response line.
 
-A log file `nterm.log` captures all traffic and internal messages. It is overwritten with each execution
-of the application.
+A log file `%APPDATA%\Ephemera\NTerm\log.txt` captures all traffic and internal messages.
 
 # Execution
 
@@ -26,11 +21,10 @@ Alternatively, NTerm can run minimally without a config file by one of:
 - `NTerm udp 127.0.0.1 59120`
 - `NTerm serial COM1 9600 8N1`
 
+The default configuration is in `%APPDATA%\Ephemera\NTerm\default.ini`. It is created the first time the
+app is run. Edit to your preferences. Any config file loaded from the command line sparsely overlays the defaults.
 
 # Configuration File Format
-// default settings ini in Ephemera. If it doesn't exist copy default there.
-
-default settings in Ephemera\NTerm\default.ini
 
 ```ini
 ; Basic config items.
@@ -69,4 +63,3 @@ s3 = "send me a three"
 - `ESC c` - clear terminal
 - `ESC h` - show some info
 - `ESC <macro>` - execute macro defined in config file
-
