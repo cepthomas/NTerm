@@ -18,9 +18,6 @@ namespace NTerm
         readonly ConcurrentQueue<object> _qRecv = new();
         #endregion
 
-        /// <summary>Module logger.</summary>
-        //readonly Logger _logger = LogManager.CreateLogger("NUL");
-
         #region Lifecycle
         /// <summary>Constructor.</summary>
         public NullComm()
@@ -42,10 +39,6 @@ namespace NTerm
         #region IComm implementation
         /// <summary>IComm implementation.</summary>
         /// <see cref="IComm"/>
-        public CommState State { get; private set; }
-
-        /// <summary>IComm implementation.</summary>
-        /// <see cref="IComm"/>
         public void Send(byte[] req)
         {
             _qSend.Enqueue(req);
@@ -65,18 +58,10 @@ namespace NTerm
         {
         }
 
-        ///// <summary>Main work loop.</summary>
-        ///// <see cref="IComm"/>
-        //public event EventHandler<NotifEventArgs>? Notif;
-        #endregion
-
         /// <summary>IComm implementation.</summary>
         /// <see cref="IComm"/>
         public void Run(CancellationToken token)
         {
-            //Notif?.Invoke(this, new(Cat.Log, "xyzzy"));
-            //_logger.Info("Run start");
-
             while (!token.IsCancellationRequested)
             {
                 if (_qSend.TryDequeue(out byte[]? rd))
@@ -90,5 +75,6 @@ namespace NTerm
                 Thread.Sleep(5);
             }
         }
+        #endregion
     }
 }

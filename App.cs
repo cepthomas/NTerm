@@ -184,7 +184,7 @@ namespace NTerm
                                         }
                                         else
                                         {
-                                            _logger.Error($"Unknown macro key: [{Utils.FormatByte((byte)kin)}]");
+                                            _logger.Error($"Unknown macro key: [{FormatByte((byte)kin)}]");
                                         }
                                         break;
                                 }
@@ -440,6 +440,24 @@ namespace NTerm
             }
 
             return cst;
+        }
+
+        /// <summary>
+        /// Format non-readable for human consumption.
+        /// </summary>
+        /// <param name="b"></param>
+        /// <returns></returns>
+        string FormatByte(byte b)
+        {
+            if (b.IsReadable())
+            {
+                return ((char)b).ToString();
+            }
+            else
+            {
+                Keys k = (Keys)b;
+                return k.ToString();
+            }
         }
 
         /// <summary>

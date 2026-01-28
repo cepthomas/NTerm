@@ -27,9 +27,6 @@ namespace NTerm
         readonly string _config;
         #endregion
 
-        /// <summary>Module logger.</summary>
-        //readonly Logger _logger = LogManager.CreateLogger("SER");
-
         #region Lifecycle
         /// <summary>Constructor.</summary>
         /// <param name="config"></param>
@@ -102,10 +99,6 @@ namespace NTerm
         #region IComm implementation
         /// <summary>IComm implementation.</summary>
         /// <see cref="IComm"/>
-        public CommState State { get; private set; }
-
-        /// <summary>IComm implementation.</summary>
-        /// <see cref="IComm"/>
         public void Send(byte[] req)
         {
             _qSend.Enqueue(req);
@@ -124,11 +117,6 @@ namespace NTerm
         public void Reset()
         {
         }
-
-        ///// <summary>IComm implementation.</summary>
-        ///// <see cref="IComm"/>
-        //public event EventHandler<NotifEventArgs>? Notif;
-        #endregion
 
         /// <summary>Main work loop.</summary>
         /// <see cref="IComm"/>
@@ -164,13 +152,13 @@ namespace NTerm
                 }
                 catch (Exception e)
                 {
-                    //_logger.Exception(e);
-                    State = Utils.ProcessException(e);
+                    _qRecv.Enqueue(e);
                 }
 
                 // Don't be greedy.
                 Thread.Sleep(10);
             }
         }
+        #endregion
     }
 }
