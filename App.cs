@@ -71,7 +71,7 @@ namespace NTerm
                 string defaultConfig = Path.Combine(appDir, "default.ini");
                 if (!File.Exists(defaultConfig))
                 {
-                    var sc = NTerm.Properties.Resources.default_config;
+                    var sc = Properties.Resources.default_config;
                     File.WriteAllText(defaultConfig, sc.ToString());
                 }
 
@@ -125,7 +125,7 @@ namespace NTerm
         {
             _comm?.Dispose();
         }
-        #endregion~
+        #endregion
 
         #region Main Loop
         /// <summary>
@@ -159,6 +159,10 @@ namespace NTerm
 
                                 switch (kin)
                                 {
+                                    case 'z': // dev
+                                        Dev();
+                                        break;
+
                                     case 'q': // quit
                                         ts.Cancel();
                                         Task.WaitAll([taskKeyboard, taskComm]);
@@ -494,71 +498,99 @@ namespace NTerm
         /// </summary>
         void Dev()
         {
-            //ConsoleOps.Move(50, 50, 1000, 900);
+            // Window move/size.
+            //Print($"{_console.WindowHeight} {_console.WindowWidth}");
+            //_console.WindowHeight = _console.WindowHeight - 10;
+            //_console.WindowWidth = _console.WindowWidth - 10;
+            //Print($"{_console.WindowHeight} {_console.WindowWidth}");
 
-            var cvals = Enum.GetValues(typeof(ConsoleColor));
+            // Colors
+            //var cvals = Enum.GetValues(typeof(ConsoleColor));
+            //
+            //Console.BackgroundColor = ConsoleColor.Black;
+            //Console.WriteLine($"--------------------------------------------------------");
+            //for (int i = 0; i < cvals.Length; i++)
+            //{
+            //    var conclr = (ConsoleColor)i;
+            //    Console.ForegroundColor = conclr;
+            //    Console.WriteLine($"ForegroundColor:{conclr}");
+            //}
+            //
+            //Console.ForegroundColor = ConsoleColor.White;
+            //Console.WriteLine($"--------------------------------------------------------");
+            //for (int i = 0; i < cvals.Length; i++)
+            //{
+            //    var conclr = (ConsoleColor)i;
+            //    Console.BackgroundColor = conclr;
+            //    Console.WriteLine($"BackgroundColor:{conclr}");
+            //}
+            //Console.ResetColor();
+        }
 
-            Console.BackgroundColor = ConsoleColor.Black;
-            Console.WriteLine($"--------------------------------------------------------");
-            for (int i = 0; i < cvals.Length; i++)
+
+        Process RunTarget(string exe)
+        {
+            // http://csharptest.net/532/using-processstart-to-capture-console-output/index.html
+
+            ProcessStartInfo pinfo = new("py", exe)
             {
-                var conclr = (ConsoleColor)i;
-                Console.ForegroundColor = conclr;
-                Console.WriteLine($"ForegroundColor:{conclr}");
+                UseShellExecute = false,
+                //RedirectStandardInput = true,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+
+                WindowStyle = ProcessWindowStyle.Hidden,
+                CreateNoWindow = true,
+                ErrorDialog = false,
+                WorkingDirectory = Environment.CurrentDirectory,
+                FileName = FindExePath(exe),
+                Arguments = EscapeArguments(args)
+            };
+
+
+             
+            using (Process process = Process.Start(psi))
+            using (ManualResetEvent mreOut = new ManualResetEvent(false),
+            mreErr = new ManualResetEvent(false))
+            {
+                process.OutputDataReceived += (o, e) => { if (e.Data == null) mreOut.Set(); else output(e.Data); };
+                process.BeginOutputReadLine();
+                process.ErrorDataReceived += (o, e) => { if (e.Data == null) mreErr.Set(); else output(e.Data); };
+                process.BeginErrorReadLine();
+                 
+                string line;
+                while (input != null && null != (line = input.ReadLine()))
+                process.StandardInput.WriteLine(line);
+                 
+                process.StandardInput.Close();
+                process.WaitForExit();
+                 
+                mreOut.WaitOne();
+                mreErr.WaitOne();
+                // return process.ExitCode;
             }
 
-            Console.ForegroundColor = ConsoleColor.White;
-            Console.WriteLine($"--------------------------------------------------------");
-            for (int i = 0; i < cvals.Length; i++)
-            {
-                var conclr = (ConsoleColor)i;
-                Console.BackgroundColor = conclr;
-                Console.WriteLine($"BackgroundColor:{conclr}");
-            }
-            Console.ResetColor();
+
+            // using Process proc = new() { StartInfo = pinfo };
+
+            // Console.WriteLine("Start process...");
+            // proc.Start();
+
+            // // TIL: To avoid deadlocks, always read the output stream first and then wait.
+            // var stdout = proc.StandardOutput.ReadToEnd();
+            // var stderr = proc.StandardError.ReadToEnd();
+
+            // //Console.WriteLine("Wait for exit...");
+            // //proc.WaitForExit();
+            // //Console.WriteLine("Exited...");
+
+            // // if (capture)
+            // // {
+            // //     return new(proc.ExitCode, stdout, stderr);
+            // // }
+
+            return proc;
         }
         #endregion
-    }
-
-    /// <summary>
-    /// Manipulate the console window using win32 functions.
-    /// </summary>
-    public class ConsoleOps
-    {
-        struct RectNative
-        {
-            public int Left;
-            public int Top;
-            public int Right;
-            public int Bottom;
-        }
-
-        // Constants for the ShowWindow function
-        const int SW_MAXIMIZE = 3;
-
-        [DllImport("user32.dll")]
-        static extern IntPtr GetForegroundWindow();
-
-        [DllImport("user32.dll")]
-        static extern bool ShowWindow(IntPtr hWnd, int nCmdShow);
-
-        [DllImport("user32.dll")]
-        static extern bool GetWindowRect(IntPtr hWnd, out RectNative lpRect);
-
-        [DllImport("user32.dll")]
-        static extern bool MoveWindow(IntPtr hWnd, int x, int y, int nWidth, int nHeight, bool bRepaint);
-
-        public static void Move(Rectangle rect)
-        {
-            IntPtr hnd = GetForegroundWindow();
-            MoveWindow(hnd, rect.Left, rect.Top, rect.Width, rect.Height, true);
-        }
-
-        public static Rectangle GetRect()
-        {
-            IntPtr hnd = GetForegroundWindow();
-            GetWindowRect(hnd, out RectNative nrect);
-            return new Rectangle(nrect.Left, nrect.Top, nrect.Right - nrect.Left, nrect.Bottom - nrect.Top);
-        }
     }
 }

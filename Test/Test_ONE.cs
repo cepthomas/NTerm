@@ -1,16 +1,11 @@
 using System;
 using System.Collections.Generic;
-using System.ComponentModel;
-using System.Data;
 using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
 using System.IO;
-using System.Text.Json.Serialization;
 using System.Drawing;
 using System.Diagnostics;
 using System.Threading;
-using System.Drawing.Imaging;
 using Ephemera.NBagOfTricks;
 using Ephemera.NBagOfTricks.PNUT;
 
@@ -23,9 +18,6 @@ namespace Test
     public class TERM_MAIN : TestSuite
     {
         #region Fields
-        /// <summary>User input</summary>
-        //readonly ConcurrentQueue<string> _qUserCli = new();
-
         /// <summary>See Config.cs.</summary>
         byte _delim = 0;
 
@@ -35,8 +27,6 @@ namespace Test
         /// <summary>Target executable</summary>
         string _ntermExe = "???";
         #endregion
-
-
 
         public override void RunSuite()
         {
@@ -67,10 +57,6 @@ namespace Test
                 //Task.WaitAll([taskKeyboard]);
             }
 
-
-
-
-
             // UT_INFO("Test ini reader.");
 
             // var inputDir = Path.Join(MiscUtils.GetSourcePath(), "Files");
@@ -88,7 +74,6 @@ namespace Test
             // {
             //     irdr.GetValues("not here lists");
             // });
-
         }
 
         /// <summary>
@@ -117,7 +102,6 @@ namespace Test
             var proc = RunTarget(_configFile);
         }
 
-
         /// <summary>
         /// Test tcp in command/response mode.
         /// </summary>
@@ -136,7 +120,6 @@ namespace Test
 //var err = srv.Run(ts);
         }
 
-
         /// <summary>
         /// Test udp in continuous mode.
         /// </summary>
@@ -154,8 +137,6 @@ namespace Test
 //UdpSender srv = new(59140, _delim);
 //srv.Run(ts);
         }
-
-
 
         /// <summary>
         /// Test tcp in command/response mode.
