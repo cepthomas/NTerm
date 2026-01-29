@@ -48,7 +48,7 @@ namespace NTerm
 
                 // Init logging. TODO log levels from?
                 string logFileName = Path.Combine(appDir, "log.txt");
-                LogManager.MinLevelFile = LogLevel.Debug;
+                LogManager.MinLevelFile = LogLevel.Trace;
                 LogManager.MinLevelNotif = LogLevel.Info;
                 LogManager.LogMessage += LogManager_LogMessage;
                 LogManager.Run(logFileName, 100000);
@@ -83,25 +83,26 @@ namespace NTerm
                     _ => throw new ConfigException($"Invalid comm type: [{_config.CommConfig[0]}]"),
                 };
 
+                // Say hello.
                 _logger.Info($"NTerm using {_comm} {DateTime.Now}");
 
                 // Go forever.
                 Run();
             }
             // Any exception that arrives here is considered fatal. Inform and exit.
-            catch (ConfigException ex) // ini content error
+            catch (ConfigException ex) // known ini error
             {
                 _logger.Error($"{ex.Message}");
                 exitCode = 1;
             }
-            catch (IniSyntaxException ex) // ini structure error
+            catch (IniSyntaxException ex) // known ini error
             {
                 _logger.Error($"Ini syntax error at line {ex.LineNum}: {ex.Message}");
                 exitCode = 1;
             }
-            catch (Exception ex) // other error
+            catch (Exception ex) // other/unexpected error
             {
-                _logger.Error(ex.ToString());
+                _logger.Exception(ex);
                 exitCode = 1;
             }
 
@@ -141,18 +142,19 @@ namespace NTerm
 
             List<char> rcvBuffer = [];
 
-//TODO1 continuous rcv messages.key cmd to pause display?
-
             while (!ts.Token.IsCancellationRequested)
             {
+                // Reset current state.
                 CommState cst = CommState.Ok;
+                Exception? cstexc = null;
+               // (CommState cst, Exception exc) state = (CommState.Ok, new());
 
                 try
                 {
-                    ///// User CLI input? /////
+                    ///// User CLI input /////
                     while (_qUserCli.TryDequeue(out string? sin))
                     {
-                        if (sin[0] == Defs.ESC) // Check for escape key.
+                        if (sin[0] == ControlChar.ESC) // Check for escape key.
                         {
                             if (sin.Length > 1)
                             {
@@ -170,7 +172,7 @@ namespace NTerm
                                         break;
 
                                     case 'h': // help
-                                        NewLine();
+                                        // NewLine();
                                         About(false);
                                         break;
 
@@ -178,7 +180,7 @@ namespace NTerm
                                         if (_config.Macros.TryGetValue(kin, out var smacro))
                                         {
                                             Print(smacro, match: false);
-                                            _logger.Debug($">>> [{smacro}]");
+                                            _logger.Trace($">>> [{smacro}]");
                                             var td = Encoding.Default.GetBytes(smacro).Append(_config.Delim);
                                             _comm.Send([.. td]);
                                         }
@@ -193,15 +195,14 @@ namespace NTerm
                         }
                         else // just send
                         {
-                            // Don't Print() as it's already on the term.
-                            NewLine();
-                            _logger.Debug($">>> [{sin}]");
+                            // Print(sin, clr: _config.TrafficColor, match: false);
+                            _logger.Trace($">>> [{sin}]");
                             var td = Encoding.Default.GetBytes(sin).Append(_config.Delim);
                             _comm.Send([.. td]);
                         }
                     }
 
-                    ///// Comm receive? /////
+                    ///// Comm receive /////
                     bool rcving = true;
                     while (rcving)
                     {
@@ -216,15 +217,15 @@ namespace NTerm
                                 {
                                     if (b[i] == _config.Delim)
                                     {
-                                        // End of the line so send it.
-                                        Print($"{string.Concat(rcvBuffer)}", match: true);
-                                        _logger.Debug($"<<< [{string.Concat(rcvBuffer)}]");
+                                        // Complete line so process it.
+                                        var srcv = string.Concat(rcvBuffer);
+                                        Print($"{srcv}", clr: _config.TrafficColor, match: true);
+                                        _logger.Trace($"<<< [{srcv}]");
                                         rcvBuffer.Clear();
-                                        NewLine();
                                     }
-                                    else if (b[i] == Defs.CR)
+                                    else if (b[i] == ControlChar.CR)
                                     {
-                                        // Skip. TODO1 support mb like CRLF.
+                                        // Skip these. Crappy way to handle CRLF. TODO do it correctly.
                                     }
                                     else
                                     {
@@ -235,22 +236,7 @@ namespace NTerm
                                 break;
 
                             case Exception e:
-                                cst = ProcessException(e);
-
-                                switch (cst)
-                                {
-                                    case CommState.Fatal:
-                                        throw e;
-
-                                    case CommState.Timeout:
-                                    case CommState.Recoverable:
-                                        // Nothing. Could add some rety logic?
-                                        break;
-
-                                    case CommState.Ok:
-                                        // Nothing.
-                                        break;
-                                }
+                                (cst, cstexc) = ProcessException(e);
                                 break;
 
                             default:
@@ -259,57 +245,58 @@ namespace NTerm
                         }
                     }
 
+                    ///// Update state /////
+                    // Each iteration of the loop may alter the state.
+                    switch (cst)
+                    {
+                        case CommState.Fatal:
+                            throw cstexc!;
+
+                        case CommState.Timeout:
+                        case CommState.Recoverable:
+                            // Nothing. TODO Could add some retry logic?
+                            break;
+
+                        case CommState.Ok:
+                            // Nothing.
+                            break;
+                    }
+
                     // Pace a bit.
                     Thread.Sleep(10);
                 }
-                catch (Exception ex)
+                catch
                 {
-                    // Something went wrong. Log and shut down gracefully.
-                    _logger.Exception(ex);
+                    // Something unexpected. Shut down loop and pass along.
                     ts.Cancel();
                     Task.WaitAll([taskKeyboard, taskComm]);
                     throw;
                 }
+
+                Task.WaitAll([taskKeyboard, taskComm]);
             }
         }
         #endregion
 
-        #region User output
+        #region Internal Functions
         /// <summary>
         /// General user writer.
         /// </summary>
         /// <param name="text"></param>
         /// <param name="clr"></param>
-        void Print(string text, ConsoleColor? clr = null, bool match = false)
+        void Print(string text, ConsoleColor? clr = null, bool match = false, bool nl = true)
         {
             if (match)
             {
                 //  Look for text matches. Internet says simple search is generally faster than compiled regex.
-                var mc = _config.Matchers.Where(m => text.Contains(m.Key));
-
-                mc.First();
-
-                if (mc.Any())
-                {
-                    clr = mc.First().Value;
-                }
+                _config.Matchers.Where(m => text.Contains(m.Key)).ForEach(m => clr = m.Value);
             }
 
-            Console.ForegroundColor = clr ?? _config.InfoColor;
-            Console.WriteLine(text);
+            if (clr is not null) { Console.ForegroundColor = (ConsoleColor)clr; }
+            if (nl)Console.WriteLine(text); else Console.Write(text);
             Console.ResetColor();
         }
 
-        /// <summary>
-        /// New line without text.
-        /// </summary>
-        void NewLine()
-        {
-            Console.WriteLine("");
-        }
-        #endregion
-
-        #region Internal Functions
         /// <summary>
         /// Task to service the user input read.
         /// </summary>
@@ -355,13 +342,9 @@ namespace NTerm
         /// <param name="e"></param>
         void LogManager_LogMessage(object? sender, LogMessageEventArgs e)
         {
-            ConsoleColor? clr = null;
-
-            //NewLine();
-
-            clr ??= e.Level switch
+            ConsoleColor? clr = e.Level switch
             {
-                LogLevel.Info => _config.InfoColor,
+                // LogLevel.Info => _config.InfoColor,
                 LogLevel.Error => _config.ErrorColor,
                 LogLevel.Debug => _config.DebugColor,
                 _ => null
@@ -374,36 +357,34 @@ namespace NTerm
         /// Process what happened on the comm thread.
         /// </summary>
         /// <param name="e"></param>
-        /// <returns></returns>
-        CommState ProcessException(Exception e)
+        /// <returns>New state and optional exception</returns>
+        (CommState cst, Exception e) ProcessException(Exception e)
         {
-            CommState cst;
-
-            // All the possible exceptions:
-            // Exception,Description,Module,Function,State
-            // ArgumentException,,SER,common,Fatal
-            // ArgumentNullException,endPoint is null.,UDP,Connect,Fatal
-            // ArgumentNullException,The host parameter is null.,TCP,ConnectAsync,Fatal
-            // ArgumentNullException,,SER,common,Fatal
-            // ArgumentOutOfRangeException,The port parameter is not between MinPort and MaxPort.,TCP,ConnectAsync,Fatal
-            // ArgumentOutOfRangeException,,SER,common,Fatal
-            // UnauthorizedAccessException,Access is denied to the port or Already open.,SER,open,Fatal
-            // InvalidOperationException,The specified port on the current instance of the SerialPort is already open.,SER,open,Fatal
-            // InvalidOperationException,The NetworkStream does not support writing/reading.,TCP,stream.Write / stream.Read,Fatal
-            // InvalidOperationException,The specified port is not open.,SER,write/read,Fatal
-            // InvalidOperationException,The TcpClient is not connected to a remote host.,TCP,GetStream,Fatal
-            // IOException,The port is in an invalid state. or the parameters passed from this SerialPort object were invalid.,SER,open,Fatal
-            // IOException,An error occurred when accessing the socket or There was a failure while writing/reading to the network.,TCP,stream.Write / stream.Read,Recoverable
-            // ObjectDisposedException,TcpClient is closed.,TCP,ConnectAsync,Recoverable
-            // ObjectDisposedException,The NetworkStream is closed.,TCP,stream.Write / stream.Read,Recoverable
-            // ObjectDisposedException,The TcpClient has been closed.,TCP,GetStream,Recoverable
-            // ObjectDisposedException,The UdpClient is closed.,UDP,Connect,Recoverable
-            // ObjectDisposedException,The underlying Socket has been closed.,UDP,ReceiveAsync,Recoverable
-            // OperationCanceledException,The cancellation token was canceled. Exception in returned task.,TCP,ConnectAsync,Recoverable
-            // SocketException,An error occurred when accessing the socket.,TCP,ConnectAsync,SPECIAL
-            // SocketException,An error occurred when accessing the socket.,UDP,Connect,SPECIAL
-            // SocketException,An error occurred when accessing the socket.,UDP,ReceiveAsync,SPECIAL
-            // TimeoutException,The operation did not complete before the timeout period ended.,SER,write/read,Timeout
+            // All the possible exceptions per MS docs:
+            // Exception                  ,Description                                                     ,Comm,Function         ,State      
+            // ArgumentException          ,                                                                ,SER ,common           ,Fatal      
+            // ArgumentNullException      ,endPoint is null.                                               ,UDP ,Connect          ,Fatal      
+            // ArgumentNullException      ,The host parameter is null.                                     ,TCP ,ConnectAsync     ,Fatal      
+            // ArgumentNullException      ,                                                                ,SER ,common           ,Fatal      
+            // ArgumentOutOfRangeException,The port parameter is not between MinPort and MaxPort.          ,TCP ,ConnectAsync     ,Fatal      
+            // ArgumentOutOfRangeException,                                                                ,SER ,common           ,Fatal      
+            // UnauthorizedAccessException,Access is denied to the port or Already open.                   ,SER ,open             ,Fatal      
+            // InvalidOperationException  ,The specified port is already open.                             ,SER ,open             ,Fatal      
+            // InvalidOperationException  ,The NetworkStream does not support writing/reading.             ,TCP ,stream.Write/Read,Fatal      
+            // InvalidOperationException  ,The specified port is not open.                                 ,SER ,write/read       ,Fatal      
+            // InvalidOperationException  ,The TcpClient is not connected to a remote host.                ,TCP ,GetStream        ,Fatal      
+            // IOException                ,The port is in an invalid state or invalid.                     ,SER ,open             ,Fatal      
+            // IOException                ,Error when accessing the socket or network read/write failure.  ,TCP ,stream.Write/Read,Recoverable
+            // ObjectDisposedException    ,TcpClient is closed.                                            ,TCP ,ConnectAsync     ,Recoverable
+            // ObjectDisposedException    ,The NetworkStream is closed.                                    ,TCP ,stream.Write/Read,Recoverable
+            // ObjectDisposedException    ,The TcpClient has been closed.                                  ,TCP ,GetStream        ,Recoverable
+            // ObjectDisposedException    ,The UdpClient is closed.                                        ,UDP ,Connect          ,Recoverable
+            // ObjectDisposedException    ,The underlying Socket has been closed.                          ,UDP ,ReceiveAsync     ,Recoverable
+            // OperationCanceledException ,The cancellation token was canceled. Exception in returned task.,TCP ,ConnectAsync     ,Recoverable
+            // SocketException            ,Error when accessing the socket.                                ,TCP ,ConnectAsync     ,SPECIAL    
+            // SocketException            ,Error when accessing the socket.                                ,UDP ,Connect          ,SPECIAL    
+            // SocketException            ,Error when accessing the socket.                                ,UDP ,ReceiveAsync     ,SPECIAL    
+            // TimeoutException           ,The operation did not complete before the timeout period ended. ,SER ,write/read       ,Timeout    
 
             // Async ops carry the original exception in inner.
             if (e is AggregateException)
@@ -411,6 +392,7 @@ namespace NTerm
                 e = e.InnerException ?? e;
             }
 
+            CommState cst;
             switch (e)
             {
                 case OperationCanceledException:
@@ -439,7 +421,7 @@ namespace NTerm
                     break;
             }
 
-            return cst;
+            return (cst, e);
         }
 
         /// <summary>
@@ -503,7 +485,8 @@ namespace NTerm
                 }
             }
 
-            Print(string.Join(Environment.NewLine, docs), match: false);
+            var s = string.Join(Environment.NewLine, docs);
+            Print(s, match: false);
         }
         #endregion
 
@@ -576,8 +559,7 @@ namespace NTerm
         public static Rectangle GetRect()
         {
             IntPtr hnd = GetForegroundWindow();
-            RectNative nrect;
-            GetWindowRect(hnd, out nrect);
+            GetWindowRect(hnd, out RectNative nrect);
             return new Rectangle(nrect.Left, nrect.Top, nrect.Right - nrect.Left, nrect.Bottom - nrect.Top);
         }
     }

@@ -14,7 +14,6 @@ namespace NTerm
     public class NullComm : IComm
     {
         #region Fields
-        readonly ConcurrentQueue<byte[]> _qSend = new();
         readonly ConcurrentQueue<object> _qRecv = new();
         #endregion
 
@@ -41,7 +40,7 @@ namespace NTerm
         /// <see cref="IComm"/>
         public void Send(byte[] req)
         {
-            _qSend.Enqueue(req);
+            _qRecv.Enqueue($"++++[{req}]");
         }
 
         /// <summary>IComm implementation.</summary>
@@ -64,15 +63,8 @@ namespace NTerm
         {
             while (!token.IsCancellationRequested)
             {
-                if (_qSend.TryDequeue(out byte[]? rd))
-                {
-                    // Loopback. Can modify it for test.
-                    _qRecv.Enqueue(Encoding.Default.GetBytes("LP:"));
-                    _qRecv.Enqueue(rd);
-                }
-
                 // Don't be greedy.
-                Thread.Sleep(5);
+                Thread.Sleep(50);
             }
         }
         #endregion

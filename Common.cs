@@ -40,13 +40,12 @@ namespace NTerm
         Fatal,       // Config error, hard runtime error, it's dead Jim
     }
 
-    /// <summary>Comm error processing categories.</summary>
-    public class Defs // Control or CChar or ??
+    /// <summary>Characters used for comm control.</summary>
+    public class ControlChar
     {
-        // Some control characters.
+        public const int NUL = 0;
         public const int LF = 10;
         public const int CR = 13;
-        public const int NUL = 0;
         public const int ESC = 27;
     }
 }

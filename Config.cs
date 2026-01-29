@@ -16,13 +16,13 @@ namespace NTerm
         public List<string> CommConfig { get; private set; } = [];
 
         /// <summary>Color for error messages.</summary>
-        public ConsoleColor ErrorColor { get; private set; } = ConsoleColor.Red; // default
+        public ConsoleColor ErrorColor { get; private set; } = ConsoleColor.Red;
 
-        /// <summary>Color for normal messages.</summary>
-        public ConsoleColor InfoColor { get; private set; } = ConsoleColor.White; // default
+        /// <summary>Color for comm messages.</summary>
+        public ConsoleColor TrafficColor { get; private set; } = ConsoleColor.Yellow;
 
         /// <summary>Color for internal messages.</summary>
-        public ConsoleColor DebugColor { get; private set; } = ConsoleColor.Cyan; // default
+        public ConsoleColor DebugColor { get; private set; } = ConsoleColor.Cyan;
 
         /// <summary>Message delimiter: LF=10 CR=13 NUL=0.</summary>
         public byte Delim { get; private set; } = 0;
@@ -79,12 +79,12 @@ namespace NTerm
                             }
                             break;
 
-                        case "err_color":
+                        case "error_color":
                             ErrorColor = Enum.Parse<ConsoleColor>(kv.Value, true);
                             break;
 
-                        case "info_color":
-                            InfoColor = Enum.Parse<ConsoleColor>(kv.Value, true);
+                        case "traffic_color":
+                            TrafficColor = Enum.Parse<ConsoleColor>(kv.Value, true);
                             break;
 
                         case "debug_color":
@@ -94,9 +94,9 @@ namespace NTerm
                         case "delim":
                             Delim = kv.Value switch
                             {
-                                "LF" => Defs.LF,
-                                "CR" => Defs.CR,
-                                "NUL" => Defs.NUL,
+                                "LF" => ControlChar.LF,
+                                "CR" => ControlChar.CR,
+                                "NUL" => ControlChar.NUL,
                                 _ => throw new ConfigException($"Invalid delim: [{kv.Value}]"),
                             };
                             break;
@@ -132,8 +132,8 @@ namespace NTerm
 
             ls.Add($"comm:{string.Join(" ", CommConfig)}");
             ls.Add($"delim:{Delim}");
-            ls.Add($"info_color:{InfoColor}");
-            ls.Add($"err_color:{ErrorColor}");
+            ls.Add($"error_color:{ErrorColor}");
+            ls.Add($"traffic_color:{TrafficColor}");
 
             if (Macros.Count > 0)
             {

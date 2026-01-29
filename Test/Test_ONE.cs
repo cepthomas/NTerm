@@ -40,6 +40,7 @@ namespace Test
 
         public override void RunSuite()
         {
+            Console.Read();
 
             Console.WriteLine($"========= Test =========");
             _configFile = Path.Combine(MiscUtils.GetSourcePath(), "test_config.ini");

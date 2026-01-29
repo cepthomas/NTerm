@@ -22,8 +22,8 @@ class LineHandler(socketserver.StreamRequestHandler):
     def handle(self):
         self.data = self.rfile.readline(MAX_MSG).rstrip()
         ###### customize here ######
-        print(f'{INFO}RCV [{self.data.decode('utf-8')}] from {self.client_address[0]}{ENDC}')
-        self.wfile.write(self.data.upper())
+        s = f'{INFO}TCP received [{self.data.decode('utf-8')}] from {self.client_address[0]}{ENDC}'
+        self.wfile.write(s)
 
 # Custom server.
 class MyServer(socketserver.TCPServer):
@@ -33,7 +33,7 @@ class MyServer(socketserver.TCPServer):
         print(f'{ERR}Error in application:')
         import traceback
         traceback.print_exc()
-        print(ENDC)
+        print(ENDC) # where does print() go? stdout?
 
     def server_close(self):
         print(f"Server closing")

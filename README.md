@@ -38,11 +38,11 @@ comm = serial COM1 9600 8N1 ; => 6|7|8 bits E|O|N parity 0|1 stop bits
 ; Message delimiter: LF|CR|NUL. Default is `NUL` to allow embedded `LF` for line string separation.
 delim = LF
 
-; Console color for internal messages. Default is gray.
-info_color = green
+; Console color for comm messages. Default is yellow.
+traffic_color = yellow
 
 ; Console color for error messages. Default is red.
-err_color = red
+error_color = red
 
 ; Simple user macros that sends text when executed. executed by `ESC char`.
 ; Quotes can be used to maintain leading or trailing whitespace.
