@@ -28,14 +28,8 @@ namespace Ephemera.NBagOfTricks // Nebulua_TODO1 // find a home for this.
         // Reads the next character from the input stream. The returned value is -1 if no further characters are available.
         int Read();
 
-        ///// new
-        // w.Location = new Point(_settings.FormGeometry.X, _settings.FormGeometry.Y);
-        // w.Size = new Size(_settings.FormGeometry.Width, _settings.FormGeometry.Height);
-        // _settings.FormGeometry = new Rectangle(f.X, f.Y, f.Width, f.Height);
 
-
-
-        //////// all real ////////
+        //////// all real Console ////////
 
         ///// Basics
         // bool CapsLock
@@ -68,7 +62,7 @@ namespace Ephemera.NBagOfTricks // Nebulua_TODO1 // find a home for this.
         // bool IsInputRedirected
         // bool IsOutputRedirected
 
-        ///// Cursor ops - in buffer C/R
+        ///// Cursor ops - on buffer C/R
         // bool CursorVisible
         // int CursorLeft
         // int CursorSize
@@ -76,53 +70,14 @@ namespace Ephemera.NBagOfTricks // Nebulua_TODO1 // find a home for this.
         // (int Left, int Top) GetCursorPosition()
         // void SetCursorPosition(int left, int top)
 
-
-        ///// Internals
+        ///// Buffer ops - on buffer C/R
         // void MoveBufferArea(int sourceLeft, int sourceTop, int sourceWidth, int sourceHeight, int targetLeft, int targetTop)
         // void MoveBufferArea(int sourceLeft, int sourceTop, int sourceWidth, int sourceHeight, int targetLeft, int targetTop, char sourceChar, ConsoleColor sourceForeColor, ConsoleColor sourceBackColor)
         // void SetBufferSize(int width, int height)
-        // Window ops relative to buffer:
         // void SetWindowPosition(int left, int top)
         // void SetWindowSize(int width, int height)
 
-
-        ///// Write() overloads
-        // void Write([StringSyntax(StringSyntaxAttribute.CompositeFormat)] string format, object? arg0)
-        // void Write([StringSyntax(StringSyntaxAttribute.CompositeFormat)] string format, object? arg0, object? arg1)
-        // void Write([StringSyntax(StringSyntaxAttribute.CompositeFormat)] string format, object? arg0, object? arg1, object? arg2)
-        // void Write([StringSyntax(StringSyntaxAttribute.CompositeFormat)] string format, params object?[]? arg)
-        // void Write(bool value)
-        // void Write(char value)
-        // void Write(char[] buffer, int index, int count)
-        // void Write(char[]? buffer)
-        // void Write(decimal value)
-        // void Write(double value)
-        // void Write(float value)
-        // void Write(int value)
-        // void Write(long value)
-        // void Write(object? value)
-        // void Write(string? value)
-        // void Write(uint value)
-        // void Write(ulong value)
-
-        ///// WriteLine() overloads
-        // void WriteLine([StringSyntax(StringSyntaxAttribute.CompositeFormat)] string format, object? arg0)
-        // void WriteLine([StringSyntax(StringSyntaxAttribute.CompositeFormat)] string format, object? arg0, object? arg1)
-        // void WriteLine([StringSyntax(StringSyntaxAttribute.CompositeFormat)] string format, object? arg0, object? arg1, object? arg2)
-        // void WriteLine([StringSyntax(StringSyntaxAttribute.CompositeFormat)] string format, params object?[]? arg)
-        // void WriteLine(bool value)
-        // void WriteLine(char value)
-        // void WriteLine(char[] buffer, int index, int count)
-        // void WriteLine(char[]? buffer)
-        // void WriteLine(decimal value)
-        // void WriteLine(double value)
-        // void WriteLine(float value)
-        // void WriteLine(int value)
-        // void WriteLine(long value)
-        // void WriteLine(object? value)
-        // void WriteLine(string? value)
-        // void WriteLine(uint value)
-        // void WriteLine(ulong value)
+        ///// Lots of Write() and WriteLine() overloads - implemented as needed.
     }
 
 
@@ -132,46 +87,22 @@ namespace Ephemera.NBagOfTricks // Nebulua_TODO1 // find a home for this.
     {
         public bool KeyAvailable { get => Console.KeyAvailable; }
         public string Title { get => Console.Title; set => Console.Title = value; }
-        int IConsole.WindowHeight { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
-        int IConsole.WindowLeft { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
-        int IConsole.WindowTop { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
-        int IConsole.WindowWidth { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
-        ConsoleColor IConsole.BackgroundColor { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
-        ConsoleColor IConsole.ForegroundColor { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
+        public int WindowHeight { get => Console.WindowHeight; set => Console.WindowHeight = value; }
+        public int WindowLeft { get => Console.WindowLeft; set => Console.WindowLeft = value; }
+        public int WindowTop { get => Console.WindowTop; set => Console.WindowTop = value; }
+        public int WindowWidth { get => Console.WindowWidth; set => Console.WindowWidth = value; }
+        public ConsoleColor BackgroundColor { get => Console.BackgroundColor; set => Console.BackgroundColor = value; }
+        public ConsoleColor ForegroundColor { get => Console.ForegroundColor; set => Console.ForegroundColor = value; }
 
         public string? ReadLine() { return Console.ReadLine(); }
         public ConsoleKeyInfo ReadKey(bool intercept) { return Console.ReadKey(intercept); }
         public void Write(string text) { Console.Write(text); }
         public void WriteLine(string text) { Console.WriteLine(text); }
-
-        ConsoleKeyInfo IConsole.ReadKey()
-        {
-            throw new NotImplementedException();
-        }
-
-        void IConsole.Clear()
-        {
-            throw new NotImplementedException();
-        }
-
-        void IConsole.ResetColor()
-        {
-            throw new NotImplementedException();
-        }
-
-        void IConsole.WriteLine()
-        {
-            throw new NotImplementedException();
-        }
-
-        int IConsole.Read()
-        {
-            throw new NotImplementedException();
-        }
-
-        public RealConsole()
-        {
-        }
+        public ConsoleKeyInfo ReadKey() { return Console.ReadKey(); }
+        public void Clear() { Console.Clear(); }
+        public void ResetColor() { Console.ResetColor(); }
+        public void WriteLine() { Console.WriteLine(); }
+        public int Read() { return Console.Read(); }
     }
 
 

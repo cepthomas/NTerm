@@ -21,6 +21,9 @@ namespace NTerm
     {
         #region Fields
         /// <summary>Current config.</summary>
+        readonly IConsole _console;
+
+        /// <summary>Current config.</summary>
         readonly Config _config = new();
 
         /// <summary>Module logger.</summary>
@@ -36,10 +39,12 @@ namespace NTerm
         #region Lifecycle
         /// <summary>
         /// Build me one and make it go.
+        /// <param name="console">Console to use. Mainly for testing.</param>
         /// </summary>
-        public App()
+        public App(IConsole console)
         {
             int exitCode = 0;
+            _console = console;
 
             try
             {
@@ -120,14 +125,6 @@ namespace NTerm
         {
             _comm?.Dispose();
         }
-
-        /// <summary>
-        /// Start here.
-        /// </summary>
-        static void Main()
-        {
-            using var app = new App();
-        }
         #endregion~
 
         #region Main Loop
@@ -168,7 +165,7 @@ namespace NTerm
                                         break;
 
                                     case 'c': // clear
-                                        Console.Clear();
+                                        _console.Clear();
                                         break;
 
                                     case 'h': // help
@@ -250,6 +247,8 @@ namespace NTerm
                     switch (cst)
                     {
                         case CommState.Fatal:
+                            ts.Cancel();
+                            Task.WaitAll([taskKeyboard, taskComm]);
                             throw cstexc!;
 
                         case CommState.Timeout:
@@ -273,7 +272,6 @@ namespace NTerm
                     throw;
                 }
 
-                Task.WaitAll([taskKeyboard, taskComm]);
             }
         }
         #endregion
@@ -292,9 +290,9 @@ namespace NTerm
                 _config.Matchers.Where(m => text.Contains(m.Key)).ForEach(m => clr = m.Value);
             }
 
-            if (clr is not null) { Console.ForegroundColor = (ConsoleColor)clr; }
-            if (nl)Console.WriteLine(text); else Console.Write(text);
-            Console.ResetColor();
+            if (clr is not null) { _console.ForegroundColor = (ConsoleColor)clr; }
+            if (nl) _console.WriteLine(text); else _console.Write(text);
+            _console.ResetColor();
         }
 
         /// <summary>
@@ -308,21 +306,21 @@ namespace NTerm
                 var kbdin = "";
 
                 // Check for something to do.
-                if (Console.KeyAvailable)
+                if (_console.KeyAvailable)
                 {
-                    var k = Console.ReadKey();
+                    var k = _console.ReadKey();
                     kbdin += k.KeyChar;
 
                     if (k.Key == ConsoleKey.Escape)
                     {
                         // Meta command. Get the next char.
-                        kbdin += Console.ReadKey().KeyChar;
+                        kbdin += _console.ReadKey().KeyChar;
                         _qUserCli.Enqueue(new(kbdin));
                     }
                     else
                     {
                         // Terminal command.
-                        var s = Console.ReadLine();
+                        var s = _console.ReadLine();
                         if (s is not null && s.Length != 0)
                         {
                             _qUserCli.Enqueue(kbdin + s);
