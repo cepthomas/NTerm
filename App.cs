@@ -14,6 +14,7 @@ using System.Net.Sockets;
 using System.Drawing;
 using Ephemera.NBagOfTricks;
 
+///////////////////////////////////// https://markheath.net/post/starting-threads-in-dotnet
 
 namespace NTerm
 {
@@ -520,55 +521,53 @@ namespace NTerm
         /// <summary>
         /// Screwing around.
         /// </summary>
-        /// 
         void Dev(int which)
         {
             // Check for something to do.
             Print($"DEV START {which}");
 
-            void _print(string text) { Print(text, clr: _config.DebugColor); };
-
             if (which == 1)
             {
-                /////////////////////////////
+                void _print(string text) { Print(text, clr: _config.DebugColor); };
+                void _error(string text) { Print(text, clr: _config.ErrorColor); };
+
                 MiscUtils.GetSourcePath();
                 var scriptFile = Path.Combine(MiscUtils.GetSourcePath(), "Test", "test_script.py");
-                RunScript(scriptFile, _print);
-                //Print(e.Data, clr: _config.DebugColor);
+                RunScript(scriptFile, _print, _error);
             }
 
             if (which == 2)
             {
                 // Window move/size.
-                //Print($"{_console.WindowHeight} {_console.WindowWidth}");
-                //_console.WindowHeight = _console.WindowHeight - 10;
-                //_console.WindowWidth = _console.WindowWidth - 10;
-                //Print($"{_console.WindowHeight} {_console.WindowWidth}");
+                Print($"{_console.WindowHeight} {_console.WindowWidth}");
+                _console.WindowHeight = _console.WindowHeight - 10;
+                _console.WindowWidth = _console.WindowWidth - 10;
+                Print($"{_console.WindowHeight} {_console.WindowWidth}");
             }
 
             if (which == 3)
             {
                 // ConsoleColors
-                //var cvals = Enum.GetValues(typeof(ConsoleColor));
-                //
-                //Console.BackgroundColor = ConsoleColor.Black;
-                //Console.WriteLine($"--------------------------------------------------------");
-                //for (int i = 0; i < cvals.Length; i++)
-                //{
-                //    var conclr = (ConsoleColor)i;
-                //    Console.ForegroundColor = conclr;
-                //    Console.WriteLine($"ForegroundColor:{conclr}");
-                //}
-                //
-                //Console.ForegroundColor = ConsoleColor.White;
-                //Console.WriteLine($"--------------------------------------------------------");
-                //for (int i = 0; i < cvals.Length; i++)
-                //{
-                //    var conclr = (ConsoleColor)i;
-                //    Console.BackgroundColor = conclr;
-                //    Console.WriteLine($"BackgroundColor:{conclr}");
-                //}
-                //Console.ResetColor();
+                var cvals = Enum.GetValues(typeof(ConsoleColor));
+
+                Console.BackgroundColor = ConsoleColor.Black;
+                Console.WriteLine($"--------------------------------------------------------");
+                for (int i = 0; i < cvals.Length; i++)
+                {
+                    var conclr = (ConsoleColor)i;
+                    Console.ForegroundColor = conclr;
+                    Console.WriteLine($"ForegroundColor:{conclr}");
+                }
+
+                Console.ForegroundColor = ConsoleColor.White;
+                Console.WriteLine($"--------------------------------------------------------");
+                for (int i = 0; i < cvals.Length; i++)
+                {
+                    var conclr = (ConsoleColor)i;
+                    Console.BackgroundColor = conclr;
+                    Console.WriteLine($"BackgroundColor:{conclr}");
+                }
+                Console.ResetColor();
             }
 
             Print($"DEV END {which}");
@@ -578,14 +577,15 @@ namespace NTerm
         }
 
         /// <summary>
-        /// Run a script in external process.
+        /// Run a script in external process. Handles py/lua/ps1/cmd/bat.
+        /// Liberally borrowed from http://csharptest.net/532/using-processstart-to-capture-console-output/index.html
         /// </summary>
         /// <param name="fn">Script name</param>
         /// <param name="output">What to do with script stdout</param>
-        void RunScript(string fn, Action<string> output) //TODO1 prob put in nbot
+        /// <param name="error">What to do with script stderr</param>
+        /// <param name="input">Optional for stdin</param>
+        void RunScript(string fn, Action<string> output, Action<string> error, TextReader? input = null) // TODO1 prob put in NBOT
         {
-            // http://csharptest.net/532/using-processstart-to-capture-console-output/index.html
-
             var ext = Path.GetExtension(fn);
             var wdir = Path.GetDirectoryName(fn);
 
@@ -601,7 +601,7 @@ namespace NTerm
             ProcessStartInfo pinfo = new(args[0], args[1..])
             {
                 UseShellExecute = false,
-                // INPUT: RedirectStandardInput = true,
+                RedirectStandardInput = input is not null,
                 RedirectStandardOutput = true,
                 RedirectStandardError = true,
                 WindowStyle = ProcessWindowStyle.Hidden,
@@ -630,44 +630,27 @@ namespace NTerm
                 proc.ErrorDataReceived += (o, e) =>
                 {
                     if (e.Data == null) mreErr.Set();
-                    output($"STDERR: {e.Data}");
+                    else error(e.Data);
                 };
                 proc.BeginErrorReadLine();
 
-                // INPUT:
-                //string line;
-                //TextReader input = new StreamReader("TODO");
-                //while (input != null && null != (line = input.ReadLine()))
-                //{
-                //    proc.StandardInput.WriteLine(line);
-                //}
-                //proc.StandardInput.Close();
+                if (input is not null)
+                {
+                    bool done = false;
+                    while (input != null && !done)
+                    {
+                        var line = input.ReadLine();
+                        if (line is not null) { proc.StandardInput.WriteLine(line); }
+                        else { done = true; }
+                    }
+                    proc.StandardInput.Close();
+                }
 
                 proc.WaitForExit();
                  
                 mreOut.WaitOne();
                 mreErr.WaitOne();
-
-                var ec = proc.ExitCode;
             }
-
-
-            // My old version:
-            // using Process proc = new() { StartInfo = pinfo };
-            // Console.WriteLine("Start process...");
-            // proc.Start();
-            // // TIL: To avoid deadlocks, always read the output stream first and then wait.
-            // var stdout = proc.StandardOutput.ReadToEnd();
-            // var stderr = proc.StandardError.ReadToEnd();
-            // //Console.WriteLine("Wait for exit...");
-            // //proc.WaitForExit();
-            // //Console.WriteLine("Exited...");
-            // // if (capture)
-            // // {
-            // //     return new(proc.ExitCode, stdout, stderr);
-            // // }
-
-            // return proc;
         }
         #endregion
     }

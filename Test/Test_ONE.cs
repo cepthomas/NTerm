@@ -196,5 +196,62 @@ namespace Test
 
             return proc;
         }
+
+    // ///////////////////////////////// test stuff TODO1??? ////////////////////////////////////
+    // public class CliHost : IDisposable
+    // {
+    //     #region Fields
+    //     /// <summary>Resource management.</summary>
+    //     bool _disposed = false;
+
+    //     /// <summary>CLI.</summary>
+    //     readonly IConsole _console;
+
+    //     /// <summary>CLI prompt.</summary>
+    //     readonly string _prompt = ">";
+    //     #endregion
+
+    //     #region Lifecycle
+    //     /// <summary>
+    //     /// Constructor inits stuff.
+    //     /// </summary>
+    //     /// <param name="scriptFn">Cli version requires cl script name.</param>
+    //     /// <param name="console">Mock</param>
+    //     public CliHost(string scriptFn, IConsole console)
+    //     {
+    //         _console = console;
+    //     }
+
+    //     public void Dispose()
+    //     {
+    //         throw new NotImplementedException();
+    //     }
+    //     #endregion
+    // }
+
+    // /// <summary>
+    // /// Test the simpler functions.
+    // /// </summary>
+    // public class CLI_PNUT
+    // {
+    //     public void RunSuite()
+    //     {
+    //         //bool bret;
+
+    //         MockConsole console = new();
+    //        // var cli = new Cli("none", console);
+
+    //         string prompt = ">";
+
+    //         console.Clear();
+    //         console.NextReadLine = "bbbbb";
+    //         //bret = cli.DoCommand();
+    //         //UT_EQUAL(console.Capture.Count, 2);
+    //         //UT_EQUAL(console.Capture[0], $"Invalid command");
+    //         //UT_EQUAL(console.Capture[1], prompt);
+    //     }
+    // }
+
+        
     }
 }

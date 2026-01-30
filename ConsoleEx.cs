@@ -5,13 +5,14 @@ using System.Runtime.InteropServices;
 using System.Text;
 
 
-namespace Ephemera.NBagOfTricks // TODO1 find a home for this - prob nbot.
+namespace Ephemera.NBagOfTricks // TODO1 find a home for this - prob NBOT.
 {
     /// <summary>
     /// Interface for consoles. Subset of System.Console.
     /// </summary>
     public interface IConsole
     {
+        #region Properties
         bool KeyAvailable { get; }
         string Title { get; set; }
         int WindowHeight { get; set; }
@@ -20,7 +21,9 @@ namespace Ephemera.NBagOfTricks // TODO1 find a home for this - prob nbot.
         int WindowWidth { get; set; }
         ConsoleColor BackgroundColor { get; set; }
         ConsoleColor ForegroundColor { get; set; }
+        #endregion
 
+        #region Functions
         void Write(string text);
         void WriteLine(string text);
         string? ReadLine();
@@ -29,10 +32,10 @@ namespace Ephemera.NBagOfTricks // TODO1 find a home for this - prob nbot.
         void Clear();
         void ResetColor();
         void WriteLine();
-        // Reads the next character from the input stream. The returned value is -1 if no further characters are available.
         int Read();
+        #endregion
 
-        #region All other real Console members - unimplemented
+        #region All other real Console members - not implemented
         ///// Basics
         // bool CapsLock
         // bool NumberLock
@@ -79,7 +82,7 @@ namespace Ephemera.NBagOfTricks // TODO1 find a home for this - prob nbot.
         // void SetWindowPosition(int left, int top)
         // void SetWindowSize(int width, int height)
 
-        ///// Lots of Write() and WriteLine() overloads - implemented as needed.
+        ///// Lots of Write() and WriteLine() overloads - implement as needed.
         #endregion
     }
 
@@ -88,7 +91,7 @@ namespace Ephemera.NBagOfTricks // TODO1 find a home for this - prob nbot.
     /// </summary>
     public class RealConsole : IConsole
     {
-        #region Console Properties
+        #region Properties
         public bool KeyAvailable { get => Console.KeyAvailable; }
         public string Title { get => Console.Title; set => Console.Title = value; }
         public ConsoleColor BackgroundColor { get => Console.BackgroundColor; set => Console.BackgroundColor = value; }
@@ -120,7 +123,7 @@ namespace Ephemera.NBagOfTricks // TODO1 find a home for this - prob nbot.
         }
         #endregion
 
-        #region Console Functions
+        #region Functions
         public string? ReadLine() { return Console.ReadLine(); }
         public ConsoleKeyInfo ReadKey(bool intercept) { return Console.ReadKey(intercept); }
         public void Write(string text) { Console.Write(text); }
@@ -132,7 +135,7 @@ namespace Ephemera.NBagOfTricks // TODO1 find a home for this - prob nbot.
         public int Read() { return Console.Read(); }
         #endregion
 
-        #region Manipulate the console window using win32 functions
+        #region Native win32 functions
         struct RectNative
         {
             public int Left;
@@ -155,13 +158,13 @@ namespace Ephemera.NBagOfTricks // TODO1 find a home for this - prob nbot.
         [DllImport("user32.dll")]
         static extern bool MoveWindow(IntPtr hWnd, int x, int y, int nWidth, int nHeight, bool bRepaint);
 
-        public static void Move(int x, int y, int width, int height)
+        static void Move(int x, int y, int width, int height)
         {
             IntPtr hnd = GetForegroundWindow();
             MoveWindow(hnd, x, y, width, height, true);
         }
 
-        public static Rectangle GetRect()
+        static Rectangle GetRect()
         {
             IntPtr hnd = GetForegroundWindow();
             GetWindowRect(hnd, out RectNative nrect);
@@ -170,52 +173,8 @@ namespace Ephemera.NBagOfTricks // TODO1 find a home for this - prob nbot.
         #endregion
     }
 
-
-    ///// <summary>
-    ///// Manipulate the console window using win32 functions. TODO1 Native Console.WindowX properties can't be set so use these.
-    ///// </summary>
-    //public class ConsoleOps
-    //{
-    //    struct RectNative
-    //    {
-    //        public int Left;
-    //        public int Top;
-    //        public int Right;
-    //        public int Bottom;
-    //    }
-
-    //    // Constants for the ShowWindow function
-    //    const int SW_MAXIMIZE = 3;
-
-    //    [DllImport("user32.dll")]
-    //    static extern IntPtr GetForegroundWindow();
-
-    //    [DllImport("user32.dll")]
-    //    static extern bool ShowWindow(IntPtr hWnd, int nCmdShow);
-
-    //    [DllImport("user32.dll")]
-    //    static extern bool GetWindowRect(IntPtr hWnd, out RectNative lpRect);
-
-    //    [DllImport("user32.dll")]
-    //    static extern bool MoveWindow(IntPtr hWnd, int x, int y, int nWidth, int nHeight, bool bRepaint);
-
-    //    public static void Move(Rectangle rect)
-    //    {
-    //        IntPtr hnd = GetForegroundWindow();
-    //        MoveWindow(hnd, rect.Left, rect.Top, rect.Width, rect.Height, true);
-    //    }
-
-    //    public static Rectangle GetRect()
-    //    {
-    //        IntPtr hnd = GetForegroundWindow();
-    //        GetWindowRect(hnd, out RectNative nrect);
-    //        return new Rectangle(nrect.Left, nrect.Top, nrect.Right - nrect.Left, nrect.Bottom - nrect.Top);
-    //    }
-    //}
-
-
     /// <summary>
-    /// A mock Console suitable for testing by simulating/capturing input and input. TODO1 needs more.
+    /// A mock Console suitable for testing by simulating/capturing input and input.
     /// </summary>
     public class MockConsole : IConsole
     {
@@ -224,20 +183,42 @@ namespace Ephemera.NBagOfTricks // TODO1 find a home for this - prob nbot.
         #endregion
 
         #region Internals
-        //        public List<string> Capture { get { return StringUtils.SplitByTokens(_capture.ToString(), Environment.NewLine); } }
+        public List<string> Capture { get { return StringUtils.SplitByTokens(_capture.ToString(), Environment.NewLine); } }
         public string NextReadLine { get; set; } = "";
-        public void Reset() => _capture.Clear();
         #endregion
 
-        #region IConsole implementation
+        #region IConsole implementation - Properties
         public bool KeyAvailable { get => NextReadLine.Length > 0; }
+
         public string Title { get; set; } = "";
-        int IConsole.WindowHeight { get; set; } = 40;
-        int IConsole.WindowLeft { get; set; } = 100;
-        int IConsole.WindowTop { get; set; } = 50;
-        int IConsole.WindowWidth { get; set; } = 100;
-        ConsoleColor IConsole.BackgroundColor { get; set; }
-        ConsoleColor IConsole.ForegroundColor { get; set; }
+
+        public int WindowHeight { get; set; } = 40;
+
+        public int WindowLeft { get; set; } = 100;
+
+        public int WindowTop { get; set; } = 50;
+
+        public int WindowWidth { get; set; } = 100;
+
+        public ConsoleColor BackgroundColor { get; set; }
+
+        public ConsoleColor ForegroundColor { get; set; }
+        #endregion
+
+        #region IConsole implementation - Functions
+        public void ResetColor()
+        {
+            BackgroundColor = ConsoleColor.Black;
+            ForegroundColor = ConsoleColor.White;
+        }
+
+        public void Write(string text) => _capture.Append(text);
+
+        public void WriteLine(string text) => _capture.Append(text + Environment.NewLine);
+
+        public void WriteLine() => _capture.Append(Environment.NewLine);
+
+        public void Clear() => _capture.Clear();
 
         public string? ReadLine()
         {
@@ -253,6 +234,7 @@ namespace Ephemera.NBagOfTricks // TODO1 find a home for this - prob nbot.
             }
         }
 
+        // The pressed key is optionally displayed in the console window.
         public ConsoleKeyInfo ReadKey(bool intercept)
         {
             if (KeyAvailable)
@@ -263,77 +245,26 @@ namespace Ephemera.NBagOfTricks // TODO1 find a home for this - prob nbot.
             }
             else
             {
+                // TODO block until new key.
                 throw new InvalidOperationException();
             }
         }
 
-        public void Write(string text) => _capture.Append(text);
+        public ConsoleKeyInfo ReadKey() => ReadKey(false);
 
-        public void WriteLine(string text) => _capture.Append(text + Environment.NewLine);
-
-        // TODO1 implement these.
-        ConsoleKeyInfo IConsole.ReadKey() { throw new NotImplementedException(); }
-        void IConsole.Clear() { throw new NotImplementedException(); }
-        void IConsole.ResetColor() { throw new NotImplementedException(); }
-        void IConsole.WriteLine() { throw new NotImplementedException(); }
-        int IConsole.Read() { throw new NotImplementedException(); }
-        #endregion
-    }
-
-
-
-    ///////////////////////////////// test stuff TODO1??? ////////////////////////////////////
-    public class CliHost : IDisposable
-    {
-        #region Fields
-        /// <summary>Resource management.</summary>
-        bool _disposed = false;
-
-        /// <summary>CLI.</summary>
-        readonly IConsole _console;
-
-        /// <summary>CLI prompt.</summary>
-        readonly string _prompt = ">";
-        #endregion
-
-        #region Lifecycle
-        /// <summary>
-        /// Constructor inits stuff.
-        /// </summary>
-        /// <param name="scriptFn">Cli version requires cl script name.</param>
-        /// <param name="console">Mock</param>
-        public CliHost(string scriptFn, IConsole console)
+        public int Read()
         {
-            _console = console;
-        }
-
-        public void Dispose()
-        {
-            throw new NotImplementedException();
+            if (KeyAvailable)
+            {
+                var key = NextReadLine[0];
+                NextReadLine = NextReadLine.Substring(1);
+                return (int)key;
+            }
+            else
+            {
+                return -1;
+            }
         }
         #endregion
-    }
-
-    /// <summary>
-    /// Test the simpler functions.
-    /// </summary>
-    public class CLI_PNUT
-    {
-        public void RunSuite()
-        {
-            //bool bret;
-
-            MockConsole console = new();
-           // var cli = new Cli("none", console);
-
-            string prompt = ">";
-
-            console.Reset();
-            console.NextReadLine = "bbbbb";
-            //bret = cli.DoCommand();
-            //UT_EQUAL(console.Capture.Count, 2);
-            //UT_EQUAL(console.Capture[0], $"Invalid command");
-            //UT_EQUAL(console.Capture[1], prompt);
-        }
     }
 }
