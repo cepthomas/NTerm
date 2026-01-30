@@ -5,10 +5,10 @@ using System.Runtime.InteropServices;
 using System.Text;
 
 
-namespace Ephemera.NBagOfTricks // TODO1 find a home for this.
+namespace Ephemera.NBagOfTricks // TODO1 find a home for this - prob nbot.
 {
     /// <summary>
-    /// Interface for consoles. Identical to system Console.
+    /// Interface for consoles. Subset of System.Console.
     /// </summary>
     public interface IConsole
     {
@@ -88,15 +88,39 @@ namespace Ephemera.NBagOfTricks // TODO1 find a home for this.
     /// </summary>
     public class RealConsole : IConsole
     {
+        #region Console Properties
         public bool KeyAvailable { get => Console.KeyAvailable; }
         public string Title { get => Console.Title; set => Console.Title = value; }
-        public int WindowHeight { get => Console.WindowHeight; set => Console.WindowHeight = value; }
-        public int WindowLeft { get => Console.WindowLeft; set => Console.WindowLeft = value; }
-        public int WindowTop { get => Console.WindowTop; set => Console.WindowTop = value; }
-        public int WindowWidth { get => Console.WindowWidth; set => Console.WindowWidth = value; }
         public ConsoleColor BackgroundColor { get => Console.BackgroundColor; set => Console.BackgroundColor = value; }
         public ConsoleColor ForegroundColor { get => Console.ForegroundColor; set => Console.ForegroundColor = value; }
 
+        // Setting window row/column doesn't work in .NET so take a dive into win32.
+        public int WindowLeft
+        {
+            get { var r = GetRect(); return r.X; }
+            set { var r = GetRect(); Move(value, r.Y, r.Width, r.Height); }
+        }
+
+        public int WindowTop
+        {
+            get { var r = GetRect(); return r.Top; }
+            set { var r = GetRect(); Move(r.X, value, r.Width, r.Height); }
+        }
+
+        public int WindowWidth
+        {
+            get { var r = GetRect(); return r.Width; }
+            set { var r = GetRect(); Move(r.X, r.Y, value, r.Height); }
+        }
+
+        public int WindowHeight
+        {
+            get { var r = GetRect(); return r.Height; }
+            set { var r = GetRect(); Move(r.X, r.Y, r.Width, value); }
+        }
+        #endregion
+
+        #region Console Functions
         public string? ReadLine() { return Console.ReadLine(); }
         public ConsoleKeyInfo ReadKey(bool intercept) { return Console.ReadKey(intercept); }
         public void Write(string text) { Console.Write(text); }
@@ -106,14 +130,9 @@ namespace Ephemera.NBagOfTricks // TODO1 find a home for this.
         public void ResetColor() { Console.ResetColor(); }
         public void WriteLine() { Console.WriteLine(); }
         public int Read() { return Console.Read(); }
-    }
+        #endregion
 
-
-    /// <summary>
-    /// Manipulate the console window using win32 functions. TODO1 Native Console.WindowX properties can't be set so use these.
-    /// </summary>
-    public class ConsoleOps
-    {
+        #region Manipulate the console window using win32 functions
         struct RectNative
         {
             public int Left;
@@ -122,7 +141,6 @@ namespace Ephemera.NBagOfTricks // TODO1 find a home for this.
             public int Bottom;
         }
 
-        // Constants for the ShowWindow function
         const int SW_MAXIMIZE = 3;
 
         [DllImport("user32.dll")]
@@ -137,10 +155,10 @@ namespace Ephemera.NBagOfTricks // TODO1 find a home for this.
         [DllImport("user32.dll")]
         static extern bool MoveWindow(IntPtr hWnd, int x, int y, int nWidth, int nHeight, bool bRepaint);
 
-        public static void Move(Rectangle rect)
+        public static void Move(int x, int y, int width, int height)
         {
             IntPtr hnd = GetForegroundWindow();
-            MoveWindow(hnd, rect.Left, rect.Top, rect.Width, rect.Height, true);
+            MoveWindow(hnd, x, y, width, height, true);
         }
 
         public static Rectangle GetRect()
@@ -149,11 +167,55 @@ namespace Ephemera.NBagOfTricks // TODO1 find a home for this.
             GetWindowRect(hnd, out RectNative nrect);
             return new Rectangle(nrect.Left, nrect.Top, nrect.Right - nrect.Left, nrect.Bottom - nrect.Top);
         }
+        #endregion
     }
 
 
+    ///// <summary>
+    ///// Manipulate the console window using win32 functions. TODO1 Native Console.WindowX properties can't be set so use these.
+    ///// </summary>
+    //public class ConsoleOps
+    //{
+    //    struct RectNative
+    //    {
+    //        public int Left;
+    //        public int Top;
+    //        public int Right;
+    //        public int Bottom;
+    //    }
+
+    //    // Constants for the ShowWindow function
+    //    const int SW_MAXIMIZE = 3;
+
+    //    [DllImport("user32.dll")]
+    //    static extern IntPtr GetForegroundWindow();
+
+    //    [DllImport("user32.dll")]
+    //    static extern bool ShowWindow(IntPtr hWnd, int nCmdShow);
+
+    //    [DllImport("user32.dll")]
+    //    static extern bool GetWindowRect(IntPtr hWnd, out RectNative lpRect);
+
+    //    [DllImport("user32.dll")]
+    //    static extern bool MoveWindow(IntPtr hWnd, int x, int y, int nWidth, int nHeight, bool bRepaint);
+
+    //    public static void Move(Rectangle rect)
+    //    {
+    //        IntPtr hnd = GetForegroundWindow();
+    //        MoveWindow(hnd, rect.Left, rect.Top, rect.Width, rect.Height, true);
+    //    }
+
+    //    public static Rectangle GetRect()
+    //    {
+    //        IntPtr hnd = GetForegroundWindow();
+    //        GetWindowRect(hnd, out RectNative nrect);
+    //        return new Rectangle(nrect.Left, nrect.Top, nrect.Right - nrect.Left, nrect.Bottom - nrect.Top);
+    //    }
+    //}
+
+
     /// <summary>
-    /// A mock Console suitable for testing by simulating/capturing input and input.
+    /// A mock Console suitable for testing by simulating/capturing input and input. TODO1 needs more.
     /// </summary>
     public class MockConsole : IConsole
     {
@@ -220,7 +282,7 @@ namespace Ephemera.NBagOfTricks // TODO1 find a home for this.
 
 
 
-    ///////////////////////////////// test stuff ////////////////////////////////////
+    ///////////////////////////////// test stuff TODO1??? ////////////////////////////////////
     public class CliHost : IDisposable
     {
         #region Fields

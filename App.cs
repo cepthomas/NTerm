@@ -34,6 +34,9 @@ namespace NTerm
 
         /// <summary>Cli event queue.</summary>
         readonly ConcurrentQueue<string> _qUserCli = new();
+
+        /// <summary>Diagnostics.</summary>
+        readonly TimeIt _tm = new();
         #endregion
 
         #region Lifecycle
@@ -136,6 +139,7 @@ namespace NTerm
             using CancellationTokenSource ts = new();
             using Task taskKeyboard = Task.Run(() => DoKeyboard(ts.Token));
             using Task taskComm = Task.Run(() => _comm.Run(ts.Token));
+            //using Task taskDev = Task.Run(() => Dev(ts.Token));
 
             List<char> rcvBuffer = [];
 
@@ -159,8 +163,26 @@ namespace NTerm
 
                                 switch (kin)
                                 {
-                                    case 'z': // dev
-                                        Dev();
+                                    case '1': // dev
+
+                                        Dev(1);
+                                        
+                                        //{ using Task taskDev = Task.Run(() => Dev(ts.Token)); }
+
+
+                                        //Task t1 = Task.Factory.StartNew(Dev, s1);
+
+
+//// Start async.
+//Task t1 = Task.Factory.StartNew(Accept, s1);
+//Task t2 = Task.Factory.StartNew(Accept, s1);
+//Task.WhenAll(t1, t2).Wait();
+
+//public async void Accept(object state)
+//{
+    
+//}
+
                                         break;
 
                                     case 'q': // quit
@@ -293,6 +315,8 @@ namespace NTerm
                 //  Look for text matches. Internet says simple search is generally faster than compiled regex.
                 _config.Matchers.Where(m => text.Contains(m.Key)).ForEach(m => clr = m.Value);
             }
+
+            text = $"[{_tm.Snap("xxx")}] {text}";
 
             if (clr is not null) { _console.ForegroundColor = (ConsoleColor)clr; }
             if (nl) _console.WriteLine(text); else _console.Write(text);
@@ -496,100 +520,154 @@ namespace NTerm
         /// <summary>
         /// Screwing around.
         /// </summary>
-        void Dev()
+        /// 
+        void Dev(int which)
         {
-            // Window move/size.
-            //Print($"{_console.WindowHeight} {_console.WindowWidth}");
-            //_console.WindowHeight = _console.WindowHeight - 10;
-            //_console.WindowWidth = _console.WindowWidth - 10;
-            //Print($"{_console.WindowHeight} {_console.WindowWidth}");
+            // Check for something to do.
+            Print($"DEV START {which}");
 
-            // Colors
-            //var cvals = Enum.GetValues(typeof(ConsoleColor));
-            //
-            //Console.BackgroundColor = ConsoleColor.Black;
-            //Console.WriteLine($"--------------------------------------------------------");
-            //for (int i = 0; i < cvals.Length; i++)
-            //{
-            //    var conclr = (ConsoleColor)i;
-            //    Console.ForegroundColor = conclr;
-            //    Console.WriteLine($"ForegroundColor:{conclr}");
-            //}
-            //
-            //Console.ForegroundColor = ConsoleColor.White;
-            //Console.WriteLine($"--------------------------------------------------------");
-            //for (int i = 0; i < cvals.Length; i++)
-            //{
-            //    var conclr = (ConsoleColor)i;
-            //    Console.BackgroundColor = conclr;
-            //    Console.WriteLine($"BackgroundColor:{conclr}");
-            //}
-            //Console.ResetColor();
+            void _print(string text) { Print(text, clr: _config.DebugColor); };
+
+            if (which == 1)
+            {
+                /////////////////////////////
+                MiscUtils.GetSourcePath();
+                var scriptFile = Path.Combine(MiscUtils.GetSourcePath(), "Test", "test_script.py");
+                RunScript(scriptFile, _print);
+                //Print(e.Data, clr: _config.DebugColor);
+            }
+
+            if (which == 2)
+            {
+                // Window move/size.
+                //Print($"{_console.WindowHeight} {_console.WindowWidth}");
+                //_console.WindowHeight = _console.WindowHeight - 10;
+                //_console.WindowWidth = _console.WindowWidth - 10;
+                //Print($"{_console.WindowHeight} {_console.WindowWidth}");
+            }
+
+            if (which == 3)
+            {
+                // ConsoleColors
+                //var cvals = Enum.GetValues(typeof(ConsoleColor));
+                //
+                //Console.BackgroundColor = ConsoleColor.Black;
+                //Console.WriteLine($"--------------------------------------------------------");
+                //for (int i = 0; i < cvals.Length; i++)
+                //{
+                //    var conclr = (ConsoleColor)i;
+                //    Console.ForegroundColor = conclr;
+                //    Console.WriteLine($"ForegroundColor:{conclr}");
+                //}
+                //
+                //Console.ForegroundColor = ConsoleColor.White;
+                //Console.WriteLine($"--------------------------------------------------------");
+                //for (int i = 0; i < cvals.Length; i++)
+                //{
+                //    var conclr = (ConsoleColor)i;
+                //    Console.BackgroundColor = conclr;
+                //    Console.WriteLine($"BackgroundColor:{conclr}");
+                //}
+                //Console.ResetColor();
+            }
+
+            Print($"DEV END {which}");
+
+            // Don't be greedy.
+            Thread.Sleep(50);
         }
 
-
-        Process RunTarget(string exe)
+        /// <summary>
+        /// Run a script in external process.
+        /// </summary>
+        /// <param name="fn">Script name</param>
+        /// <param name="output">What to do with script stdout</param>
+        void RunScript(string fn, Action<string> output) //TODO1 prob put in nbot
         {
             // http://csharptest.net/532/using-processstart-to-capture-console-output/index.html
 
-            ProcessStartInfo pinfo = new("py", exe)
-            {
-                UseShellExecute = false,
-                //RedirectStandardInput = true,
-                RedirectStandardOutput = true,
-                RedirectStandardError = true,
+            var ext = Path.GetExtension(fn);
+            var wdir = Path.GetDirectoryName(fn);
 
-                WindowStyle = ProcessWindowStyle.Hidden,
-                CreateNoWindow = true,
-                ErrorDialog = false,
-                WorkingDirectory = Environment.CurrentDirectory,
-                FileName = FindExePath(exe),
-                Arguments = EscapeArguments(args)
+            string[] args = ext switch
+            {
+                ".cmd" or ".bat" => ["cmd", "/C", fn],
+                ".ps1" => ["powershell", "-executionpolicy", "bypass", "-File", fn],
+                ".lua" => ["lua", fn],
+                ".py" => ["py", fn],
+                _ => ["cmd", "/C", fn] // default just open.
             };
 
-
-             
-            using (Process process = Process.Start(psi))
-            using (ManualResetEvent mreOut = new ManualResetEvent(false),
-            mreErr = new ManualResetEvent(false))
+            ProcessStartInfo pinfo = new(args[0], args[1..])
             {
-                process.OutputDataReceived += (o, e) => { if (e.Data == null) mreOut.Set(); else output(e.Data); };
-                process.BeginOutputReadLine();
-                process.ErrorDataReceived += (o, e) => { if (e.Data == null) mreErr.Set(); else output(e.Data); };
-                process.BeginErrorReadLine();
-                 
-                string line;
-                while (input != null && null != (line = input.ReadLine()))
-                process.StandardInput.WriteLine(line);
-                 
-                process.StandardInput.Close();
-                process.WaitForExit();
+                UseShellExecute = false,
+                // INPUT: RedirectStandardInput = true,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+                WindowStyle = ProcessWindowStyle.Hidden,
+                CreateNoWindow = true,
+                //ErrorDialog = false,
+                WorkingDirectory = wdir,
+            };
+
+            // - The OutputDataReceived event fires on a separate thread, so you must use synchronization mechanisms
+            //   (like ManualResetEvent or TaskCompletionSource) if you need to ensure all output is captured before
+            //   proceeding with or using the full output in the main thread (e.g. after calling process.WaitForExit()).
+            // - Also! in order to receive the events asynchronously, the target must flush its stdout on write.
+
+            using (var proc = Process.Start(pinfo))
+            using (ManualResetEvent mreOut = new(false), mreErr = new(false))
+            {
+                if (proc is null) { throw new InvalidOperationException($"Couldn't start process {args}"); }
+
+                proc.OutputDataReceived += (o, e) =>
+                {
+                    if (e.Data == null) mreOut.Set();
+                    else output(e.Data);
+                };
+                proc.BeginOutputReadLine();
+
+                proc.ErrorDataReceived += (o, e) =>
+                {
+                    if (e.Data == null) mreErr.Set();
+                    output($"STDERR: {e.Data}");
+                };
+                proc.BeginErrorReadLine();
+
+                // INPUT:
+                //string line;
+                //TextReader input = new StreamReader("TODO");
+                //while (input != null && null != (line = input.ReadLine()))
+                //{
+                //    proc.StandardInput.WriteLine(line);
+                //}
+                //proc.StandardInput.Close();
+
+                proc.WaitForExit();
                  
                 mreOut.WaitOne();
                 mreErr.WaitOne();
-                // return process.ExitCode;
+
+                var ec = proc.ExitCode;
             }
 
 
+            // My old version:
             // using Process proc = new() { StartInfo = pinfo };
-
             // Console.WriteLine("Start process...");
             // proc.Start();
-
             // // TIL: To avoid deadlocks, always read the output stream first and then wait.
             // var stdout = proc.StandardOutput.ReadToEnd();
             // var stderr = proc.StandardError.ReadToEnd();
-
             // //Console.WriteLine("Wait for exit...");
             // //proc.WaitForExit();
             // //Console.WriteLine("Exited...");
-
             // // if (capture)
             // // {
             // //     return new(proc.ExitCode, stdout, stderr);
             // // }
 
-            return proc;
+            // return proc;
         }
         #endregion
     }

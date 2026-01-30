@@ -8,15 +8,10 @@ import time
 
 # From remlog.py
 
-#------------------------------------------------------------------------------
-#------------------------- Configuration start --------------------------------
-#------------------------------------------------------------------------------
-
 HOST = '127.0.0.1'
 PORT = 51111
 
 # Optional ansi color for categories.
-# https://en.wikipedia.org/wiki/ANSI_escape_code  91:br red  31:red  93:yellow  37/97:white
 CATS = { "INF":37, "DBG":93, "ERR":91 }
 
 # Delimiter for message lines. LF=10  CR=13  NUL=0
@@ -25,9 +20,6 @@ MDEL = '\0'
 # Debug.
 SEQ_NUM = False
 
-#------------------------------------------------------------------------------
-#------------------------- Configuration end ----------------------------------
-#------------------------------------------------------------------------------
 
 seq_num = 0
 
@@ -47,24 +39,12 @@ def send(msg, cat=None):
         pass
 
 
-#------------------------------------------------------------------------------
-#------------------------- test_remlog.py -------------------------------------
-#------------------------------------------------------------------------------
-
-# Use a script similar to:
-# cls
-# start C:\Dev\Apps\NTerm\bin\net8.0-windows\win-x64\NTerm.exe udp 127.0.0.1 51111
-# timeout 1
-# py udp_sender.py
-
 
 lines = []
 with open('ross_1.txt') as f:
     lines = f.readlines()
 lenl = len(lines)
 
-
-# CATS = { "INF":37, "DBG":93, "ERR":91 }
 
 # outer loop
 for i in range(5):

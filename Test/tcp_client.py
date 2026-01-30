@@ -5,8 +5,6 @@ import collections
 import socket
 
 
-
-### Remote debugger configuration.
 # TCP configuration.
 HOST = '127.0.0.1'
 PORT = None # default = off  51111
@@ -17,9 +15,6 @@ DEBUG_COLOR = 93 # yellow
 INFO_COLOR = None # 37/97 white
 # Delimiter for socket message lines.
 MDEL = '\n'
-
-
-
 
 
 # TCP client
