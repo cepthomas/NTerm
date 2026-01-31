@@ -3,6 +3,10 @@ using System.Collections.Generic;
 using System.IO;
 using Ephemera.NBagOfTricks;
 
+// TODO1?? document internals:
+// debug_color = green ; cyan
+// debug_target = ".\\Test\\tcp_server.py"
+
 
 namespace NTerm
 {
