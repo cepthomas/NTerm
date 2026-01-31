@@ -14,7 +14,6 @@ using System.Net.Sockets;
 using System.Drawing;
 using Ephemera.NBagOfTricks;
 
-///////////////////////////////////// https://markheath.net/post/starting-threads-in-dotnet
 
 namespace NTerm
 {
@@ -43,33 +42,39 @@ namespace NTerm
         #region Lifecycle
         /// <summary>
         /// Build me one and make it go.
-        /// <param name="console">Console to use. Mainly for testing.</param>
+        /// <param name="args">Command line.</param>
+        /// <param name="console">Console to use. Can override default for testing.</param>
         /// </summary>
-        public App(IConsole console)
+        public App(List<string> args, IConsole? console = null)
         {
             int exitCode = 0;
-            _console = console;
+            _console = console ?? new RealConsole();
 
             try
             {
                 // Must do this first before initializing.
                 string appDir = MiscUtils.GetAppDataDir("NTerm", "Ephemera");
 
-                // Init logging. TODO log levels from?
+                // Init logging. Hard-coded log levels.
                 string logFileName = Path.Combine(appDir, "log.txt");
                 LogManager.MinLevelFile = LogLevel.Trace;
                 LogManager.MinLevelNotif = LogLevel.Info;
                 LogManager.LogMessage += LogManager_LogMessage;
                 LogManager.Run(logFileName, 100000);
 
-                // Process user command line input.
-                var args = Environment.GetCommandLineArgs().ToList()[1..];
+                // Say hello.
+                _logger.Info($"NTerm using {_comm} {DateTime.Now}");
 
-                if (args.Count == 0)
+                // Process user command line input.
+                //var args = Environment.GetCommandLineArgs().ToList()[1..];
+
+                if (args.Count() == 0)
                 {
                     About(true);
                     Environment.Exit(1);
                 }
+
+                // Print($"Console is {ConsoleOps.GetRect()}"); // TODO set/save console size??
 
                 // Load config. Is there a default ini? if no, copy from resources.
                 string defaultConfig = Path.Combine(appDir, "default.ini");
@@ -77,6 +82,8 @@ namespace NTerm
                 {
                     var sc = Properties.Resources.default_config;
                     File.WriteAllText(defaultConfig, sc.ToString());
+
+                    _logger.Info($"Created default config {defaultConfig} - edit to taste.");
                 }
 
                 _config = new();
@@ -92,8 +99,13 @@ namespace NTerm
                     _ => throw new ConfigException($"Invalid comm type: [{_config.CommConfig[0]}]"),
                 };
 
-                // Say hello.
-                _logger.Info($"NTerm using {_comm} {DateTime.Now}");
+                
+                if (_config.DebugScript is not null)
+                {
+                    void _print(string text) { Print($"TGT {text}", clr: _config.DebugColor); };
+                    void _error(string text) { Print($"TGT {text}", clr: _config.ErrorColor); };
+                    Tools.RunScript(_config.DebugScript, _print, _error);
+                }
 
                 // Go forever.
                 Run();
@@ -116,8 +128,6 @@ namespace NTerm
             }
 
             LogManager.Stop();
-
-            // Print($"Console is {ConsoleOps.GetRect()}"); // TODO set/save console size??
 
             Environment.Exit(exitCode);
         }
@@ -167,23 +177,6 @@ namespace NTerm
                                     case '1': // dev
 
                                         Dev(1);
-                                        
-                                        //{ using Task taskDev = Task.Run(() => Dev(ts.Token)); }
-
-
-                                        //Task t1 = Task.Factory.StartNew(Dev, s1);
-
-
-//// Start async.
-//Task t1 = Task.Factory.StartNew(Accept, s1);
-//Task t2 = Task.Factory.StartNew(Accept, s1);
-//Task.WhenAll(t1, t2).Wait();
-
-//public async void Accept(object state)
-//{
-    
-//}
-
                                         break;
 
                                     case 'q': // quit
@@ -317,7 +310,7 @@ namespace NTerm
                 _config.Matchers.Where(m => text.Contains(m.Key)).ForEach(m => clr = m.Value);
             }
 
-            text = $"[{_tm.Snap("xxx")}] {text}";
+            // text = $"[{_tm.Snap("")}] {text}";
 
             if (clr is not null) { _console.ForegroundColor = (ConsoleColor)clr; }
             if (nl) _console.WriteLine(text); else _console.Write(text);
@@ -524,7 +517,7 @@ namespace NTerm
         void Dev(int which)
         {
             // Check for something to do.
-            Print($"DEV START {which}");
+            Print($"DEV === start === {which}");
 
             if (which == 1)
             {
@@ -533,7 +526,7 @@ namespace NTerm
 
                 MiscUtils.GetSourcePath();
                 var scriptFile = Path.Combine(MiscUtils.GetSourcePath(), "Test", "test_script.py");
-                RunScript(scriptFile, _print, _error);
+                Tools.RunScript(scriptFile, _print, _error);
             }
 
             if (which == 2)
@@ -570,87 +563,10 @@ namespace NTerm
                 Console.ResetColor();
             }
 
-            Print($"DEV END {which}");
+            Print($"DEV === end === {which}");
 
             // Don't be greedy.
             Thread.Sleep(50);
-        }
-
-        /// <summary>
-        /// Run a script in external process. Handles py/lua/ps1/cmd/bat.
-        /// Liberally borrowed from http://csharptest.net/532/using-processstart-to-capture-console-output/index.html
-        /// </summary>
-        /// <param name="fn">Script name</param>
-        /// <param name="output">What to do with script stdout</param>
-        /// <param name="error">What to do with script stderr</param>
-        /// <param name="input">Optional for stdin</param>
-        void RunScript(string fn, Action<string> output, Action<string> error, TextReader? input = null) // TODO1 prob put in NBOT
-        {
-            var ext = Path.GetExtension(fn);
-            var wdir = Path.GetDirectoryName(fn);
-
-            string[] args = ext switch
-            {
-                ".cmd" or ".bat" => ["cmd", "/C", fn],
-                ".ps1" => ["powershell", "-executionpolicy", "bypass", "-File", fn],
-                ".lua" => ["lua", fn],
-                ".py" => ["py", fn],
-                _ => ["cmd", "/C", fn] // default just open.
-            };
-
-            ProcessStartInfo pinfo = new(args[0], args[1..])
-            {
-                UseShellExecute = false,
-                RedirectStandardInput = input is not null,
-                RedirectStandardOutput = true,
-                RedirectStandardError = true,
-                WindowStyle = ProcessWindowStyle.Hidden,
-                CreateNoWindow = true,
-                //ErrorDialog = false,
-                WorkingDirectory = wdir,
-            };
-
-            // - The OutputDataReceived event fires on a separate thread, so you must use synchronization mechanisms
-            //   (like ManualResetEvent or TaskCompletionSource) if you need to ensure all output is captured before
-            //   proceeding with or using the full output in the main thread (e.g. after calling process.WaitForExit()).
-            // - Also! in order to receive the events asynchronously, the target must flush its stdout on write.
-
-            using (var proc = Process.Start(pinfo))
-            using (ManualResetEvent mreOut = new(false), mreErr = new(false))
-            {
-                if (proc is null) { throw new InvalidOperationException($"Couldn't start process {args}"); }
-
-                proc.OutputDataReceived += (o, e) =>
-                {
-                    if (e.Data == null) mreOut.Set();
-                    else output(e.Data);
-                };
-                proc.BeginOutputReadLine();
-
-                proc.ErrorDataReceived += (o, e) =>
-                {
-                    if (e.Data == null) mreErr.Set();
-                    else error(e.Data);
-                };
-                proc.BeginErrorReadLine();
-
-                if (input is not null)
-                {
-                    bool done = false;
-                    while (input != null && !done)
-                    {
-                        var line = input.ReadLine();
-                        if (line is not null) { proc.StandardInput.WriteLine(line); }
-                        else { done = true; }
-                    }
-                    proc.StandardInput.Close();
-                }
-
-                proc.WaitForExit();
-                 
-                mreOut.WaitOne();
-                mreErr.WaitOne();
-            }
         }
         #endregion
     }

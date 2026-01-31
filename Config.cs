@@ -21,9 +21,6 @@ namespace NTerm
         /// <summary>Color for comm messages.</summary>
         public ConsoleColor TrafficColor { get; private set; } = ConsoleColor.Yellow;
 
-        /// <summary>Color for internal messages.</summary>
-        public ConsoleColor DebugColor { get; private set; } = ConsoleColor.Cyan;
-
         /// <summary>Message delimiter: LF=10 CR=13 NUL=0.</summary>
         public byte Delim { get; private set; } = 0;
 
@@ -32,6 +29,12 @@ namespace NTerm
 
         /// <summary>Colorizing text.</summary>
         public Dictionary<string, ConsoleColor> Matchers { get; private set; } = [];
+
+        /// <summary>Debug: Color for internal messages.</summary>
+        public ConsoleColor DebugColor { get; private set; } = ConsoleColor.Cyan;
+
+        /// <summary>Debug: Specific script to run.</summary>
+        public string? DebugScript { get; private set; }
         #endregion
 
         /// <summary>
@@ -99,6 +102,14 @@ namespace NTerm
                                 "NUL" => ControlChar.NUL,
                                 _ => throw new ConfigException($"Invalid delim: [{kv.Value}]"),
                             };
+                            break;
+
+                        case "debug_script":
+                            if (!File.Exists(kv.Value))
+                            {
+                                throw new ConfigException($"Invalid script: [{kv}]");
+                            }
+                            DebugScript = kv.Value;
                             break;
 
                         default:

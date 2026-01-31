@@ -18,7 +18,7 @@ A standard `.ini` format file is typically used to configure a session:
 Alternatively, NTerm can run minimally without a config file by one of:
 
 - `NTerm tcp 127.0.0.1 59120`
-- `NTerm udp 127.0.0.1 59120`
+- `NTerm udp 127.0.0.1 59140`
 - `NTerm serial COM1 9600 8N1`
 
 The default configuration is in `%APPDATA%\Ephemera\NTerm\default.ini`. It is created the first time the

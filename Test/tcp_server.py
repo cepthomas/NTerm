@@ -33,7 +33,7 @@ class MyServer(socketserver.TCPServer):
         print(f'{ERR}Error in application:')
         import traceback
         traceback.print_exc()
-        print(ENDC) # where does print() go? stdout?
+        print(ENDC)
 
     def server_close(self):
         print(f"Server closing")

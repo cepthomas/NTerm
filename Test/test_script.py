@@ -9,21 +9,13 @@ import time
 lines = []
 with open('ross_1.txt') as f:
     lines = f.read().splitlines()
-lenl = len(lines)
-
-# with open("heroes.txt", "r") as heroes:    
-# hlist = heroes.read().splitlines()
-
 
 start_ms = time.time() * 1000.0
 
 for i in range(5):
-    r =  random.randrange(0, lenl)
+    r =  random.randrange(0, len(lines))
     now_ms = time.time() * 1000.0
-    # readlines() includes NL so remove it.
-    print(f'[{i} {now_ms - start_ms}]{lines[r]}') # {lines[r].rstrip()}
-    # In order for the Term host to get the lines in realtime - flush now.
-    sys.stdout.flush()
-    time.sleep(1.0)
+    print(f'[{i} {now_ms - start_ms}]{lines[r]}')
+    time.sleep(0.5)
 
 sys.exit(999)
