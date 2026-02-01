@@ -62,13 +62,10 @@ namespace NTerm
                 LogManager.LogMessage += LogManager_LogMessage;
                 LogManager.Run(logFileName, 100000);
 
-                // Say hello.
-                _logger.Info($"NTerm using {_comm} {DateTime.Now}");
-
                 // Process user command line input.
                 //var args = Environment.GetCommandLineArgs().ToList()[1..];
 
-                if (args.Count() == 0)
+                if (args.Count == 0)
                 {
                     About(true);
                     Environment.Exit(1);
@@ -99,13 +96,16 @@ namespace NTerm
                     _ => throw new ConfigException($"Invalid comm type: [{_config.CommConfig[0]}]"),
                 };
 
-                
+                // Check for debug operation.                
                 if (_config.DebugScript is not null)
                 {
                     void _print(string text) { Print($"TGT {text}", clr: _config.DebugColor); };
                     void _error(string text) { Print($"TGT {text}", clr: _config.ErrorColor); };
                     Tools.RunScript(_config.DebugScript, _print, _error);
                 }
+
+                // Say hello.
+                _logger.Info($"NTerm using {_comm} {DateTime.Now}");
 
                 // Go forever.
                 Run();
@@ -282,7 +282,7 @@ namespace NTerm
                     }
 
                     // Pace a bit.
-                    Thread.Sleep(10);
+                    Thread.Sleep(50);
                 }
                 catch
                 {

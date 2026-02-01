@@ -36,7 +36,7 @@ def write_remote(msg):
             elif msg.startswith('INF'): color = INFO_COLOR
 
         # Send it.
-        msg = f'{msg}{MDEL}' if color is None else f'\033[{color}m{msg}\033[0m{MDEL}'
+        msg = f'{msg}{MDEL}' if color is None else f'\u001b[{color}m{msg}\u001b[0m{MDEL}'
         client_socket.sendall(msg.encode('utf-8'))
 
     except ConnectionRefusedError:

@@ -8,7 +8,7 @@ using System.Diagnostics;
 using System.Threading;
 using Ephemera.NBagOfTricks;
 using Ephemera.NBagOfTricks.PNUT;
-
+using NTerm;
 
 
  // TODO1 Rethink tests - what is useful? Use with IConsole etc.
@@ -18,9 +18,6 @@ namespace Test
     public class TERM_MAIN : TestSuite
     {
         #region Fields
-        /// <summary>See Config.cs.</summary>
-        byte _delim = 0;
-
         /// <summary>Config to use</summary>
         string _configFile = "???";
 
@@ -31,13 +28,15 @@ namespace Test
         public override void RunSuite()
         {
             Console.Read();
-
             Console.WriteLine($"========= Test =========");
             _configFile = Path.Combine(MiscUtils.GetSourcePath(), "test_config.ini");
             _ntermExe = Path.Combine(MiscUtils.GetSourcePath(), "..", "bin", "net8.0-windows", "win-x64", "NTerm.exe");
-
             using CancellationTokenSource ts = new();
             //using Task taskKeyboard = Task.Run(() => _qUserCli.Enqueue(Console.ReadLine() ?? ""));
+
+
+//            App app = new();
+
 
             try
             {
@@ -160,41 +159,41 @@ namespace Test
 //srv.Run(ts);
         }
 
-        // /// <summary>
-        // /// Run the exe with full user cli. => use new util
-        // /// </summary>
-        // /// <param name="args"></param>
-        // Process RunTarget(string args, bool capture = false)
-        // {
-        //     ProcessStartInfo pinfo = new(_ntermExe, args)
-        //     {
-        //         UseShellExecute = !capture,
-        //         RedirectStandardOutput = capture,
-        //         RedirectStandardError = capture,
-        //     };
+        /// <summary>
+        /// Run the exe with full user cli. => use new util
+        /// </summary>
+        /// <param name="args"></param>
+        Process RunTarget(string args, bool capture = false)
+        {
+            ProcessStartInfo pinfo = new(_ntermExe, args)
+            {
+                UseShellExecute = !capture,
+                RedirectStandardOutput = capture,
+                RedirectStandardError = capture,
+            };
 
-        //     using Process proc = new() { StartInfo = pinfo };
+            using Process proc = new() { StartInfo = pinfo };
 
-        //     Console.WriteLine("Start process...");
-        //     proc.Start();
+            Console.WriteLine("Start process...");
+            proc.Start();
 
-        //     // if (capture)
-        //     // {
-        //     //     // TIL: To avoid deadlocks, always read the output stream first and then wait.
-        //     //     var stdout = proc.StandardOutput.ReadToEnd();
-        //     //     var stderr = proc.StandardError.ReadToEnd();
-        //     // }
+            // if (capture)
+            // {
+            //     // TIL: To avoid deadlocks, always read the output stream first and then wait.
+            //     var stdout = proc.StandardOutput.ReadToEnd();
+            //     var stderr = proc.StandardError.ReadToEnd();
+            // }
 
-        //     //Console.WriteLine("Wait for exit...");
-        //     //proc.WaitForExit();
-        //     //Console.WriteLine("Exited...");
+            //Console.WriteLine("Wait for exit...");
+            //proc.WaitForExit();
+            //Console.WriteLine("Exited...");
 
-        //     // if (capture)
-        //     // {
-        //     //     return new(proc.ExitCode, stdout, stderr);
-        //     // }
+            // if (capture)
+            // {
+            //     return new(proc.ExitCode, stdout, stderr);
+            // }
 
-        //     return proc;
-        // }    
+            return proc;
+        }
     }
 }

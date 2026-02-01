@@ -1,7 +1,5 @@
 import sys
-import os
 import random
-import traceback
 import time
 
 # A script for hacking on, that's all.
