@@ -15,6 +15,9 @@ using System.Drawing;
 using Ephemera.NBagOfTricks;
 
 
+// TODO1 fix these hardcodes: debug_script = ...
+
+
 namespace NTerm
 {
     public class App : IDisposable
