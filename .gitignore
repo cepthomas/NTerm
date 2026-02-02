@@ -406,4 +406,4 @@ obj/
 # test_out.txt
 # /Test/*.json
 /Properties/launchSettings.json
-nterm.log
+log.txt

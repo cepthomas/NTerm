@@ -97,7 +97,6 @@ namespace NTerm
                         int numToSend = td.Length;
                         int ind = 0;
 
-
                         //=========== Connect ============//
                         using var client = new TcpClient();
                         client.SendTimeout = RESPONSE_TIME;
@@ -107,10 +106,8 @@ namespace NTerm
                         if (!task.Wait(CONNECT_TIME, token))
                         {
                             throw new TimeoutException();
-                           //return (OpStatus.ConnectTimeout, "", resp); // TODO ?
                         }
                         using var stream = client.GetStream();
-
 
                         //=========== Send ============//
                         while (!sendDone)
@@ -124,7 +121,6 @@ namespace NTerm
                             ind += tosend;
                             sendDone = ind >= numToSend;
                         }
-
 
                         //=========== Receive ==========//
                         bool rcvDone = false;

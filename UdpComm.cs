@@ -91,21 +91,16 @@ namespace NTerm
                 while (!token.IsCancellationRequested)
                 {
                     //=========== Receive ==========//
-                    // sync
-                    //byte[] bytes = listener.Receive(ref ep);
-                    //Console.WriteLine($"Received broadcast from {ep} :");
-
-                    // async(ish)
-                    var task = listener.ReceiveAsync(token);
-                    if (task.IsCompleted && task.IsCompletedSuccessfully)
+                    byte[] bytes = listener.Receive(ref ep);
+                    if (bytes.Length > 0)
                     {
-                        byte[] bytes = task.Result.Buffer;
-                        Console.WriteLine($"{Encoding.ASCII.GetString(bytes, 0, bytes.Length)}");
+                        //Console.WriteLine($"Received broadcast from {ep} :");
+                        _qRecv.Enqueue(bytes);
                     }
                 }
 
                 // Don't be greedy.
-                Thread.Sleep(10);
+                Thread.Sleep(50);
             }
             catch (Exception e)
             {

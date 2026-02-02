@@ -99,9 +99,24 @@ namespace NTerm
                 // Check for debug operation.                
                 if (_config.DebugScript is not null)
                 {
-                    void _print(string text) { Print($"TGT {text}", clr: _config.DebugColor); };
-                    void _error(string text) { Print($"TGT {text}", clr: _config.ErrorColor); };
-                    Tools.RunScript(_config.DebugScript, _print, _error);
+                    //Print($"Running script {_config.DebugScript}", clr: _config.DebugColor);
+                    //var wdir = Path.GetDirectoryName(_config.DebugScript);
+
+                    // Non-blocking.
+                    //Process? _debugProcess;
+                    //ProcessStartInfo pinfo = new("py", _config.DebugScript)
+                    //{
+                    //    WorkingDirectory = wdir
+                    //};
+                    //_debugProcess = Process.Start(pinfo);
+                    //_debugProcess.Start();
+
+                    // Blocking with capture.
+                    // Print($"Running script {_config.DebugScript}", clr: _config.DebugColor);
+                    // void _print(string text) { Print($"TGT {text}", clr: _config.DebugColor); };
+                    // void _error(string text) { Print($"TGT {text}", clr: _config.ErrorColor); };
+                    // Tools.RunScript(_config.DebugScript, _print, _error);
+                    // Print($"Done script", clr: _config.DebugColor);
                 }
 
                 // Say hello.
@@ -137,6 +152,7 @@ namespace NTerm
         /// </summary>
         public void Dispose()
         {
+            //_debugProcess?.Close();
             _comm?.Dispose();
         }
         #endregion
@@ -150,7 +166,6 @@ namespace NTerm
             using CancellationTokenSource ts = new();
             using Task taskKeyboard = Task.Run(() => DoKeyboard(ts.Token));
             using Task taskComm = Task.Run(() => _comm.Run(ts.Token));
-            //using Task taskDev = Task.Run(() => Dev(ts.Token));
 
             List<char> rcvBuffer = [];
 
@@ -159,7 +174,6 @@ namespace NTerm
                 // Reset current state.
                 CommState cst = CommState.Ok;
                 Exception? cstexc = null;
-               // (CommState cst, Exception exc) state = (CommState.Ok, new());
 
                 try
                 {
@@ -175,7 +189,6 @@ namespace NTerm
                                 switch (kin)
                                 {
                                     case '1': // dev
-
                                         Dev(1);
                                         break;
 
@@ -189,7 +202,6 @@ namespace NTerm
                                         break;
 
                                     case 'h': // help
-                                        // NewLine();
                                         About(false);
                                         break;
 
@@ -309,8 +321,6 @@ namespace NTerm
                 //  Look for text matches. Internet says simple search is generally faster than compiled regex.
                 _config.Matchers.Where(m => text.Contains(m.Key)).ForEach(m => clr = m.Value);
             }
-
-            // text = $"[{_tm.Snap("")}] {text}";
 
             if (clr is not null) { _console.ForegroundColor = (ConsoleColor)clr; }
             if (nl) _console.WriteLine(text); else _console.Write(text);
@@ -521,21 +531,20 @@ namespace NTerm
 
             if (which == 1)
             {
-                void _print(string text) { Print(text, clr: _config.DebugColor); };
-                void _error(string text) { Print(text, clr: _config.ErrorColor); };
-
-                MiscUtils.GetSourcePath();
-                var scriptFile = Path.Combine(MiscUtils.GetSourcePath(), "Test", "test_script.py");
-                Tools.RunScript(scriptFile, _print, _error);
+                // void _print(string text) { Print(text, clr: _config.DebugColor); };
+                // void _error(string text) { Print(text, clr: _config.ErrorColor); };
+                // MiscUtils.GetSourcePath();
+                // var scriptFile = Path.Combine(MiscUtils.GetSourcePath(), "Test", "test_script.py");
+                // Tools.RunScript(scriptFile, _print, _error);
             }
 
             if (which == 2)
             {
-                // Window move/size.
-                Print($"{_console.WindowHeight} {_console.WindowWidth}");
-                _console.WindowHeight = _console.WindowHeight - 10;
-                _console.WindowWidth = _console.WindowWidth - 10;
-                Print($"{_console.WindowHeight} {_console.WindowWidth}");
+                //// Window move/size.
+                //Print($"{_console.WindowHeight} {_console.WindowWidth}");
+                //_console.WindowHeight -= 10;
+                //_console.WindowWidth -= 10;
+                //Print($"{_console.WindowHeight} {_console.WindowWidth}");
             }
 
             if (which == 3)

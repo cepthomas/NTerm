@@ -24,6 +24,14 @@ Alternatively, NTerm can run minimally without a config file by one of:
 The default configuration is in `%APPDATA%\Ephemera\NTerm\default.ini`. It is created the first time the
 app is run. Edit to your preferences. Any config file loaded from the command line sparsely overlays the defaults.
 
+# Runtime Commands
+
+These commands are available in the terminal:
+- `ESC q` - quit application
+- `ESC c` - clear terminal
+- `ESC h` - show some info
+- `ESC <macro>` - execute macro defined in config file
+
 # Configuration File Format
 
 ```ini
@@ -57,9 +65,7 @@ s3 = "send me a three"
 "xyz" = yellow
 ```
 
-# Runtime Commands
+There are also some `[nterm]` fields intended for internal debug use:
+- `debug_color = green`
+- `debug_target = ".\\Test\\tcp_server.py"`
 
-- `ESC q` - quit application
-- `ESC c` - clear terminal
-- `ESC h` - show some info
-- `ESC <macro>` - execute macro defined in config file
