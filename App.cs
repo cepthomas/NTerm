@@ -35,8 +35,8 @@ namespace NTerm
         /// <summary>Cli event queue.</summary>
         readonly ConcurrentQueue<string> _qUserCli = new();
 
-        /// <summary>Diagnostics.</summary>
-        readonly TimeIt _tm = new();
+        /// <summary>Debugging help.</summary>
+        readonly Process? _debugProcess;
         #endregion
 
         #region Lifecycle
@@ -61,9 +61,6 @@ namespace NTerm
                 LogManager.MinLevelNotif = LogLevel.Info;
                 LogManager.LogMessage += LogManager_LogMessage;
                 LogManager.Run(logFileName, 100000);
-
-                // Process user command line input.
-                //var args = Environment.GetCommandLineArgs().ToList()[1..];
 
                 if (args.Count == 0)
                 {
@@ -99,17 +96,15 @@ namespace NTerm
                 // Check for debug operation.                
                 if (_config.DebugScript is not null)
                 {
-                    //Print($"Running script {_config.DebugScript}", clr: _config.DebugColor);
-                    //var wdir = Path.GetDirectoryName(_config.DebugScript);
+                    Print($"Running script {_config.DebugScript}", clr: _config.DebugColor);
+                    var wdir = Path.GetDirectoryName(_config.DebugScript);
 
-                    // Non-blocking.
-                    //Process? _debugProcess;
-                    //ProcessStartInfo pinfo = new("py", _config.DebugScript)
-                    //{
-                    //    WorkingDirectory = wdir
-                    //};
-                    //_debugProcess = Process.Start(pinfo);
-                    //_debugProcess.Start();
+                    // Non-blocking. 
+                    ProcessStartInfo pinfo = new("py", _config.DebugScript)
+                    {
+                       WorkingDirectory = wdir
+                    };
+                    _debugProcess = Process.Start(pinfo);
 
                     // Blocking with capture.
                     // Print($"Running script {_config.DebugScript}", clr: _config.DebugColor);
@@ -152,7 +147,7 @@ namespace NTerm
         /// </summary>
         public void Dispose()
         {
-            //_debugProcess?.Close();
+            _debugProcess?.Close();
             _comm?.Dispose();
         }
         #endregion

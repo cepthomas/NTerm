@@ -1,9 +1,12 @@
 import sys
+import os
 import datetime
 import socketserver
 
 # "python tcpserver shutdown"
 
+
+print('===== 1 =====', os.getpid())
 
 # Configure.
 HOST = 'localhost'  # '127.0.0.1'
@@ -17,6 +20,7 @@ ERR  = '\u001b[91m'
 INFO = '\u001b[96m'
 ENDC = '\u001b[0m'
 
+print('===== 2 =====')
 
 # Handle one request.
 # Uses file-like object - rfile and wfile. Socket will be auto closed.
