@@ -15,8 +15,6 @@ using System.Drawing;
 using Ephemera.NBagOfTricks;
 
 
-// TODO1 fix these hardcodes: debug_script = ...
-
 
 namespace NTerm
 {
@@ -97,24 +95,32 @@ namespace NTerm
                 };
 
                 // Check for debug operation.                
-                if (_config.DebugScript is not null)
+                if (_config.DebugScript is not null)    
                 {
                     Print($"Running script {_config.DebugScript}", clr: _config.DebugColor);
                     var wdir = Path.GetDirectoryName(_config.DebugScript);
 
-                    // Non-blocking. 
+                    ///// Run in new console. TODO relocate.
                     ProcessStartInfo pinfo = new("py", _config.DebugScript)
                     {
-                       WorkingDirectory = wdir
+                        UseShellExecute = true,
+                        WorkingDirectory = wdir
                     };
                     _debugProcess = Process.Start(pinfo);
 
-                    // Blocking with capture.
-                    // Print($"Running script {_config.DebugScript}", clr: _config.DebugColor);
-                    // void _print(string text) { Print($"TGT {text}", clr: _config.DebugColor); };
-                    // void _error(string text) { Print($"TGT {text}", clr: _config.ErrorColor); };
-                    // Tools.RunScript(_config.DebugScript, _print, _error);
-                    // Print($"Done script", clr: _config.DebugColor);
+                    ///// Non-blocking - internal start. 
+                    //ProcessStartInfo pinfo = new("py", _config.DebugScript)
+                    //{
+                    //    WorkingDirectory = wdir
+                    //};
+                    //_debugProcess = Process.Start(pinfo);
+
+                    ///// Blocking with capture - internal start.
+                    //Print($"Running script {_config.DebugScript}", clr: _config.DebugColor);
+                    //void _print(string text) { Print($"TGT {text}", clr: _config.DebugColor); };
+                    //void _error(string text) { Print($"TGT {text}", clr: _config.ErrorColor); };
+                    //Tools.RunScript(_config.DebugScript, _print, _error);
+                    //Print($"Done script", clr: _config.DebugColor);
                 }
 
                 // Say hello.
@@ -191,6 +197,7 @@ namespace NTerm
                                         break;
 
                                     case 'q': // quit
+                                        Print("Quitting");
                                         ts.Cancel();
                                         Task.WaitAll([taskKeyboard, taskComm]);
                                         break;

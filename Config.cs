@@ -105,11 +105,12 @@ namespace NTerm
                             break;
 
                         case "debug_script":
-                            if (!File.Exists(kv.Value))
+                            var sexp = Environment.ExpandEnvironmentVariables(kv.Value);
+                            if (!File.Exists(sexp))
                             {
                                 throw new ConfigException($"Invalid script: [{kv}]");
                             }
-                            DebugScript = kv.Value;
+                            DebugScript = sexp;
                             break;
 
                         default:

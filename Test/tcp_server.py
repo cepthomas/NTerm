@@ -3,10 +3,6 @@ import os
 import datetime
 import socketserver
 
-# "python tcpserver shutdown"
-
-
-print('===== 1 =====', os.getpid())
 
 # Configure.
 HOST = 'localhost'  # '127.0.0.1'
@@ -20,7 +16,6 @@ ERR  = '\u001b[91m'
 INFO = '\u001b[96m'
 ENDC = '\u001b[0m'
 
-print('===== 2 =====')
 
 # Handle one request.
 # Uses file-like object - rfile and wfile. Socket will be auto closed.
@@ -29,8 +24,8 @@ class LineHandler(socketserver.StreamRequestHandler):
         self.data = self.rfile.readline(MAX_MSG).rstrip()
         ## >>> customize here
         srcv = self.data.decode('utf-8')
-        srsp = f'TCP received [{srcv}] from {self.client_address[0]}{MDEL}'
-        print(srsp)
+        print(f'Client sent [{srcv}]')
+        srsp = f'You sent [{srcv}]{MDEL}'
         self.wfile.write(srsp.encode('utf-8'))
 
 # Custom server.
@@ -47,7 +42,7 @@ class MyServer(socketserver.TCPServer):
 
 # Run the server.
 with MyServer((HOST, PORT), LineHandler) as server:
-    print(f'Server start')
+    # print(f'Server start')
     try:
         server.serve_forever() # polls at 0.5 sec. timeout not used.
 
