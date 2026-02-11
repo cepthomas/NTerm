@@ -105,18 +105,9 @@ namespace NTerm
                             break;
 
                         case "debug_script":
-                            var sexp = Environment.ExpandEnvironmentVariables(kv.Value);
-                            // TODO1 also . and .. in:
-                            // C:\Dev\Apps\NTerm\Test\test_config_tcp.ini:
-                            //     9: debug_script = ".\tcp_server.py"
-                            // C:\Dev\Apps\NTerm\Test\test_config_udp.ini:
-                            //     9: debug_script = .\udp_sender.py"
-
-                            if (!File.Exists(sexp))
-                            {
-                                throw new ConfigException($"Invalid script: [{kv}]");
-                            }
-                            DebugScript = sexp;
+                            var dbgfn = MiscUtils.RationalizeFileName(kv.Value, Path.GetDirectoryName(iniFn));
+                            if (dbgfn is null) { throw new ConfigException($"Invalid script: [{kv}]"); }
+                            DebugScript = dbgfn;
                             break;
 
                         default:
