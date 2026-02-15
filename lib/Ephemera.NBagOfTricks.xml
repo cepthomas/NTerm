@@ -196,21 +196,6 @@
             <param name="two"></param>
             <returns></returns>
         </member>
-        <member name="T:Ephemera.NBagOfTricks.IConsole">
-            <summary>
-            Interface for consoles. Subset of System.Console.
-            </summary>
-        </member>
-        <member name="T:Ephemera.NBagOfTricks.RealConsole">
-            <summary>
-            The real console. Mainly pass-through for interface members.
-            </summary>
-        </member>
-        <member name="T:Ephemera.NBagOfTricks.MockConsole">
-            <summary>
-            A mock Console suitable for testing by simulating input and capturing output.
-            </summary>
-        </member>
         <member name="T:Ephemera.NBagOfTricks.TimeIt">
             <summary>Simple profiler.</summary>
         </member>
@@ -719,6 +704,21 @@
             <param name="user">The value that was specified for the dwUser parameter of the timeSetEvent function.</param>
             <param name="param1">Reserved.</param>
             <param name="param2">Reserved.</param>
+        </member>
+        <member name="T:Ephemera.NBagOfTricks.IConsole">
+            <summary>
+            Interface for consoles. Subset of System.Console.
+            </summary>
+        </member>
+        <member name="T:Ephemera.NBagOfTricks.RealConsole">
+            <summary>
+            The real console. Mainly pass-through for interface members.
+            </summary>
+        </member>
+        <member name="T:Ephemera.NBagOfTricks.MockConsole">
+            <summary>
+            A mock Console suitable for testing by simulating input and capturing output.
+            </summary>
         </member>
         <member name="T:Ephemera.NBagOfTricks.MultiFileWatcher">
             <summary>
