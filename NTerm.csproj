@@ -42,6 +42,9 @@
         <Reference Include="Ephemera.NBagOfTricks">
             <HintPath>lib\Ephemera.NBagOfTricks.dll</HintPath>
         </Reference>
+        <Reference Include="Ephemera.WinConsole">
+          <HintPath>lib\Ephemera.WinConsole.dll</HintPath>
+        </Reference>
     </ItemGroup>
 
     <ItemGroup>

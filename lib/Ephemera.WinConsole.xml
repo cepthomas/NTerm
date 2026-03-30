@@ -1,0 +1,108 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>Ephemera.WinConsole</name>
+    </assembly>
+    <members>
+        <member name="M:Ephemera.WinConsole.Clipboard.GetText">
+            <summary>
+            Get text from clipboard.
+            </summary>
+            <returns></returns>
+        </member>
+        <member name="M:Ephemera.WinConsole.Clipboard.SetText(System.String)">
+            <summary>
+            Set text in clipboard.
+            </summary>
+            <param name="text"></param>
+        </member>
+        <member name="M:Ephemera.WinConsole.Clipboard.TryOpenClipboard">
+            <summary>
+            
+            </summary>
+            <exception cref="T:System.ComponentModel.Win32Exception"></exception>
+        </member>
+        <member name="M:Ephemera.WinConsole.ColorCons.ToSystemColor(System.ConsoleColor)">
+            <summary>Convert ConsoleColor to System.Color.</summary>
+            <param name="conclr">In color</param>
+            <returns>Out color</returns>
+        </member>
+        <member name="M:Ephemera.WinConsole.ColorCons.ToConsoleColor(System.Drawing.Color)">
+            <summary>Convert System.Color to ConsoleColor.</summary>
+            <param name="sysclr">The color</param>
+            <returns></returns>
+            <exception cref="T:System.Exception"></exception>
+        </member>
+        <member name="M:Ephemera.WinConsole.ColorCons.ToConsoleColor_simple(System.Drawing.Color)">
+            <summary>Simple binning approach.</summary>
+            <param name="sysclr"></param>
+            <returns></returns>
+        </member>
+        <member name="M:Ephemera.WinConsole.ColorCons.ParseNullableConsoleColor(System.String)">
+            <summary>Parse console color safely.</summary>
+            <param name="value">Color name</param>
+            <returns>Console color or null if invalid</returns>
+        </member>
+        <member name="T:Ephemera.WinConsole.IConsole">
+            <summary>
+            Interface for consoles. Subset of System.Console.
+            </summary>
+        </member>
+        <member name="T:Ephemera.WinConsole.RealConsole">
+            <summary>
+            The real console. Mainly pass-through for interface members.
+            </summary>
+        </member>
+        <member name="T:Ephemera.WinConsole.MockConsole">
+            <summary>
+            A mock Console suitable for testing by simulating input and capturing output.
+            </summary>
+        </member>
+        <member name="M:Ephemera.WinConsole.Utils.Move(System.Int32,System.Int32,System.Int32,System.Int32)">
+            <summary>
+            
+            </summary>
+            <param name="x"></param>
+            <param name="y"></param>
+            <param name="width"></param>
+            <param name="height"></param>
+        </member>
+        <member name="M:Ephemera.WinConsole.Utils.GetRect">
+            <summary>
+            
+            </summary>
+            <returns></returns>
+        </member>
+        <member name="M:Ephemera.WinConsole.Utils.Hide">
+            <summary>
+            TBD.
+            </summary>
+        </member>
+        <member name="M:Ephemera.WinConsole.Utils.UnredirectConsole(System.IntPtr@,System.IntPtr@,System.IntPtr@)">
+            <summary>
+            TBD.
+            </summary>
+            <param name="stdOut"></param>
+            <param name="stdIn"></param>
+            <param name="stdErr"></param>
+        </member>
+        <member name="M:Ephemera.WinConsole.Utils.GetConsoleStandardInput">
+            <summary>
+            TBD.
+            </summary>
+            <returns></returns>
+        </member>
+        <member name="M:Ephemera.WinConsole.Utils.GetConsoleStandardOutput">
+            <summary>
+            TBD.
+            </summary>
+            <returns></returns>
+        </member>
+        <member name="M:Ephemera.WinConsole.Utils.GetConsoleStandardError">
+            <summary>
+            TBD.
+            </summary>
+            <returns></returns>
+        </member>
+    </members>
+</doc>
