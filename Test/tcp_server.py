@@ -4,7 +4,7 @@ import datetime
 import socketserver
 
 
-# Configure.
+# Configure. Edit for specific test scenarios.
 HOST = 'localhost'  # '127.0.0.1'
 PORT = 59120
 MAX_MSG = 10000

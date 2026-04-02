@@ -4,6 +4,7 @@ import traceback
 import collections
 import socket
 
+# Not really useful for NTerm testing but symmetry is nice.
 
 # TCP configuration.
 HOST = '127.0.0.1'
