@@ -11,7 +11,6 @@ using System.Threading.Tasks;
 using System.Windows.Forms;
 using System.Net.Sockets;
 using Ephemera.NBagOfTricks;
-using Ephemera.WinConsole;
 
 
 namespace NTerm
