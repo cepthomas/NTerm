@@ -63,12 +63,6 @@ namespace NTerm
 
                 if (args.Count == 0)
                 {
-
-                    var proc = Process.GetCurrentProcess();
-                   // Process.
-
-
-                    //MessageBox.Show(serror);
                     About(true);
                     Environment.Exit(1);
                 }
