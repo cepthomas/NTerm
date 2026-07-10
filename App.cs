@@ -46,6 +46,7 @@ namespace NTerm
         public App(List<string> args, IConsole? console = null)
         {
             int exitCode = 0;
+            string serror = "";
             _console = console ?? new RealConsole();
 
             try
@@ -62,6 +63,12 @@ namespace NTerm
 
                 if (args.Count == 0)
                 {
+
+                    var proc = Process.GetCurrentProcess();
+                   // Process.
+
+
+                    //MessageBox.Show(serror);
                     About(true);
                     Environment.Exit(1);
                 }
@@ -129,18 +136,26 @@ namespace NTerm
             // Any exception that arrives here is considered fatal. Inform and exit.
             catch (ConfigException ex) // known ini error
             {
-                _logger.Error($"{ex.Message}");
+                serror = $"{ex.Message}";
+                _logger.Error(serror);
                 exitCode = 1;
             }
             catch (IniSyntaxException ex) // known ini error
             {
-                _logger.Error($"Ini syntax error at line {ex.LineNum}: {ex.Message}");
+                serror = $"Ini syntax error at line {ex.LineNum}: {ex.Message}";
+                _logger.Error(serror);
                 exitCode = 1;
             }
             catch (Exception ex) // other/unexpected error
             {
+                serror = ex.Message;
                 _logger.Exception(ex);
                 exitCode = 1;
+            }
+
+            if (serror.Length > 0)
+            {
+                MessageBox.Show(serror, "Error! - see  log");
             }
 
             LogManager.Stop();
