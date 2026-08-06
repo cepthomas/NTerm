@@ -4,7 +4,7 @@ Minimalist terminal for simple text-based interfaces like embedded systems.
 
 Supported protocols:
 - TCP client sends line to a server then reads one response line.
-- UDP listener displays continuous messages. Currently doesn't send.
+- UDP client displays any received messages. Can send also.
 - Serial port client sends line then listens for one response line.
 
 A log file `%APPDATA%\Ephemera\NTerm\log.txt` captures all traffic and internal messages.
@@ -43,7 +43,8 @@ comm = tcp 127.0.0.1 59120
 comm = udp 127.0.0.1 59140
 comm = serial COM1 9600 8N1 ; => 6|7|8 bits E|O|N parity 0|1 stop bits
 
-; Message delimiter: LF|CR|NUL. Default is `NUL` to allow embedded `LF` for line string separation.
+; Message delimiter: LF|CR|NUL. Default is `LF` for common text line operation.
+; Can also be set to others to allow embedded `LF`.
 delim = LF
 
 ; Console color for comm messages. Default is yellow.

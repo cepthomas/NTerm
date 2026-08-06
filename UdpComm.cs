@@ -20,7 +20,7 @@ namespace NTerm
         #region Fields
         readonly string _host;
         readonly int _port;
-        //readonly ConcurrentQueue<byte[]> _qSend = new();
+        readonly ConcurrentQueue<byte[]> _qSend = new();
         readonly ConcurrentQueue<object> _qRecv = new();
         const int BUFFER_SIZE = 4096;
         #endregion
@@ -60,8 +60,8 @@ namespace NTerm
         /// <see cref="IComm"/>
         public void Send(byte[] td)
         {
-            throw new NotImplementedException();
-            //_qSend.Enqueue([]);
+            //throw new NotImplementedException();
+            _qSend.Enqueue([]);
         }
 
         /// <summary>IComm implementation.</summary>
@@ -82,25 +82,30 @@ namespace NTerm
         /// <see cref="IComm"/>
         public void Run(CancellationToken token)
         {
-            //=========== Connect ============//
-            using var listener = new UdpClient(_port);
-            IPEndPoint ep = new(IPAddress.Any, _port);
-
             try
             {
+                using var client = new UdpClient(_port);
+                IPEndPoint ep = new(IPAddress.Any, _port);
+
                 while (!token.IsCancellationRequested)
                 {
+                    //=========== Send ============//
+                    if (_qSend.TryDequeue(out byte[]? td))
+                    {
+                        client.Send(td);
+                    }
+
                     //=========== Receive ==========//
-                    byte[] bytes = listener.Receive(ref ep);
+                    byte[] bytes = client.Receive(ref ep);
                     if (bytes.Length > 0)
                     {
                         //Console.WriteLine($"Received broadcast from {ep} :");
                         _qRecv.Enqueue(bytes);
                     }
-                }
 
-                // Don't be greedy.
-                Thread.Sleep(50);
+                    // Don't be greedy.
+                    Thread.Sleep(10);
+                }
             }
             catch (Exception e)
             {

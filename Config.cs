@@ -22,7 +22,7 @@ namespace NTerm
         public ConsoleColor TrafficColor { get; private set; } = ConsoleColor.Yellow;
 
         /// <summary>Message delimiter: LF=10 CR=13 NUL=0.</summary>
-        public byte Delim { get; private set; } = 0;
+        public byte Delim { get; private set; } = 10;
 
         /// <summary>User macros.</summary>
         public Dictionary<char, string> Macros { get; private set; } = [];

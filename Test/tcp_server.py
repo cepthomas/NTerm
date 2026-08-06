@@ -9,7 +9,7 @@ HOST = 'localhost'  # '127.0.0.1'
 PORT = 59120
 MAX_MSG = 10000
 # Delimiter for message lines. LF=10  CR=13  NUL=0
-MDEL = '\u000a'
+MDEL = '\u000A'
 
 # Colors
 ERR  = '\u001b[91m'

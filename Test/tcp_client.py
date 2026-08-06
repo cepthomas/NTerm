@@ -14,8 +14,8 @@ USE_COLOR = True
 ERROR_COLOR = 91 # br red  31 is reg red
 DEBUG_COLOR = 93 # yellow
 INFO_COLOR = None # 37/97 white
-# Delimiter for socket message lines.
-MDEL = '\n'
+# Delimiter for message lines. LF=10  CR=13  NUL=0
+MDEL = '\u000A'
 
 
 # TCP client

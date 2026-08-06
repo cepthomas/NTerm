@@ -11,7 +11,7 @@ PORT = 59140
 
 
 # Delimiter for message lines. LF=10  CR=13  NUL=0
-MDEL = '\u000a'
+MDEL = '\u000A'
 
 seq_num = 0
 
