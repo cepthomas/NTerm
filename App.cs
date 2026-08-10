@@ -25,7 +25,7 @@ namespace NTerm
         readonly Config _config = new();
 
         /// <summary>Module logger.</summary>
-        readonly Logger _logger = LogManager.CreateLogger("App");
+        readonly Logger _logger = LogManager.CreateLogger("NTerm");
 
         /// <summary>Client comm flavor.</summary>
         readonly IComm _comm = new NullComm();

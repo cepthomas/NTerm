@@ -1,5 +1,5 @@
 
-For testing you're prob ably going to want a ..\NTerm\Properties\launchSettings.json file
+For testing you're probably going to want a ..\NTerm\Properties\launchSettings.json file
 with something like this:
 
 {
