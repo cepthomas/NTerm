@@ -6,8 +6,8 @@ with something like this:
   "profiles": {
     "NTerm": {
         "commandName": "Project",
-        //"commandLineArgs": " tcp 127.0.0.1 59120",
-        "commandLineArgs": " udp 127.0.0.1 59140"
+        //"commandLineArgs": "tcp 127.0.0.1 59120",
+        //"commandLineArgs": "udp 127.0.0.1 59140"
     }
   }
 }

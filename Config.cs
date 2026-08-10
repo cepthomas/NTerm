@@ -22,7 +22,7 @@ namespace NTerm
         public ConsoleColor TrafficColor { get; private set; } = ConsoleColor.Yellow;
 
         /// <summary>Message delimiter: LF=10 CR=13 NUL=0.</summary>
-        public byte Delim { get; private set; } = 10;
+        public byte? Delim { get; private set; } = 10;
 
         /// <summary>User macros.</summary>
         public Dictionary<char, string> Macros { get; private set; } = [];
@@ -100,6 +100,7 @@ namespace NTerm
                                 "LF" => ControlChar.LF,
                                 "CR" => ControlChar.CR,
                                 "NUL" => ControlChar.NUL,
+                                "NONE" => null,
                                 _ => throw new ConfigException($"Invalid delim: [{kv.Value}]"),
                             };
                             break;
@@ -139,8 +140,16 @@ namespace NTerm
         {
             List<string> ls = [];
 
+            var sdelim = Delim switch
+            {
+                ControlChar.LF => "LF",
+                ControlChar.CR => "CR",
+                ControlChar.NUL => "NUL",
+                _ => "NONE",
+            };
+
             ls.Add($"comm:{string.Join(" ", CommConfig)}");
-            ls.Add($"delim:{Delim}");
+            ls.Add($"delim:{sdelim}");
             ls.Add($"error_color:{ErrorColor}");
             ls.Add($"traffic_color:{TrafficColor}");
 

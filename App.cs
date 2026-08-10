@@ -221,7 +221,8 @@ namespace NTerm
                                         {
                                             Print(smacro, match: false);
                                             _logger.Trace($">>> [{smacro}]");
-                                            var td = Encoding.Default.GetBytes(smacro).Append(_config.Delim);
+                                            var sm = _config.Delim is null ? smacro : smacro + _config.Delim;
+                                            var td = Encoding.Default.GetBytes(sm);
                                             _comm.Send([.. td]);
                                         }
                                         else
@@ -236,8 +237,8 @@ namespace NTerm
                         else // just send
                         {
                             // Print(sin, clr: _config.TrafficColor, match: false);
-                            _logger.Trace($">>> [{sin}]");
-                            var td = Encoding.Default.GetBytes(sin).Append(_config.Delim);
+                            var st = _config.Delim is null ? sin : sin + _config.Delim;
+                            var td = Encoding.Default.GetBytes(st);
                             _comm.Send([.. td]);
                         }
                     }
@@ -252,25 +253,36 @@ namespace NTerm
                         switch (r)
                         {
                             case byte[] b:
-                                // Look for delimiter or just buffer it.
-                                for (int i = 0; i < b.Length; i++)
+                                if (_config.Delim is null)
                                 {
-                                    if (b[i] == _config.Delim)
+                                    // No delim, just show it.
+                                    var srcv = Encoding.UTF8.GetString(b);
+                                    Print($"{srcv}", clr: _config.TrafficColor, match: true);
+                                    _logger.Trace($"<<< [{srcv}]");
+                                    rcvBuffer.Clear();
+                                }
+                                else
+                                {
+                                    // Look for delimiter or just buffer it.
+                                    for (int i = 0; i < b.Length; i++)
                                     {
-                                        // Complete line so process it.
-                                        var srcv = string.Concat(rcvBuffer);
-                                        Print($"{srcv}", clr: _config.TrafficColor, match: true);
-                                        _logger.Trace($"<<< [{srcv}]");
-                                        rcvBuffer.Clear();
-                                    }
-                                    else if (b[i] == ControlChar.CR)
-                                    {
-                                        // Skip these. Crappy way to handle CRLF. TODO do it correctly.
-                                    }
-                                    else
-                                    {
-                                        // Add to buffer.
-                                        rcvBuffer.Add((char)b[i]);
+                                        if (b[i] == _config.Delim)
+                                        {
+                                            // Complete line so process it.
+                                            var srcv = string.Concat(rcvBuffer);
+                                            Print($"{srcv}", clr: _config.TrafficColor, match: true);
+                                            _logger.Trace($"<<< [{srcv}]");
+                                            rcvBuffer.Clear();
+                                        }
+                                        else if (b[i] == ControlChar.CR)
+                                        {
+                                            // Skip these. Crappy way to handle CRLF. TODO do it correctly.
+                                        }
+                                        else
+                                        {
+                                            // Add to buffer.
+                                            rcvBuffer.Add((char)b[i]);
+                                        }
                                     }
                                 }
                                 break;

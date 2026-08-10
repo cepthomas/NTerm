@@ -9,7 +9,8 @@ import time
 HOST = '127.0.0.1' # 'localhost'
 PORT = 59140
 # Delimiter for message lines. LF=10  CR=13  NUL=0
-MDEL = '\u000A'
+MDEL = ''
+# MDEL = '\u000A'
 TIMEOUT = 5
 
 seq_num = 0
