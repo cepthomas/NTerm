@@ -8,8 +8,6 @@ import socketserver
 HOST = 'localhost'  # '127.0.0.1'
 PORT = 59120
 MAX_MSG = 10000
-# Delimiter for message lines. LF=10  CR=13  NUL=0
-MDEL = '\u000A'
 
 # Colors
 ERR  = '\u001b[91m'
@@ -25,7 +23,7 @@ class LineHandler(socketserver.StreamRequestHandler):
         ## >>> customize here
         srcv = self.data.decode('utf-8')
         print(f'Client sent [{srcv}]')
-        srsp = f'You sent [{srcv}]{MDEL}'
+        srsp = f'You sent [{srcv}]'
         self.wfile.write(srsp.encode('utf-8'))
 
 # Custom server.
