@@ -21,7 +21,7 @@ namespace NTerm
         /// <summary>Debug: Color for internal messages.</summary>
         public ConsoleColor? DebugColor { get; private set; } = null;
 
-        /// <summary>TODO1? Message delimiter: LF=10 CR=13 NUL=0.</summary>
+        /// <summary>TODO1? CRLF, None,...  Message delimiter: LF=10 CR=13 NUL=0.</summary>
         public byte? Delim { get; private set; } = 10;
 
         /// <summary>User macros.</summary>

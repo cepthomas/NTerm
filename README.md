@@ -47,10 +47,7 @@ comm = serial COM1 9600 8N1 ; => 6|7|8 bits E|O|N parity 0|1 stop bits
 ; Can also be set to others to allow embedded `LF`.
 delim = LF
 
-; Console color for comm messages. Default is yellow.
-traffic_color = yellow
-
-; Console color for error messages. Default is red.
+; Console color for error messages - optional.
 error_color = red
 
 ; Simple user macros that sends text when executed. executed by `ESC char`.
