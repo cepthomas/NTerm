@@ -32,9 +32,6 @@ namespace NTerm
 
         /// <summary>Cli event queue.</summary>
         readonly ConcurrentQueue<string> _qUserCli = new();
-
-        /// <summary>Debugging help.</summary>
-        readonly Process? _debugProcess;
         #endregion
 
         #region Lifecycle
@@ -92,37 +89,8 @@ namespace NTerm
                     _ => throw new ConfigException($"Invalid comm type: [{_config.CommConfig[0]}]"),
                 };
 
-                // Check for debug operation.                
-                if (_config.DebugScript is not null)    
-                {
-                    Print($"Running script {_config.DebugScript}", clr: _config.DebugColor);
-                    var wdir = Path.GetDirectoryName(_config.DebugScript);
-
-                    ///// Run in new console. TODO relocate.
-                    ProcessStartInfo pinfo = new("py", _config.DebugScript)
-                    {
-                        UseShellExecute = true,
-                        WorkingDirectory = wdir
-                    };
-                    _debugProcess = Process.Start(pinfo);
-
-                    ///// Non-blocking - internal start. 
-                    //ProcessStartInfo pinfo = new("py", _config.DebugScript)
-                    //{
-                    //    WorkingDirectory = wdir
-                    //};
-                    //_debugProcess = Process.Start(pinfo);
-
-                    ///// Blocking with capture - internal start.
-                    //Print($"Running script {_config.DebugScript}", clr: _config.DebugColor);
-                    //void _print(string text) { Print($"TGT {text}", clr: _config.DebugColor); };
-                    //void _error(string text) { Print($"TGT {text}", clr: _config.ErrorColor); };
-                    //Tools.RunScript(_config.DebugScript, _print, _error);
-                    //Print($"Done script", clr: _config.DebugColor);
-                }
-
                 // Say hello.
-                _logger.Info($"NTerm using {_comm} {DateTime.Now}");
+                _logger.Info($"NTerm using {_comm}");
 
                 // Go forever.
                 Run();
@@ -162,7 +130,6 @@ namespace NTerm
         /// </summary>
         public void Dispose()
         {
-            _debugProcess?.Close();
             _comm?.Dispose();
         }
         #endregion

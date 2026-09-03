@@ -65,8 +65,3 @@ s3 = "send me a three"
 "abc" = magenta
 "xyz" = yellow
 ```
-
-There are also some `[nterm]` fields intended for internal debug use:
-- `debug_color = green`
-- `debug_target = ".\\Test\\tcp_server.py"`
-

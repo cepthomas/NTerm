@@ -32,9 +32,6 @@ namespace NTerm
 
         /// <summary>Debug: Color for internal messages.</summary>
         public ConsoleColor DebugColor { get; private set; } = ConsoleColor.Cyan;
-
-        /// <summary>Debug: Specific script to run.</summary>
-        public string? DebugScript { get; private set; }
         #endregion
 
         /// <summary>
@@ -103,12 +100,6 @@ namespace NTerm
                                 "NONE" => null,
                                 _ => throw new ConfigException($"Invalid delim: [{kv.Value}]"),
                             };
-                            break;
-
-                        case "debug_script":
-                            var dbgfn = MiscUtils.RationalizeFileName(kv.Value, Path.GetDirectoryName(iniFn));
-                            if (dbgfn is null) { throw new ConfigException($"Invalid script: [{kv}]"); }
-                            DebugScript = dbgfn;
                             break;
 
                         default:
