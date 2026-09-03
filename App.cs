@@ -224,7 +224,7 @@ namespace NTerm
                                 {
                                     // No delim, just show it.
                                     var srcv = Encoding.UTF8.GetString(b);
-                                    Print($"{srcv}", clr: _config.TrafficColor, match: true);
+                                    Print($"{srcv}", match: true);
                                     _logger.Trace($"<<< [{srcv}]");
                                     rcvBuffer.Clear();
                                 }
@@ -237,7 +237,7 @@ namespace NTerm
                                         {
                                             // Complete line so process it.
                                             var srcv = string.Concat(rcvBuffer);
-                                            Print($"{srcv}", clr: _config.TrafficColor, match: true);
+                                            Print($"{srcv}", match: true);
                                             _logger.Trace($"<<< [{srcv}]");
                                             rcvBuffer.Clear();
                                         }

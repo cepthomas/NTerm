@@ -12,16 +12,16 @@ namespace NTerm
     public class Config
     {
         #region Config properties
-        /// <summary>Comm parameters.</summary>
+        /// <summary>Comm parameters of .</summary>
         public List<string> CommConfig { get; private set; } = [];
 
         /// <summary>Color for error messages.</summary>
-        public ConsoleColor ErrorColor { get; private set; } = ConsoleColor.Red;
+        public ConsoleColor? ErrorColor { get; private set; } = null;
 
-        /// <summary>Color for comm messages.</summary>
-        public ConsoleColor TrafficColor { get; private set; } = ConsoleColor.Yellow;
+        /// <summary>Debug: Color for internal messages.</summary>
+        public ConsoleColor? DebugColor { get; private set; } = null;
 
-        /// <summary>Message delimiter: LF=10 CR=13 NUL=0.</summary>
+        /// <summary>TODO1? Message delimiter: LF=10 CR=13 NUL=0.</summary>
         public byte? Delim { get; private set; } = 10;
 
         /// <summary>User macros.</summary>
@@ -29,9 +29,6 @@ namespace NTerm
 
         /// <summary>Colorizing text.</summary>
         public Dictionary<string, ConsoleColor> Matchers { get; private set; } = [];
-
-        /// <summary>Debug: Color for internal messages.</summary>
-        public ConsoleColor DebugColor { get; private set; } = ConsoleColor.Cyan;
         #endregion
 
         /// <summary>
@@ -81,10 +78,6 @@ namespace NTerm
 
                         case "error_color":
                             ErrorColor = Enum.Parse<ConsoleColor>(kv.Value, true);
-                            break;
-
-                        case "traffic_color":
-                            TrafficColor = Enum.Parse<ConsoleColor>(kv.Value, true);
                             break;
 
                         case "debug_color":
@@ -142,7 +135,6 @@ namespace NTerm
             ls.Add($"comm:{string.Join(" ", CommConfig)}");
             ls.Add($"delim:{sdelim}");
             ls.Add($"error_color:{ErrorColor}");
-            ls.Add($"traffic_color:{TrafficColor}");
 
             if (Macros.Count > 0)
             {
