@@ -92,6 +92,16 @@ namespace NTerm
                 // Say hello.
                 _logger.Info($"NTerm using {_comm}");
 
+
+                // using var cts = new CancellationTokenSource();
+                // // Handle Ctrl+C gracefully
+                // Console.CancelKeyPress += (s, e) =>
+                // {
+                //     e.Cancel = true;
+                //     cts.Cancel();
+                // };
+
+
                 // Go forever.
                 Run();
             }
