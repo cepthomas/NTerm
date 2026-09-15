@@ -222,54 +222,6 @@ namespace NTerm
             }
         }
 
-
-        ///// <summary>
-        ///// Task to service the user input read.
-        ///// </summary>
-        ///// <param name="token"></param>
-        //void DoKeyboard(CancellationToken token)
-        //{
-        //    while (!token.IsCancellationRequested)
-        //    {
-        //        var kbdin = "";
-
-        //        // Check for something to do.
-        //        if (_console.KeyAvailable)
-        //        {
-        //            var k = _console.ReadKey();
-        //            kbdin += k.KeyChar;
-
-        //            if (k.Key == ConsoleKey.Escape)
-        //            {
-        //                // Meta command. Get the next char.
-        //                kbdin += _console.ReadKey().KeyChar;
-        //                _qUserCli.Enqueue(new(kbdin));
-        //            }
-        //            else
-        //            {
-        //                // Terminal command.
-        //                var s = _console.ReadLine();
-        //                if (s is not null && s.Length != 0)
-        //                {
-        //                    _qUserCli.Enqueue(kbdin + s);
-        //                }
-        //            }
-        //        }
-
-        //        // Don't be greedy.
-        //        Thread.Sleep(50);
-        //    }
-        //}
-
-
-
-
-
-
-
-
-
-
         /// <summary>
         /// Process user entry. Always line oriented.
         /// </summary>
@@ -334,7 +286,7 @@ namespace NTerm
             // Show whatever arrived.
             var srcv = Encoding.UTF8.GetString(b);
             Tell($"{srcv}", match: true);
-            _logger.Trace($"<<< [{srcv}]");
+            //_logger.Trace($"<<< [{srcv}]");
         }
         #endregion
 
@@ -415,6 +367,8 @@ namespace NTerm
                     docs.Add($"");
                     docs.Add($"Serial ports: {string.Join(" ", sp)}");
                 }
+
+                docs.AddRange(_config.Doc());
             }
 
             var s = string.Join(Environment.NewLine, docs);

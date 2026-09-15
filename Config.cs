@@ -21,7 +21,7 @@ namespace NTerm
         public ConsoleColor? DebugColor { get; private set; } = null;
 
         /// <summary>Indicates meta command next.</summary>
-        public char MetaInd { get; private set; } = (char)ConsoleKey.Escape;
+        public char MetaInd { get; private set; } = '!';
 
         /// <summary>User macros.</summary>
         public Dictionary<string, string> Macros { get; private set; } = [];
@@ -122,7 +122,7 @@ namespace NTerm
         /// 
         /// </summary>
         /// <returns></returns>
-        public override string ToString()
+        public List<string> Doc()
         {
             List<string> ls = [];
 
@@ -142,7 +142,8 @@ namespace NTerm
                 Matchers.ForEach(m => ls.Add($"    {m.Key}:{m.Value}"));
             }
 
-            return string.Join(Environment.NewLine, ls);
+            //return string.Join(Environment.NewLine, ls);
+            return ls;
         }
     }
 }

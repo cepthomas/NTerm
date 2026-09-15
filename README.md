@@ -50,7 +50,7 @@ comm = serial port baud [framing]  ==> serial COM1 9600 [framing]
 ; Console color for error messages - optional.
 error_color = red
 
-; First char in command indicates a meta command. Default is 'ESC'. 
+; First char in command indicates a meta command. Default is '!'. 
 meta_ind = |
 
 ; Simple user macros that sends text when executed using `<meta_ind>name`.
