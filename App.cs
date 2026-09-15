@@ -13,26 +13,6 @@ using System.Net.Sockets;
 using Ephemera.NBagOfTricks;
 
 
-// TODO1 copy these:
-// C:\Dev\Apps\NTerm-new
-// |   App.cs (14k)
-// |   Common.cs (7k)
-// |   Config.cs (5k)
-// |   IConsole.cs (7k)
-// |   NullComm.cs (1k)
-// |   Program.cs (410b)
-// |   README.md (2k)
-// |   SerialComm.cs (5k)
-// |   TcpComm.cs (9k)
-// |   UdpComm.cs (5k)
-// \---Test
-//         tcp_server.py (1k)
-//         test_config_null.ini (54b)
-//         test_config_tcp.ini (218b)
-//         test_config_udp.ini (220b)
-//         udp_sender.py (2k)
-
-
 namespace NTerm
 {
     public class App : IDisposable

@@ -5,12 +5,11 @@ import importlib
 import random
 import time
 
-##### Broadcasts a bunch of strings.
+##### Emulates a typical continuous broadcast source.
 
 # config
-HOST = '127.0.0.1' # 'localhost'
+HOST = '127.0.0.1'
 PORT = 59140
-PORTL = PORT+1 # listen
 
 
 # print("System 🔥 Colors\n")
@@ -62,36 +61,13 @@ def send(msg, color_code):
     except Exception as e:
         print("An error occurred", e)
 
-def listen():
-    msg = None
-    with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as sock:
-        sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-        sock.bind((HOST, PORTL))
-        sock.settimeout(5)  # Seconds.
 
-        while not msg:
-            try:
-                data, _ = sock.recvfrom(4096) # blocks
-                msg = data.decode('utf-8')
-
-            except (ConnectionError, socket.timeout) as e:
-                print('timeout...')
-                time.sleep(5)
-
-            except Exception as e:
-                msg = e
-
-# msg = listen()
-# print('got msg', msg)
-msg = 'go'
-
-if msg == 'go':
-    # outer loop
-    for i in range(5):
-        # inner loop
-        for j in range(5):
-            rl =  random.randrange(0, len(_lines))
-            rc =  random.randrange(0, len(_color_codes))
-            send(_lines[rl], _color_codes[rc])
-            time.sleep(0.05)
-        time.sleep(0.2)
+# outer loop
+for i in range(5):
+    # inner loop
+    for j in range(5):
+        rl =  random.randrange(0, len(_lines))
+        rc =  random.randrange(0, len(_color_codes))
+        send(_lines[rl], _color_codes[rc])
+        time.sleep(0.05)
+    time.sleep(0.2)

@@ -20,7 +20,6 @@ namespace NTerm
         #region Fields
         readonly string _host;
         readonly int _port;
-        readonly bool _send = false; // TODO1 prob a bad idea to do this?
         readonly ConcurrentQueue<byte[]> _qSend = new();
         const int BUFFER_SIZE = 4096;
         #endregion
@@ -33,19 +32,8 @@ namespace NTerm
         {
             try
             {
-               _host = config[1];
+                _host = config[1];
                 _port = int.Parse(config[2]);
-                if (config.Count > 3)
-                {
-                    if (config[3].Equals("send", StringComparison.CurrentCultureIgnoreCase))
-                    {
-                        _send = true;
-                    }
-                    else
-                    {
-                        throw new Exception(config[3]);
-                    }
-                }
             }
            catch (Exception e)
            {
@@ -64,17 +52,16 @@ namespace NTerm
         {
             return
             [
-                "udp host port [send]",
+                "udp host port",
                 "host: like 127.0.0.1",
                 "port: port to listen",
-                "send: make this a sender instead of listener"
             ];
         }
 
         /// <summary>What am I.</summary>
         public override string ToString()
         {
-            return $"UdpComm {_host}:{_port} sender:{_send}";
+            return $"UdpComm {_host}:{_port}";
         }
         #endregion
 
@@ -82,11 +69,8 @@ namespace NTerm
         /// <see cref="IComm"/>
         public void Send(byte[] td)
         {
-            if (!_send)
-            {
-                throw new InvalidOperationException("Not configured to send");
-            }
-            _qSend.Enqueue([]);
+            throw new InvalidOperationException("Not configured to send");
+            // _qSend.Enqueue([]);
         }
 
         /// <see cref="IComm"/>
@@ -104,74 +88,37 @@ namespace NTerm
             {
                 token.ThrowIfCancellationRequested();
 
-                //=========== Send ============//
-                if (_send)
+                //=========== Receive ==========//
+                try
                 {
-                    if (_qSend.TryDequeue(out byte[]? td))
+                    using var client = new UdpClient(_port);
+                    IPEndPoint ep = new(IPAddress.Any, _port);
+                    byte[] bytes = client.Receive(ref ep);
+                    if (bytes.Length > 0)
                     {
-                        try
-                        {
-                            using var client = new UdpClient(_port);
-                            client.Send(td);
-                        }
-                        catch (Exception e)
-                        {
-                            // What happened?
-                            var res = Common.ProcessException(e);
-
-                            switch (res.cst)
-                            {
-                                case CommState.Ok:
-                                case CommState.Timeout:
-                                case CommState.Recoverable:
-                                    // Continue running. TODO1 or not? send failed...
-                                    break;
-
-                                case CommState.Stop:
-                                    done = true;
-                                    break;
-
-                                case CommState.Fatal:
-                                    throw (res.e);
-                            }
-                        }
+                        //Console.WriteLine($"Received broadcast from {ep} :");
+                        progress.Report(bytes);
                     }
                 }
-
-                //=========== Receive ==========//
-                else
+                catch (Exception e)
                 {
-                    try
+                    // What happened?
+                    var res = Common.ProcessException(e);
+
+                    switch (res.cst)
                     {
-                        using var client = new UdpClient(_port);
-                        IPEndPoint ep = new(IPAddress.Any, _port);
-                        byte[] bytes = client.Receive(ref ep);
-                        if (bytes.Length > 0)
-                        {
-                            //Console.WriteLine($"Received broadcast from {ep} :");
-                            progress.Report(bytes);
-                        }
-                    }
-                    catch (Exception e)
-                    {
-                        // What happened?
-                        var res = Common.ProcessException(e);
+                        case CommState.Ok:
+                        case CommState.Timeout:
+                        case CommState.Recoverable:
+                            // Continue running.
+                            break;
 
-                        switch (res.cst)
-                        {
-                            case CommState.Ok:
-                            case CommState.Timeout:
-                            case CommState.Recoverable:
-                                // Continue running.
-                                break;
+                        case CommState.Stop:
+                            done = true;
+                            break;
 
-                            case CommState.Stop:
-                                done = true;
-                                break;
-
-                            case CommState.Fatal:
-                                throw (res.e);
-                        }
+                        case CommState.Fatal:
+                            throw (res.e);
                     }
                 }
 

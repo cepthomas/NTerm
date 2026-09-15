@@ -1,4 +1,4 @@
-# NTerm  TODO1 clean up
+# NTerm
 
 Minimalist terminal for simple text-based interfaces like embedded systems.
 
@@ -40,13 +40,11 @@ These meta commands are available in the terminal:
 [nterm]
 
 ; Protocol flavor and config - one of these. Default is `null` which does local loopback.
-comm = tcp 127.0.0.1 59120 [delim]
-comm = udp 127.0.0.1 59140 [send?]
-comm = serial COM1 9600 [framing]
-comm = null
+comm = tcp host port [delim]  ==> tcp 127.0.0.1 59120 8N1
+comm = udp host port  ==> udp 127.0.0.1 59140
+comm = serial port baud [framing]  ==> serial COM1 9600 [framing]
 ; Options:
 ; delim: message delimiter=NONE|NULL|ESC|LF|CR|CRLF, default is CRLF
-; send: make this a sender instead of listener
 ; framing: bits=6|7|8 parity=E|O|N stop bits=1|2, default is 8N1
 
 ; Console color for error messages - optional.
