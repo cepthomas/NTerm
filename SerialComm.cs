@@ -16,12 +16,11 @@ namespace NTerm
 {
     /// <summary>Serial port comm.</summary>
     /// <see cref="IComm"/>
-    public class SerialComm : IComm // TODO need hardware.
+    public class SerialComm : IComm // TODO need hardware for test.
     {
         #region Fields
         readonly SerialPort _serialPort;
         readonly ConcurrentQueue<byte[]> _qSend = new();
-        readonly ConcurrentQueue<object> _qRecv = new();
         const int RESPONSE_TIME = 10;
         const int BUFFER_SIZE = 4096;
         readonly string _config;
@@ -38,33 +37,31 @@ namespace NTerm
 
             try
             {
-                // Parse the args: COM1 9600 8N1 => E|O|N 6|7|8 0|1|15
                 _serialPort.PortName = config[1];
-
                 _serialPort.BaudRate = int.Parse(config[2]);
+                var framing = config.Count > 3 ? config[3] : "8N1";
 
-                _serialPort.DataBits = config[3][0] switch
+                _serialPort.DataBits = framing[0] switch
                 {
                     '6' => 6,
                     '7' => 7,
                     '8' => 8,
-                    _ => throw new ConfigException($"Invalid data bits:{config[2]}"),
+                    _ => throw new ConfigException($"Invalid data bits: {framing}"),
                 };
 
-                _serialPort.Parity = config[3][1] switch
+                _serialPort.Parity = framing[1] switch
                 {
                     'E' => Parity.Even,
                     'O' => Parity.Odd,
                     'N' => Parity.None,
-                    _ => throw new ConfigException($"Invalid parity:{config[2]}"),
+                    _ => throw new ConfigException($"Invalid parity: {framing}"),
                 };
 
-                _serialPort.StopBits = config[3][2] switch
+                _serialPort.StopBits = framing[2] switch
                 {
-                    '0' => StopBits.None,
                     '1' => StopBits.One,
-                    //'15' => StopBits.OnePointFive,
-                    _ => throw new ConfigException($"Invalid stop bits:{config[2]}"),
+                    '2' => StopBits.Two,
+                    _ => throw new ConfigException($"Invalid stop bits: {framing}"),
                 };
 
                 // Other params.
@@ -76,7 +73,7 @@ namespace NTerm
             }
             catch (Exception e)
             {
-                var msg = $"Invalid args: {e.Message}";
+                var msg = $"Invalid arg: {e.Message}";
                 _config = "invalid";
                 throw new ConfigException(msg);
             }
@@ -90,6 +87,18 @@ namespace NTerm
         }
 
         /// <summary>What am I.</summary>
+        /// <summary>Send help.</summary>
+        public static List<string> Usage()
+        {
+            return
+            [
+                "ser port baud [framing]",
+                "port: like COM99",
+                "baud: baud rate",
+                "framing: bits=6|7|8 parity=E|O|N stop bits=1|2 default is 8N1"
+            ];
+        }
+
         public override string ToString()
         {
             return $"SerialComm {_config[1..]} ";
@@ -97,22 +106,12 @@ namespace NTerm
         #endregion
 
         #region IComm implementation
-        /// <summary>IComm implementation.</summary>
         /// <see cref="IComm"/>
         public void Send(byte[] req)
         {
             _qSend.Enqueue(req);
         }
 
-        /// <summary>IComm implementation.</summary>
-        /// <see cref="IComm"/>
-        public object? GetReceive()
-        {
-            _qRecv.TryDequeue(out object? res);
-            return res;
-        }
-
-        /// <summary>IComm implementation.</summary>
         /// <see cref="IComm"/>
         public void Reset()
         {
@@ -120,15 +119,17 @@ namespace NTerm
 
         /// <summary>Main work loop.</summary>
         /// <see cref="IComm"/>
-        public void Run(CancellationToken token)
+        public async Task Run(CancellationToken token, IProgress<byte[]> progress)
         {
-            //Notif?.Invoke(this, new(Cat.Log, "xyzzy"));
+            bool done = false;
             //_logger.Info("Run start");
 
-            while (!token.IsCancellationRequested)
+            while (!done)
             {
                 try
                 {
+                    token.ThrowIfCancellationRequested();
+
                     //=========== Connect ============//
                     if (!_serialPort.IsOpen)
                     {
@@ -147,16 +148,33 @@ namespace NTerm
 
                     if (byteCount > 0)
                     {
-                        _qRecv.Enqueue(rxdata);
+                        progress.Report(rxdata);
                     }
                 }
                 catch (Exception e)
                 {
-                    _qRecv.Enqueue(e);
+                    // What happened?
+                    var res = Common.ProcessException(e);
+
+                    switch (res.cst)
+                    {
+                        case CommState.Ok:
+                        case CommState.Timeout:
+                        case CommState.Recoverable:
+                            // Continue running.
+                            break;
+
+                        case CommState.Stop:
+                            done = true;
+                            break;
+
+                        case CommState.Fatal:
+                            throw (res.e);
+                    }
                 }
 
                 // Don't be greedy.
-                Thread.Sleep(10);
+                await Task.Delay(10, token);
             }
         }
         #endregion

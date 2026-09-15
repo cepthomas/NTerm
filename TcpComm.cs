@@ -12,6 +12,16 @@ using Ephemera.NBagOfTricks;
 
 // https://learn.microsoft.com/en-us/dotnet/api/system.net.sockets.tcpclient
 
+
+// Common Framing and Delimiting Methods
+// - Length-Prefix (Most Common Overall): Prefixes each message with a fixed-size integer header
+//   that states the exact length of the upcoming payload. This works for both binary and text data.
+// - CRLF (\r\n) (Most Common Text Delimiter): Uses a Carriage Return followed by a Line Feed.
+//   It is widely used in classic text-based protocols running over TCP, such as HTTP, SMTP, POP3, and IMAP.
+// - Single Newline (\n or \r): Commonly used for line-delimited streaming, chat protocols, and log shipping (like Syslog).
+// - Fixed-Length Messages: Every message sent has a predetermined, rigid size, requiring padding if the actual data is shorter.
+
+
 namespace NTerm
 {
     /// <summary>TCP comm.</summary>
@@ -22,10 +32,11 @@ namespace NTerm
         readonly string _host;
         readonly int _port;
         readonly ConcurrentQueue<byte[]> _qSend = new();
-        readonly ConcurrentQueue<object> _qRecv = new();
         const int CONNECT_TIME = 50;
         const int RESPONSE_TIME = 1000;
         const int BUFFER_SIZE = 4096;
+        /// <summary>Message delimiter</summary>
+        readonly Delim _delim;
         #endregion
 
         #region Lifecycle
@@ -38,10 +49,11 @@ namespace NTerm
             {
                 _host = config[1];
                 _port = int.Parse(config[2]);
+                if (config.Count > 3) { _delim = Enum.Parse<Delim>(config[3], true); }
             }
             catch (Exception e)
             {
-                var msg = $"Invalid args: {e.Message}";
+                var msg = $"Invalid arg: {e.Message}";
                 throw new ConfigException(msg);
             }
         }
@@ -49,6 +61,18 @@ namespace NTerm
         /// <summary>Clean up.</summary>
         public void Dispose()
         {
+        }
+
+        /// <summary>Send help.</summary>
+        public static List<string> Usage()
+        {
+            return
+            [
+                "tcp host port [delim]",
+                "host: like 127.0.0.1",
+                "port: port to talk on",
+                "delim: message delimiter=NONE|NULL|ESC|LF|CR|CRLF default is CRLF"
+            ];
         }
 
         /// <summary>What am I.</summary>
@@ -59,97 +83,189 @@ namespace NTerm
         #endregion
 
         #region IComm implementation
-        /// <summary>IComm implementation.</summary>
         /// <see cref="IComm"/>
-        public void Send(byte[] req)
+        public void Send(byte[] td)
         {
-            _qSend.Enqueue(req);
+            _qSend.Enqueue(td);
         }
 
-        /// <summary>IComm implementation.</summary>
-        /// <see cref="IComm"/>
-        public object? GetReceive()
-        {
-            _qRecv.TryDequeue(out object? res);
-            return res;
-        }
-
-        /// <summary>IComm implementation.</summary>
         /// <see cref="IComm"/>
         public void Reset()
         {
+            // Nothing.
         }
 
         /// <summary>Main work loop.</summary>
         /// <see cref="IComm"/>
-        public void Run(CancellationToken token)
+        public async Task Run(CancellationToken token, IProgress<byte[]> progress)
         {
-            //_logger.Info("Run start");
+            bool done = false;
 
-            while (!token.IsCancellationRequested)
+            while (!done)
             {
                 try
                 {
-                    //=========== Work to do? ============//
-                    if (_qSend.TryDequeue(out byte[]? td))
+                    token.ThrowIfCancellationRequested();
+
+                    //=========== Connect ============//
+                    using var client = new TcpClient();
+                    client.SendTimeout = RESPONSE_TIME;
+                    client.SendBufferSize = BUFFER_SIZE;
+
+                    var task = client.ConnectAsync(_host, _port);
+                    if (!task.Wait(CONNECT_TIME, token))
                     {
-                        bool sendDone = false;
-                        int numToSend = td.Length;
-                        int ind = 0;
+                        throw new TimeoutException();
+                    }
+                    using var stream = client.GetStream();
 
-                        //=========== Connect ============//
-                        using var client = new TcpClient();
-                        client.SendTimeout = RESPONSE_TIME;
-                        client.SendBufferSize = BUFFER_SIZE;
+                    // Start a background task to continuously read server messages
+                    Task receiveTask = Receive(stream, token, progress);
 
-                        var task = client.ConnectAsync(_host, _port);
-                        if (!task.Wait(CONNECT_TIME, token))
+                    //=========== Send to do? ============//
+                    // Main loop for sending data from console input
+                    while (!token.IsCancellationRequested)
+                    {
+                        if (_qSend.TryDequeue(out byte[]? td))
                         {
-                            throw new TimeoutException();
-                        }
-                        using var stream = client.GetStream();
-
-                        //=========== Send ============//
-                        while (!sendDone)
-                        {
-                            // Do a chunk.
-                            int tosend = numToSend - ind >= client!.SendBufferSize ? client.SendBufferSize : numToSend - ind;
-
-                            // If the send time-out expires, Write() throws SocketException.
-                            stream.Write(td, ind, tosend);
-
-                            ind += tosend;
-                            sendDone = ind >= numToSend;
+                            await stream.WriteAsync(td, 0, td.Length, token);
                         }
 
-                        //=========== Receive ==========//
-                        bool rcvDone = false;
-                        byte[] rxData = new byte[BUFFER_SIZE];
-
-                        while (!rcvDone)
-                        {
-                            // Get response. If the read time-out expires, Read() throws IOException.
-                            int byteCount = stream.Read(rxData, 0, BUFFER_SIZE);
-
-                            if (byteCount > 0)
-                            {
-                                var rx = rxData.Subset(0, byteCount);
-                                _qRecv.Enqueue(rx);
-                            }
-                            else
-                            {
-                                rcvDone = true;
-                            }
-                        }
+                        // Don't be greedy.
+                        await Task.Delay(10, token);
                     }
                 }
                 catch (Exception e)
                 {
-                    _qRecv.Enqueue(e);
+                    // What happened?
+                    var res = Common.ProcessException(e);
+
+                    switch (res.cst)
+                    {
+                        case CommState.Ok:
+                        case CommState.Timeout:
+                        case CommState.Recoverable:
+                            // Continue running.
+                            break;
+
+                        case CommState.Stop:
+                            done = true;
+                            break;
+
+                        case CommState.Fatal:
+                            throw (res.e);
+                    }
                 }
 
                 // Don't be greedy.
-                Thread.Sleep(10);
+                await Task.Delay(10, token);
+            }
+        }
+        #endregion
+
+        #region Privates
+        /// <summary>
+        /// Background task to listen for incoming messages.
+        /// </summary>
+        /// <param name="stream"></param>
+        /// <param name="token"></param>
+        /// <param name="progress"></param>
+        /// <returns></returns>
+        async Task Receive(NetworkStream stream, CancellationToken token, IProgress<byte[]> progress)
+        {
+            byte[] rcvData = new byte[BUFFER_SIZE];
+            bool done = false;
+
+            // Distilled version for processing data before unpacketing.
+            byte _cdelim = _delim switch
+            {
+                Delim.NONE => 0xFF,
+                Delim.NULL => 0x00,
+                Delim.ESC => 0x1B,
+                Delim.CR => 0x0D,
+                Delim.LF => 0x0A,
+                Delim.CRLF => 0x0A,
+                _ => 0xFF
+            };
+
+            // Collected data while looking for delimiter.
+            List<byte> buffer = [];
+
+            try
+            {
+                while (!done && !token.IsCancellationRequested)
+                {
+                    // Read incoming bytes asynchronously
+                    int numRead = await stream.ReadAsync(rcvData, token);
+
+                    // If ReadAsync returns 0, the server closed the connection.
+                    if (numRead == 0) { break; }
+
+                    // Decode the message.
+                    if (_delim is Delim.NONE)
+                    {
+                        // No delim, just deliver whatever arrived.
+                        progress.Report(rcvData);
+                    }
+                    else
+                    {
+                        // Look for delimiter or just buffer it.
+                        bool isDelim = false;
+                        for (int i = 0; i < numRead; i++)
+                        {
+                            if (rcvData[i] == _cdelim)
+                            {
+                                if (_delim is Delim.CRLF)
+                                {
+                                    if (buffer.Count > 0 && buffer.Last() == 0x0D)
+                                    {
+                                        isDelim = true;
+                                        buffer.RemoveAt(buffer.Count - 1); // trim
+                                    }
+                                }
+                                else
+                                {
+                                    isDelim = true;
+                                }
+
+                                if (isDelim)
+                                {
+                                    // Complete line so process it.
+                                    buffer.RemoveAt(buffer.Count - 1); // trim
+                                    var srcv = buffer.ToArray();
+                                    progress.Report(srcv);
+                                    buffer.Clear();
+                                }
+                            }
+                            else
+                            {
+                                // Add to buffer.
+                                buffer.Add(rcvData[i]);
+                            }
+                        }
+                    }
+                }
+            }
+            catch (Exception e)
+            {
+                // What happened?
+                var res = Common.ProcessException(e); //TODO1 simplify?
+
+                switch (res.cst)
+                {
+                    case CommState.Ok:
+                    case CommState.Timeout:
+                    case CommState.Recoverable:
+                        // Continue running.
+                        break;
+
+                    case CommState.Stop:
+                        done = true;
+                        break;
+
+                    case CommState.Fatal:
+                        throw (res.e);
+                }
             }
         }
         #endregion

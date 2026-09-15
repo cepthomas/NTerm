@@ -11,8 +11,7 @@ namespace NTerm
 
     public class Config
     {
-        #region Config properties
-        /// <summary>Comm parameters of .</summary>
+        /// <summary>Properties per specific comm type.</summary>
         public List<string> CommConfig { get; private set; } = [];
 
         /// <summary>Color for error messages.</summary>
@@ -21,15 +20,15 @@ namespace NTerm
         /// <summary>Debug: Color for internal messages.</summary>
         public ConsoleColor? DebugColor { get; private set; } = null;
 
-        /// <summary>TODO1? CRLF, None,...  Message delimiter: LF=10 CR=13 NUL=0.</summary>
-        public byte? Delim { get; private set; } = 10;
+        /// <summary>Indicates meta command next.</summary>
+        public char MetaInd { get; private set; } = (char)ConsoleKey.Escape;
 
         /// <summary>User macros.</summary>
-        public Dictionary<char, string> Macros { get; private set; } = [];
+        public Dictionary<string, string> Macros { get; private set; } = [];
 
         /// <summary>Colorizing text.</summary>
         public Dictionary<string, ConsoleColor> Matchers { get; private set; } = [];
-        #endregion
+
 
         /// <summary>
         /// Decipher the user args.
@@ -68,7 +67,6 @@ namespace NTerm
                     {
                         case "comm":
                             CommConfig = kv.Value.SplitByToken(" ");
-                            // Process comm spec.
                             List<string> valid = ["null", "tcp", "udp", "serial"];
                             if (CommConfig.Count < 1 || !valid.Contains(CommConfig[0]))
                             {
@@ -84,15 +82,19 @@ namespace NTerm
                             DebugColor = Enum.Parse<ConsoleColor>(kv.Value, true);
                             break;
 
-                        case "delim":
-                            Delim = kv.Value switch
+                        case "meta":
+                            if (kv.Value.Equals("ESC", StringComparison.CurrentCultureIgnoreCase))
                             {
-                                "LF" => ControlChar.LF,
-                                "CR" => ControlChar.CR,
-                                "NUL" => ControlChar.NUL,
-                                "NONE" => null,
-                                _ => throw new ConfigException($"Invalid delim: [{kv.Value}]"),
-                            };
+                                MetaInd = (char)ConsoleKey.Escape;
+                            }
+                            else if (kv.Value.Length == 1)
+                            {
+                                MetaInd = kv.Value[0];
+                            }
+                            else
+                            {
+                                throw new ConfigException($"Invalid meta ind: [{kv.Value}]");
+                            }
                             break;
 
                         default:
@@ -104,7 +106,7 @@ namespace NTerm
                 if (inrdr.GetSectionNames().Contains("macros"))
                 {
                     ntermSect = inrdr.GetValues("macros");
-                    ntermSect.ForEach(kv => Macros[kv.Key[0]] = kv.Value.Replace("\"", ""));
+                    ntermSect.ForEach(kv => Macros[kv.Key] = kv.Value.Replace("\"", ""));
                 }
 
                 // [matchers] section
@@ -120,20 +122,12 @@ namespace NTerm
         /// 
         /// </summary>
         /// <returns></returns>
-        public List<string> Doc()
+        public override string ToString()
         {
             List<string> ls = [];
 
-            var sdelim = Delim switch
-            {
-                ControlChar.LF => "LF",
-                ControlChar.CR => "CR",
-                ControlChar.NUL => "NUL",
-                _ => "NONE",
-            };
-
             ls.Add($"comm:{string.Join(" ", CommConfig)}");
-            ls.Add($"delim:{sdelim}");
+            ls.Add($"meta_ind:{MetaInd}");
             ls.Add($"error_color:{ErrorColor}");
 
             if (Macros.Count > 0)
@@ -148,7 +142,7 @@ namespace NTerm
                 Matchers.ForEach(m => ls.Add($"    {m.Key}:{m.Value}"));
             }
 
-            return ls;
+            return string.Join(Environment.NewLine, ls);
         }
     }
 }

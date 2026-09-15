@@ -59,26 +59,5 @@ namespace NTerm.Properties {
                 resourceCulture = value;
             }
         }
-        
-        /// <summary>
-        ///   Looks up a localized string similar to ; Defaults for all configs - overriden by user specific.
-        ///[nterm]
-        ///comm = null
-        ///delim = LF
-        ///prompt = 
-        ///info_color = gray
-        ///err_color = red
-        ///debug_color = cyan
-        ///[macros]
-        ///; none
-        ///[matchers]
-        ///; none
-        ///.
-        /// </summary>
-        internal static string default_config {
-            get {
-                return ResourceManager.GetString("default_config", resourceCulture);
-            }
-        }
     }
 }

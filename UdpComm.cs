@@ -20,8 +20,8 @@ namespace NTerm
         #region Fields
         readonly string _host;
         readonly int _port;
+        readonly bool _send = false; // TODO1 prob a bad idea to do this?
         readonly ConcurrentQueue<byte[]> _qSend = new();
-        readonly ConcurrentQueue<object> _qRecv = new();
         const int BUFFER_SIZE = 4096;
         #endregion
 
@@ -31,14 +31,25 @@ namespace NTerm
         /// <exception cref="ConfigException"></exception>
         public UdpComm(List<string> config)
         {
-           try
-           {
+            try
+            {
                _host = config[1];
-               _port = int.Parse(config[2]);
-           }
+                _port = int.Parse(config[2]);
+                if (config.Count > 3)
+                {
+                    if (config[3].Equals("send", StringComparison.CurrentCultureIgnoreCase))
+                    {
+                        _send = true;
+                    }
+                    else
+                    {
+                        throw new Exception(config[3]);
+                    }
+                }
+            }
            catch (Exception e)
            {
-               var msg = $"Invalid args: {e.Message}";
+               var msg = $"Invalid arg: {e.Message}";
                throw new ConfigException(msg);
            }
         }
@@ -48,31 +59,36 @@ namespace NTerm
         {
         }
 
+        /// <summary>Send help.</summary>
+        public static List<string> Usage()
+        {
+            return
+            [
+                "udp host port [send]",
+                "host: like 127.0.0.1",
+                "port: port to listen",
+                "send: make this a sender instead of listener"
+            ];
+        }
+
         /// <summary>What am I.</summary>
         public override string ToString()
         {
-            return $"UdpComm {_host}:{_port}";
+            return $"UdpComm {_host}:{_port} sender:{_send}";
         }
         #endregion
 
         #region IComm implementation
-        /// <summary>IComm implementation.</summary>
         /// <see cref="IComm"/>
         public void Send(byte[] td)
         {
-            //throw new NotImplementedException();
+            if (!_send)
+            {
+                throw new InvalidOperationException("Not configured to send");
+            }
             _qSend.Enqueue([]);
         }
 
-        /// <summary>IComm implementation.</summary>
-        /// <see cref="IComm"/>
-        public object? GetReceive()
-        {
-            _qRecv.TryDequeue(out object? res);
-            return res;
-        }
-
-        /// <summary>IComm implementation.</summary>
         /// <see cref="IComm"/>
         public void Reset()
         {
@@ -80,36 +96,87 @@ namespace NTerm
 
         /// <summary>Main work loop.</summary>
         /// <see cref="IComm"/>
-        public void Run(CancellationToken token)
+        public async Task Run(CancellationToken token, IProgress<byte[]> progress)
         {
-            try
-            {
-                using var client = new UdpClient(_port);
-                IPEndPoint ep = new(IPAddress.Any, _port);
+            bool done = false;
 
-                while (!token.IsCancellationRequested)
+            while (!done)
+            {
+                token.ThrowIfCancellationRequested();
+
+                //=========== Send ============//
+                if (_send)
                 {
-                    //=========== Send ============//
                     if (_qSend.TryDequeue(out byte[]? td))
                     {
-                        client.Send(td);
-                    }
+                        try
+                        {
+                            using var client = new UdpClient(_port);
+                            client.Send(td);
+                        }
+                        catch (Exception e)
+                        {
+                            // What happened?
+                            var res = Common.ProcessException(e);
 
-                    //=========== Receive ==========//
-                    byte[] bytes = client.Receive(ref ep);
-                    if (bytes.Length > 0)
-                    {
-                        //Console.WriteLine($"Received broadcast from {ep} :");
-                        _qRecv.Enqueue(bytes);
-                    }
+                            switch (res.cst)
+                            {
+                                case CommState.Ok:
+                                case CommState.Timeout:
+                                case CommState.Recoverable:
+                                    // Continue running. TODO1 or not? send failed...
+                                    break;
 
-                    // Don't be greedy.
-                    Thread.Sleep(10);
+                                case CommState.Stop:
+                                    done = true;
+                                    break;
+
+                                case CommState.Fatal:
+                                    throw (res.e);
+                            }
+                        }
+                    }
                 }
-            }
-            catch (Exception e)
-            {
-                _qRecv.Enqueue(e);
+
+                //=========== Receive ==========//
+                else
+                {
+                    try
+                    {
+                        using var client = new UdpClient(_port);
+                        IPEndPoint ep = new(IPAddress.Any, _port);
+                        byte[] bytes = client.Receive(ref ep);
+                        if (bytes.Length > 0)
+                        {
+                            //Console.WriteLine($"Received broadcast from {ep} :");
+                            progress.Report(bytes);
+                        }
+                    }
+                    catch (Exception e)
+                    {
+                        // What happened?
+                        var res = Common.ProcessException(e);
+
+                        switch (res.cst)
+                        {
+                            case CommState.Ok:
+                            case CommState.Timeout:
+                            case CommState.Recoverable:
+                                // Continue running.
+                                break;
+
+                            case CommState.Stop:
+                                done = true;
+                                break;
+
+                            case CommState.Fatal:
+                                throw (res.e);
+                        }
+                    }
+                }
+
+                // Don't be greedy.
+                await Task.Delay(10, token);
             }
         }
         #endregion

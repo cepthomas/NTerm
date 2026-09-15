@@ -15,9 +15,9 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <Compile Remove="lib\**" />
-        <EmbeddedResource Remove="lib\**" />
-        <None Remove="lib\**" />
+      <Compile Remove="_stuff\**" />
+      <EmbeddedResource Remove="_stuff\**" />
+      <None Remove="_stuff\**" />
     </ItemGroup>
 
     <ItemGroup>

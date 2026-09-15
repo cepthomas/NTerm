@@ -1,4 +1,4 @@
-# NTerm
+# NTerm  TODO1 clean up
 
 Minimalist terminal for simple text-based interfaces like embedded systems.
 
@@ -19,18 +19,19 @@ Alternatively, NTerm can run minimally without a config file by one of:
 
 - `NTerm tcp 127.0.0.1 59120`
 - `NTerm udp 127.0.0.1 59140`
-- `NTerm serial COM1 9600 8N1`
+- `NTerm serial COM1 9600`
 
 The default configuration is in `%APPDATA%\Ephemera\NTerm\default.ini`. It is created the first time the
 app is run. Edit to your preferences. Any config file loaded from the command line sparsely overlays the defaults.
 
-# Runtime Commands
 
-These commands are available in the terminal:
-- `ESC q` - quit application
-- `ESC c` - clear terminal
-- `ESC h` - show some info
-- `ESC <macro>` - execute macro defined in config file
+# Meta Commands
+
+These meta commands are available in the terminal:
+- `<meta_ind>q` - quit application
+- `<meta_ind>c` - clear terminal
+- `<meta_ind>h` - show some info
+- `<meta_ind><macro>` - execute macro defined in config file
 
 # Configuration File Format
 
@@ -38,19 +39,23 @@ These commands are available in the terminal:
 ; Basic config items.
 [nterm]
 
-; Protocol flavor - one of these. Default is `null`.
-comm = tcp 127.0.0.1 59120
-comm = udp 127.0.0.1 59140
-comm = serial COM1 9600 8N1 ; => 6|7|8 bits E|O|N parity 0|1 stop bits
-
-; Message delimiter: LF|CR|NUL. Default is `LF` for common text line operation.
-; Can also be set to others to allow embedded `LF`.
-delim = LF
+; Protocol flavor and config - one of these. Default is `null` which does local loopback.
+comm = tcp 127.0.0.1 59120 [delim]
+comm = udp 127.0.0.1 59140 [send?]
+comm = serial COM1 9600 [framing]
+comm = null
+; Options:
+; delim: message delimiter=NONE|NULL|ESC|LF|CR|CRLF, default is CRLF
+; send: make this a sender instead of listener
+; framing: bits=6|7|8 parity=E|O|N stop bits=1|2, default is 8N1
 
 ; Console color for error messages - optional.
 error_color = red
 
-; Simple user macros that sends text when executed. executed by `ESC char`.
+; First char in command indicates a meta command. Default is 'ESC'. 
+meta_ind = |
+
+; Simple user macros that sends text when executed using `<meta_ind>name`.
 ; Quotes can be used to maintain leading or trailing whitespace.
 : char cannot be one of the buitin commands (q, c, h).
 [macros]
