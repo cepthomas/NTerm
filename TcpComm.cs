@@ -173,7 +173,7 @@ namespace NTerm
         /// <returns></returns>
         async Task Receive(NetworkStream stream, CancellationToken token, IProgress<byte[]> progress)
         {
-            byte[] rcvData = new byte[BUFFER_SIZE];
+            byte[] recvData = new byte[BUFFER_SIZE];
             bool done = false;
 
             // Distilled version for processing data before unpacketing.
@@ -196,7 +196,7 @@ namespace NTerm
                 while (!done && !token.IsCancellationRequested)
                 {
                     // Read incoming bytes asynchronously
-                    int numRead = await stream.ReadAsync(rcvData, token);
+                    int numRead = await stream.ReadAsync(recvData, token);
 
                     // If ReadAsync returns 0, the server closed the connection.
                     if (numRead == 0) { break; }
@@ -205,7 +205,7 @@ namespace NTerm
                     if (_delim is Delim.NONE)
                     {
                         // No delim, just deliver whatever arrived.
-                        progress.Report(rcvData);
+                        progress.Report(recvData);
                     }
                     else
                     {
@@ -213,7 +213,7 @@ namespace NTerm
                         bool isDelim = false;
                         for (int i = 0; i < numRead; i++)
                         {
-                            if (rcvData[i] == _cdelim)
+                            if (recvData[i] == _cdelim)
                             {
                                 if (_delim is Delim.CRLF)
                                 {
@@ -232,15 +232,15 @@ namespace NTerm
                                 {
                                     // Complete line so process it.
                                     buffer.RemoveAt(buffer.Count - 1); // trim
-                                    var srcv = buffer.ToArray();
-                                    progress.Report(srcv);
+                                    var srecv = buffer.ToArray();
+                                    progress.Report(srecv);
                                     buffer.Clear();
                                 }
                             }
                             else
                             {
                                 // Add to buffer.
-                                buffer.Add(rcvData[i]);
+                                buffer.Add(recvData[i]);
                             }
                         }
                     }

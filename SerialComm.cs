@@ -143,12 +143,12 @@ namespace NTerm
                     }
 
                     //=========== Receive ==========//
-                    var rxdata = new byte[BUFFER_SIZE];
-                    int byteCount = _serialPort.Read(rxdata, 0, BUFFER_SIZE);
+                    var recvdata = new byte[BUFFER_SIZE];
+                    int byteCount = _serialPort.Read(recvdata, 0, BUFFER_SIZE);
 
                     if (byteCount > 0)
                     {
-                        progress.Report(rxdata);
+                        progress.Report(recvdata);
                     }
                 }
                 catch (Exception e)

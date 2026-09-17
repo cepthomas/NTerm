@@ -23,7 +23,7 @@ with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as sock:
         try:
             data, _ = sock.recvfrom(4096) # blocks
             msg = data.decode('utf-8')
-            print('rcv:', msg)
+            print('recv:', msg)
 
         except ConnectionError:
             print('connection failed...')

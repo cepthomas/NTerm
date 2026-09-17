@@ -84,7 +84,7 @@ namespace NTerm
         {
             bool done = false;
 
-            while (!done)
+            while (!done && !token.IsCancellationRequested)
             {
                 token.ThrowIfCancellationRequested();
 
@@ -96,7 +96,7 @@ namespace NTerm
                     byte[] bytes = client.Receive(ref ep);
                     if (bytes.Length > 0)
                     {
-                        //Console.WriteLine($"Received broadcast from {ep} :");
+Console.WriteLine($"Received broadcast from {ep} :");
                         progress.Report(bytes);
                     }
                 }

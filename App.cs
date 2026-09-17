@@ -43,7 +43,7 @@ namespace NTerm
             string serror = "";
             _console = console ?? new RealConsole();
 
-            //Dev();
+            Dev();
 
             try
             {
@@ -158,17 +158,32 @@ namespace NTerm
             try
             {
                 // Hook up progress reporting.
-                var rxHandler = new Progress<byte[]>(value => { ProcessReceive(value); });
-                var kbdHandler = new Progress<string>(value => { if (ProcessUserInput(value)) ts.Cancel(); });
+                var recvHandler = new Progress<byte[]>(value =>
+                {
+                    // Show whatever arrived.
+                    var srecv = Encoding.UTF8.GetString(value);
+                    Tell($"{srecv}", match: true);
+                    //_logger.Trace($"<<< [{srecv}]");
+                });
+
+                var consoleHandler = new Progress<string>(value =>
+                {
+                    if (ProcessConsole(value))
+                    {
+                        ts.Cancel();
+                    }
+                });
 
                 // Fire off multiple long-running async background operations
                 // TIL: Don't call explicit Dispose() on tasks. That includes using statements.
                 // https://devblogs.microsoft.com/dotnet/do-i-need-to-dispose-of-tasks/
-                Task taskKeyboard = RunConsole(ts.Token, kbdHandler);
-                Task taskComm = _comm.Run(ts.Token, rxHandler);
+                Task taskKeyboard = RunConsole(ts.Token, consoleHandler);
+                Task taskComm = _comm.Run(ts.Token, recvHandler);
 
                 // These are forever tasks. If any stops it indicates shutdown - normal or error.
-                await Task.WhenAny(taskKeyboard, taskComm);
+                await Task.WhenAny(taskComm, taskKeyboard);
+
+                Tell($"ending taskComm:{taskComm} taskKeyboard:{taskKeyboard}");
 
                 // Check for task errors (and/or Status?) and do something with them.
                 if (taskKeyboard.Exception is not null && taskKeyboard.Exception.InnerException is not null)
@@ -205,7 +220,7 @@ namespace NTerm
 
             while (!done && !token.IsCancellationRequested)
             {
-                //token.ThrowIfCancellationRequested();
+                token.ThrowIfCancellationRequested();
 
                 // Check for something to do.
                 if (_console.KeyAvailable)
@@ -227,7 +242,7 @@ namespace NTerm
         /// </summary>
         /// <param name="sin"></param>
         /// <returns>True if quit</returns>
-        bool ProcessUserInput(string sin)
+        bool ProcessConsole(string sin)
         {
             bool quit = false;
 
@@ -275,18 +290,6 @@ namespace NTerm
             }
 
             return quit;
-        }
-
-        /// <summary>
-        /// Process the receive contents.
-        /// </summary>
-        /// <param name="r"></param>
-        void ProcessReceive(byte[] b)
-        {
-            // Show whatever arrived.
-            var srcv = Encoding.UTF8.GetString(b);
-            Tell($"{srcv}", match: true);
-            //_logger.Trace($"<<< [{srcv}]");
         }
         #endregion
 
@@ -382,17 +385,21 @@ namespace NTerm
         /// </summary>
         void Dev()
         {
-            Usage(false);
 
-            var s = "[{i}m {i}[0m Hello 🔥";
-            Tell(s, ConsoleColor.Green);
-            var bs = Encoding.UTF8.GetBytes(s);
+            var ttt = new AsyncTcpClient();
+            var tsk = ttt.GoGo();
 
-            var sx = Common.MakeReadable(bs);
-            Tell(sx, ConsoleColor.Green);
 
-            var senc = Encoding.UTF8.GetString(bs);
-            Tell(senc, ConsoleColor.Green);
+            // Usage(false);
+
+
+            // var s = "[{i}m {i}[0m Hello 🔥";
+            // Tell(s, ConsoleColor.Green);
+            // var bs = Encoding.UTF8.GetBytes(s);
+            // var sx = Common.MakeReadable(bs);
+            // Tell(sx, ConsoleColor.Green);
+            // var senc = Encoding.UTF8.GetString(bs);
+            // Tell(senc, ConsoleColor.Green);
 
 
             // void _print(string text) { Print(text, clr: _config.DebugColor); };

@@ -6,7 +6,7 @@ import socketserver
 ##### Simple echoing tcp server for test purposes.
 
 # Configure. Edit for specific test scenarios.
-HOST = 'localhost'  # '127.0.0.1'
+HOST = '127.0.0.1' # 'localhost'
 PORT = 59120
 MAX_MSG = 10000
 
@@ -20,11 +20,13 @@ ENDC = '\u001b[0m'
 # Uses file-like object - rfile and wfile. Socket will be auto closed.
 class LineHandler(socketserver.StreamRequestHandler):
     def handle(self):
+        print(f'handle()')
         self.data = self.rfile.readline(MAX_MSG).rstrip()
-        ## >>> customize here
-        received = self.data.decode('utf-8')
-        print(f'Client sent [{received}]')
-        response = f'>>>[{received}]'
+        ## >>> custom here
+        rdata = self.data.decode('utf-8')
+        # print(f'Client sent [{rdata}]')
+        response = f'Client sent [{rdata}]'
+        # response = f'>>>[{rdata}]'
         self.wfile.write(response.encode('utf-8'))
 
 
