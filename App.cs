@@ -40,10 +40,9 @@ namespace NTerm
         public App(List<string> args, IConsole? console = null)
         {
             int exitCode = 0;
-            string serror = "";
             _console = console ?? new RealConsole();
 
-            Dev();
+            //Dev();
 
             try
             {
@@ -68,14 +67,14 @@ namespace NTerm
                 if (!File.Exists(defaultConfig))
                 {
                     string scfig = """
-                        ; User defaults - overriden by specific ini.
+                        ; User defaults.
                         [nterm]
                         comm = null
                         error_color = red
                         [macros]
-                        ; none
+                        ; add
                         [matchers]
-                        ; none
+                        ; add
                         """;
                     File.WriteAllText(defaultConfig, scfig);
                     _logger.Info($"Created default config {defaultConfig} - edit to taste.");
@@ -100,39 +99,48 @@ namespace NTerm
                 using CancellationTokenSource ts = new();
 
                 // Hook exit key.
-                Console.CancelKeyPress += (s, e) =>
+                Console.CancelKeyPress += (s, e) => { e.Cancel = true; ts.Cancel(); };
+
+                // Hook up progress reporting. Just show whatever arrived.
+                var recvHandler = new Progress<byte[]>(value => { Tell($"{Encoding.UTF8.GetString(value)}", match: true); });
+                
+                // Hook up keyboard reading.
+                var consoleHandler = new Progress<string>(value => { if (ProcessConsole(value)) { ts.Cancel(); } });
+
+                // Run bg tasks forever. Essentially old skool BackgroundWorker clone.
+                Task.Run(() => RunConsole(ts.Token, consoleHandler));
+                Task.Run(() => _comm.Run(ts.Token, recvHandler));
+
+                while (!ts.Token.IsCancellationRequested)
                 {
-                    e.Cancel = true;
-                    ts.Cancel();
-                };
+                    // Anything to do?
 
-                RunForever(ts);
-
-                _logger.Info($"NTerm exit");
+                    Thread.Sleep(10);
+                }
             }
-            // Any exception that arrives here is considered fatal. Inform and exit.
-            catch (ConfigException ex) // known ini error
+            catch (TaskCanceledException ex)
             {
-                serror = $"{ex.Message}";
-                _logger.Error(serror);
+                _logger.Debug($"Normal completion [{ex.Message}]");
+            }
+            catch (ConfigException ex)
+            {
+                _logger.Error($"{ex.Message}");
                 exitCode = 1;
             }
-            catch (IniSyntaxException ex) // known ini error
+            catch (IniSyntaxException ex)
             {
-                serror = $"Ini syntax error at line {ex.LineNum}: {ex.Message}";
-                _logger.Error(serror);
+                _logger.Error($"Ini syntax error at line {ex.LineNum}: {ex.Message}");
                 exitCode = 1;
             }
-            catch (Exception ex) // other/unexpected error
+            catch (Exception ex)
             {
-                serror = ex.Message;
-                _logger.Exception(ex);
+                _logger.Error($"{ex.Message}");
                 exitCode = 1;
             }
 
-            if (serror.Length > 0)
+            if (exitCode > 0)
             {
-                MessageBox.Show(serror, "Error! - see  log");
+                MessageBox.Show("Error!", "See the log");
             }
 
             LogManager.Stop();
@@ -149,64 +157,6 @@ namespace NTerm
         }
         #endregion
 
-        #region Main Loop
-        /// <summary>
-        /// Main loop.
-        /// </summary>
-        public async void RunForever(CancellationTokenSource ts)
-        {
-            try
-            {
-                // Hook up progress reporting.
-                var recvHandler = new Progress<byte[]>(value =>
-                {
-                    // Show whatever arrived.
-                    var srecv = Encoding.UTF8.GetString(value);
-                    Tell($"{srecv}", match: true);
-                    //_logger.Trace($"<<< [{srecv}]");
-                });
-
-                var consoleHandler = new Progress<string>(value =>
-                {
-                    if (ProcessConsole(value))
-                    {
-                        ts.Cancel();
-                    }
-                });
-
-                // Fire off multiple long-running async background operations
-                // TIL: Don't call explicit Dispose() on tasks. That includes using statements.
-                // https://devblogs.microsoft.com/dotnet/do-i-need-to-dispose-of-tasks/
-                Task taskKeyboard = RunConsole(ts.Token, consoleHandler);
-                Task taskComm = _comm.Run(ts.Token, recvHandler);
-
-                // These are forever tasks. If any stops it indicates shutdown - normal or error.
-                await Task.WhenAny(taskComm, taskKeyboard);
-
-                Tell($"ending taskComm:{taskComm} taskKeyboard:{taskKeyboard}");
-
-                // Check for task errors (and/or Status?) and do something with them.
-                if (taskKeyboard.Exception is not null && taskKeyboard.Exception.InnerException is not null)
-                {
-                    _logger.Exception(taskKeyboard.Exception.InnerException);
-                }
-                if (taskComm.Exception is not null && taskComm.Exception.InnerException is not null)
-                {
-                    _logger.Exception(taskComm.Exception.InnerException);
-                }
-            }
-            catch (TaskCanceledException ex)
-            {
-                _logger.Debug($"Normal TaskCanceledException [{ex.Message}]");
-            }
-            catch (Exception ex)
-            {
-                _logger.Exception(ex);
-                Tell(ex.Message, ConsoleColor.Red);
-            }
-        }
-        #endregion
-
         #region Process inputs
         /// <summary>
         /// The keyboard input task.
@@ -216,12 +166,8 @@ namespace NTerm
         /// <returns></returns>
         public async Task RunConsole(CancellationToken token, IProgress<string> progress)
         {
-            bool done = false;
-
-            while (!done && !token.IsCancellationRequested)
+            while (!token.IsCancellationRequested)
             {
-                token.ThrowIfCancellationRequested();
-
                 // Check for something to do.
                 if (_console.KeyAvailable)
                 {
@@ -232,7 +178,6 @@ namespace NTerm
                     }
                 }
 
-                // Relax a bit.
                 await Task.Delay(10, token);
             }
         }
@@ -246,47 +191,56 @@ namespace NTerm
         {
             bool quit = false;
 
-            // May be meta command.
-            var first = sin[0];
-            var rest = sin[1..];
-
-            // Interpret the input.
-            if (first == _config.MetaInd)
+            try
             {
-                switch (rest.ToLower())
+                // May be meta command.
+                var first = sin[0];
+                var rest = sin[1..];
+
+                // Interpret the input.
+                if (first == _config.MetaInd)
                 {
-                    case "q": // quit
-                        Tell("Quitting");
-                        quit = true;
-                        break;
+                    switch (rest.ToLower())
+                    {
+                        case "q": // quit
+                            Tell("Quitting");
+                            quit = true;
+                            break;
 
-                    case "c": // clear
-                        _console.Clear();
-                        break;
+                        case "c": // clear
+                            _console.Clear();
+                            break;
 
-                    case "h": // help
-                        Usage(false);
-                        break;
+                        case "h": // help
+                            Usage(false);
+                            break;
 
-                    default: // user macro?
-                        if (_config.Macros.TryGetValue(rest, out var smacro))
-                        {
-                            Tell(smacro, match: false);
-                            //_logger.Trace($">>> [{smacro}]");
-                            var td = Encoding.UTF8.GetBytes(smacro);
-                            _comm.Send([.. td]);
-                        }
-                        else
-                        {
-                            _logger.Error($"Unknown macro name: [{rest}]");
-                        }
-                        break;
+                        default: // user macro?
+                            if (_config.Macros.TryGetValue(rest, out var smacro))
+                            {
+                                Tell(smacro, match: false);
+                                //var td = Encoding.UTF8.GetBytes(smacro);
+                                //_comm.Send([.. td]);
+                                _comm.Send(smacro);
+                            }
+                            else
+                            {
+                                _logger.Error($"Unknown macro name: [{rest}]");
+                            }
+                            break;
+                    }
+                }
+                else // just send verbatim
+                {
+                    //var td = Encoding.UTF8.GetBytes(sin);
+                    //_comm.Send([.. td]);
+                    _comm.Send(sin);
                 }
             }
-            else // just send verbatim
+            catch (Exception ex)
             {
-                var td = Encoding.UTF8.GetBytes(sin);
-                _comm.Send([.. td]);
+                _logger.Exception(ex);
+                quit = true;
             }
 
             return quit;
@@ -356,7 +310,7 @@ namespace NTerm
             if (!fail)
             {
                 //var ind = $"[{_config.MetaInd}]";
-                var ind = Common.MakeReadable((byte)_config.MetaInd);
+                var ind = _config.MetaInd;
                 docs.Add($"");
                 docs.Add($"Commands:");
                 docs.Add($"    {ind}q: quit");
@@ -385,9 +339,8 @@ namespace NTerm
         /// </summary>
         void Dev()
         {
-
-            var ttt = new AsyncTcpClient();
-            var tsk = ttt.GoGo();
+            //var ttt = new AsyncTcpClient();
+            //var tsk = ttt.GoGo();
 
 
             // Usage(false);

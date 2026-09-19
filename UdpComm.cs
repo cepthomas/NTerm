@@ -67,10 +67,9 @@ namespace NTerm
 
         #region IComm implementation
         /// <see cref="IComm"/>
-        public void Send(byte[] td)
+        public void Send(string td)
         {
-            throw new InvalidOperationException("Not configured to send");
-            // _qSend.Enqueue([]);
+            throw new NotImplementedException("UDP is listen only");
         }
 
         /// <see cref="IComm"/>
@@ -96,30 +95,14 @@ namespace NTerm
                     byte[] bytes = client.Receive(ref ep);
                     if (bytes.Length > 0)
                     {
-Console.WriteLine($"Received broadcast from {ep} :");
+                        // Just pass along.
                         progress.Report(bytes);
                     }
                 }
                 catch (Exception e)
                 {
                     // What happened?
-                    var res = Common.ProcessException(e);
-
-                    switch (res.cst)
-                    {
-                        case CommState.Ok:
-                        case CommState.Timeout:
-                        case CommState.Recoverable:
-                            // Continue running.
-                            break;
-
-                        case CommState.Stop:
-                            done = true;
-                            break;
-
-                        case CommState.Fatal:
-                            throw (res.e);
-                    }
+                    done = Common.ProcessException(e);
                 }
 
                 // Don't be greedy.

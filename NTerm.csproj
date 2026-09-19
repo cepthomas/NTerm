@@ -15,9 +15,20 @@
     </PropertyGroup>
 
     <ItemGroup>
+      <Compile Remove="lib\**" />
+      <Compile Remove="_keep\**" />
       <Compile Remove="_stuff\**" />
+      <EmbeddedResource Remove="lib\**" />
+      <EmbeddedResource Remove="_keep\**" />
       <EmbeddedResource Remove="_stuff\**" />
+      <None Remove="lib\**" />
+      <None Remove="_keep\**" />
       <None Remove="_stuff\**" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <None Remove="nterm.sublime-project" />
+      <None Remove="nterm.sublime-workspace" />
     </ItemGroup>
 
     <ItemGroup>

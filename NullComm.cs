@@ -15,7 +15,7 @@ namespace NTerm
     public class NullComm : IComm
     {
         #region Fields
-        readonly ConcurrentQueue<byte[]> _qSend = new();
+        readonly ConcurrentQueue<string> _qSend = new();
         #endregion
 
         #region Lifecycle
@@ -44,7 +44,7 @@ namespace NTerm
 
         #region IComm implementation
         /// <see cref="IComm"/>
-        public void Send(byte[] td)
+        public void Send(string td)
         {
             _qSend.Enqueue(td);
         }
@@ -63,10 +63,11 @@ namespace NTerm
             {
                 token.ThrowIfCancellationRequested();
 
-                if (_qSend.TryDequeue(out byte[]? td))
+                if (_qSend.TryDequeue(out string? td))
                 {
-                    Array.Reverse(td);
-                    progress.Report(td);
+                    var b = Encoding.UTF8.GetBytes(td);
+                    Array.Reverse(b);
+                    progress.Report(b);
                 }
 
                 // Don't be greedy.

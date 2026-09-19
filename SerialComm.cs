@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.IO.Ports;
 using System.Linq;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Ephemera.NBagOfTricks;
@@ -20,7 +21,7 @@ namespace NTerm
     {
         #region Fields
         readonly SerialPort _serialPort;
-        readonly ConcurrentQueue<byte[]> _qSend = new();
+        readonly ConcurrentQueue<string> _qSend = new();
         const int RESPONSE_TIME = 10;
         const int BUFFER_SIZE = 4096;
         readonly string _config;
@@ -107,7 +108,7 @@ namespace NTerm
 
         #region IComm implementation
         /// <see cref="IComm"/>
-        public void Send(byte[] req)
+        public void Send(string req)
         {
             _qSend.Enqueue(req);
         }
@@ -137,9 +138,10 @@ namespace NTerm
                     }
 
                     //=========== Send ============//
-                    while (_qSend.TryDequeue(out byte[]? td))
+                    while (_qSend.TryDequeue(out string? td))
                     {
-                        _serialPort.Write(td, 0, td.Length);
+                        var b = Encoding.UTF8.GetBytes(td);
+                        _serialPort.Write(b, 0, b.Length);
                     }
 
                     //=========== Receive ==========//
@@ -154,23 +156,7 @@ namespace NTerm
                 catch (Exception e)
                 {
                     // What happened?
-                    var res = Common.ProcessException(e);
-
-                    switch (res.cst)
-                    {
-                        case CommState.Ok:
-                        case CommState.Timeout:
-                        case CommState.Recoverable:
-                            // Continue running.
-                            break;
-
-                        case CommState.Stop:
-                            done = true;
-                            break;
-
-                        case CommState.Fatal:
-                            throw (res.e);
-                    }
+                    done = Common.ProcessException(e);
                 }
 
                 // Don't be greedy.
