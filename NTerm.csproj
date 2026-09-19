@@ -6,7 +6,7 @@
         <OutputPath>bin\</OutputPath>
         <TargetFramework>net8.0-windows</TargetFramework>
         <!-- Need to do this to suppress all runtimes for IO.Ports: -->
-        <!-- <RuntimeIdentifier>win-x64</RuntimeIdentifier> -->
+        <RuntimeIdentifier>win-x64</RuntimeIdentifier>
 
         <Nullable>enable</Nullable>
         <ImplicitUsings>disable</ImplicitUsings>
