@@ -24,7 +24,6 @@ Alternatively, NTerm can run minimally without a config file by one of:
 The default configuration is in `%APPDATA%\Ephemera\NTerm\default.ini`. It is created the first time the
 app is run. Edit to your preferences. Any config file loaded from the command line sparsely overlays the defaults.
 
-
 # Meta Commands
 
 These meta commands are available in the terminal:
@@ -51,7 +50,10 @@ comm = serial port baud [framing]  ==> serial COM1 9600 [framing]
 error_color = red
 
 ; First char in command indicates a meta command. Default is '!'. 
-meta_ind = |
+meta_ind = !
+
+; Convert received binary bytes to something readable. Default is false.
+readable = true or false
 
 ; Simple user macros that sends text when executed using `<meta_ind>name`.
 ; Quotes can be used to maintain leading or trailing whitespace.

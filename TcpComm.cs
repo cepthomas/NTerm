@@ -10,14 +10,6 @@ using System.Threading.Tasks;
 using Ephemera.NBagOfTricks;
 
 
-// https://learn.microsoft.com/en-us/dotnet/api/system.net.sockets.tcpclient
-
-
-// TODO support Length-Prefix delim? (Most Common Overall): Prefixes each message with a fixed-size integer header
-// - CRLF (\r\n) (Most Common Text Delimiter): Uses a Carriage Return followed by a Line Feed.
-//   It is widely used in classic text-based protocols running over TCP, such as HTTP, SMTP, POP3, and IMAP.
-// - Single Newline (\n or \r): Commonly used for line-delimited streaming, chat protocols, and log shipping (like Syslog).
-
 
 namespace NTerm
 {
@@ -32,22 +24,11 @@ namespace NTerm
         const int CONNECT_TIME = 50;
         const int RESPONSE_TIME = 1000;
         const int BUFFER_SIZE = 4096;
-        /// <summary>Message delimiter</summary>
-//        readonly Delim _delim;
-        #endregion
-
-
+        // Message delimiter  TODO support Length-Prefix delim?
         readonly byte? _delim;
+        // Secondary message delimiter e.g. the CR in CRLF pair.
         readonly byte? _delim2;
-
-        /// <summary>Characters used for comm control.</summary>
-        //public enum Delim { NONE, NULL, ESC, LF, CR, CRLF }
-
-
-
-
-
-
+        #endregion
 
         #region Lifecycle
         /// <summary>Constructor.</summary>
@@ -61,8 +42,7 @@ namespace NTerm
                 _port = int.Parse(config[2]);
                 if (config.Count > 3)
                 {
-                   // _delim = Enum.Parse<Delim>(config[3], true);
-
+                    // Decode message delimiter.
                     switch (config[3].ToUpper())
                     {
                         case "NONE": break;
@@ -73,17 +53,6 @@ namespace NTerm
                         case "CRLF": _delim = 0x0A; _delim2 = 0x0D; break;
                         default: throw new ConfigException(config[3]);
                     }
-
-                    //byte _cdelim = _delim switch
-                    //{
-                    //    Delim.NONE => 0xFF,
-                    //    Delim.NULL => 0x00,
-                    //    Delim.ESC => 0x1B,
-                    //    Delim.CR => 0x0D,
-                    //    Delim.LF => 0x0A,
-                    //    Delim.CRLF => 0x0A,
-                    //    _ => 0xFF
-                    //};
                 }
             }
             catch (Exception e)
@@ -153,15 +122,18 @@ namespace NTerm
                     using var stream = client.GetStream();
 
                     // Start a background task to continuously read server messages
-                    // Task receiveTask = Receive(stream, token, progress);
-                    // Fire-and-forget the infinite background task
-                    // Task.Run(() => DoWorkAsync(_cts.Token));
-                    _ = Task.Run(() => Receive(stream, token, progress));
+                    var rt = Task.Run(() => Receive(stream, token, progress));
 
                     //=========== Sending? ============//
                     // Main loop for sending data from console input
                     while (!token.IsCancellationRequested)
                     {
+                        //if (rt.Status == TaskStatus.RanToCompletion)
+                        //{
+                        //    Console.WriteLine($"read task ended conn:{client.Connected} stream:{stream}");
+                        //    break;
+                        //}
+
                         if (_qSend.TryDequeue(out string? s))
                         {
                             // Add terminator maybe.
@@ -200,18 +172,6 @@ namespace NTerm
             byte[] recvData = new byte[BUFFER_SIZE];
             bool done = false;
 
-            //// Distilled version for processing data before unpacketing.
-            //byte _cdelim = _delim switch
-            //{
-            //    Delim.NONE => 0xFF,
-            //    Delim.NULL => 0x00,
-            //    Delim.ESC => 0x1B,
-            //    Delim.CR => 0x0D,
-            //    Delim.LF => 0x0A,
-            //    Delim.CRLF => 0x0A,
-            //    _ => 0xFF
-            //};
-
             // Collected data while looking for delimiter.
             List<byte> buffer = [];
 
@@ -219,26 +179,21 @@ namespace NTerm
             {
                 try
                 {
-                    Console.WriteLine("start read async");
                     // Read incoming bytes asynchronously
                     int numRead = await stream.ReadAsync(recvData, token);
 
                     // If ReadAsync returns 0, the server closed the connection.
-                    if (numRead == 0)
-                    {
-                        Console.WriteLine("server closed conn");
-                        break;
-                    }
+                    if (numRead == 0) { break; }
 
                     // Decode the message.
-                    if (_delim is null) //Delim.NONE)
+                    if (_delim is null)
                     {
                         // No delim, just deliver whatever arrived.
                         progress.Report(recvData);
                     }
                     else
                     {
-                        // Look for delimiter or just buffer it. TODO1 clean up this logic
+                        // Look for delimiter or just buffer it. TODO clean up this logic.
                         bool isDelim = false;
                         for (int i = 0; i < numRead; i++)
                         {
@@ -249,7 +204,7 @@ namespace NTerm
                                     if (buffer.Count > 0 && buffer.Last() == _delim2)
                                     {
                                         isDelim = true;
-                                        buffer.RemoveAt(buffer.Count - 1); // trim
+                                        buffer.RemoveAt(buffer.Count - 1); // trim extra delim
                                     }
                                 }
                                 else
@@ -260,7 +215,6 @@ namespace NTerm
                                 if (isDelim)
                                 {
                                     // Complete line so process it.
-                                    //buffer.RemoveAt(buffer.Count - 1); // trim
                                     var srecv = buffer.ToArray();
                                     progress.Report(srecv);
                                     buffer.Clear();

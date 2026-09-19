@@ -70,7 +70,6 @@ namespace NTerm
                 _serialPort.WriteBufferSize = BUFFER_SIZE;
                 _serialPort.ReadTimeout = RESPONSE_TIME;
                 _serialPort.WriteTimeout = RESPONSE_TIME;
-                // _serialPort.Handshake?
             }
             catch (Exception e)
             {

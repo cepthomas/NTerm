@@ -5,30 +5,21 @@
         <UseWindowsForms>true</UseWindowsForms>
         <OutputPath>bin\</OutputPath>
         <TargetFramework>net8.0-windows</TargetFramework>
+        <!-- Need to do this to suppress all runtimes for IO.Ports: -->
+        <!-- <RuntimeIdentifier>win-x64</RuntimeIdentifier> -->
 
         <Nullable>enable</Nullable>
         <ImplicitUsings>disable</ImplicitUsings>
         <ApplicationIcon>cucaracha.ico</ApplicationIcon>
         <SatelliteResourceLanguages>none</SatelliteResourceLanguages>
         <NoWarn>1701;1702;CA1816;CA1822;SYSLIB1054</NoWarn>
-        <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+        <!-- <AllowUnsafeBlocks>true</AllowUnsafeBlocks> -->
     </PropertyGroup>
 
     <ItemGroup>
       <Compile Remove="lib\**" />
-      <Compile Remove="_keep\**" />
-      <Compile Remove="_stuff\**" />
       <EmbeddedResource Remove="lib\**" />
-      <EmbeddedResource Remove="_keep\**" />
-      <EmbeddedResource Remove="_stuff\**" />
       <None Remove="lib\**" />
-      <None Remove="_keep\**" />
-      <None Remove="_stuff\**" />
-    </ItemGroup>
-
-    <ItemGroup>
-      <None Remove="nterm.sublime-project" />
-      <None Remove="nterm.sublime-workspace" />
     </ItemGroup>
 
     <ItemGroup>

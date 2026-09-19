@@ -6,7 +6,7 @@ import socketserver
 ##### Simple echoing tcp server for test purposes.
 
 # Configure. Edit for specific test scenarios.
-HOST = '127.0.0.1' # 'localhost'
+HOST = '127.0.0.1'
 PORT = 59120
 MAX_MSG = 10000
 
@@ -17,7 +17,7 @@ ENDC = '\u001b[0m'
 
 
 ##### https://docs.python.org/3/library/socketserver.html#socketserver.BaseRequestHandler
-class MyTCPHandler(socketserver.BaseRequestHandler):
+class DelimHandler(socketserver.BaseRequestHandler):
     """
     The request handler class for our server.
 
@@ -28,10 +28,10 @@ class MyTCPHandler(socketserver.BaseRequestHandler):
     def handle(self):
         try:
             # self.request is the TCP socket connected to the client
-            print(f'MyTCPHandler.handle()')
+            print(f'DelimHandler.handle()')
             pieces = [b'']
             total = 0
-            while b'\n' not in pieces[-1] and total < 10_000: # TODO1 handle other delims.
+            while b'\n' not in pieces[-1] and total < 10_000: # TODO handle other delims.
                 pieces.append(self.request.recv(2000))
                 total += len(pieces[-1])
             self.data = b''.join(pieces)
@@ -41,23 +41,18 @@ class MyTCPHandler(socketserver.BaseRequestHandler):
             print(f'[{dr}]')
             # just send back the same data, but upper-cased
             ds = self.data.upper()
-
             print(f'Sending back:')
             print(f'[{ds}]')
-
             self.request.sendall(ds)
             # after we return, the socket will be closed.
             print(f'Send done')
 
         except Exception as e1:
-            # ???
-            print(f'{ERR}MyTCPHandler(): {type(e1)}{ENDC}')
+            print(f'{ERR}DelimHandler(): {type(e1)}{ENDC}')
 
 
 # Run the server.
-# with MyServer((HOST, PORT), LineHandler) as server:
-# with MyServer((HOST, PORT), MyTCPHandler) as server:
-with socketserver.TCPServer((HOST, PORT), MyTCPHandler) as server:
+with socketserver.TCPServer((HOST, PORT), DelimHandler) as server:
     print(f'MyServer start')
 
     try:

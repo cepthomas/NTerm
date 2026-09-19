@@ -23,12 +23,14 @@ namespace NTerm
         /// <summary>Indicates meta command next.</summary>
         public char MetaInd { get; private set; } = '!';
 
+        /// <summary>Make binary readable.</summary>
+        public bool Readable { get; private set; } = false;
+
         /// <summary>User macros.</summary>
         public Dictionary<string, string> Macros { get; private set; } = [];
 
         /// <summary>Colorizing text.</summary>
         public Dictionary<string, ConsoleColor> Matchers { get; private set; } = [];
-
 
         /// <summary>
         /// Decipher the user args.
@@ -80,6 +82,12 @@ namespace NTerm
 
                         case "debug_color":
                             DebugColor = Enum.Parse<ConsoleColor>(kv.Value, true);
+                            break;
+
+                        case "readable":
+                            var vb = kv.Value.ToLower();
+                            if (vb == "true") Readable = true;
+                            else throw new ConfigException($"Invalid readable: [{kv.Value}]");
                             break;
 
                         case "meta":
@@ -142,7 +150,6 @@ namespace NTerm
                 Matchers.ForEach(m => ls.Add($"    {m.Key}:{m.Value}"));
             }
 
-            //return string.Join(Environment.NewLine, ls);
             return ls;
         }
     }

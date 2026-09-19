@@ -42,8 +42,6 @@ namespace NTerm
             int exitCode = 0;
             _console = console ?? new RealConsole();
 
-            //Dev();
-
             try
             {
                 string appDir = MiscUtils.GetAppDataDir("NTerm", "Ephemera");
@@ -71,6 +69,7 @@ namespace NTerm
                         [nterm]
                         comm = null
                         error_color = red
+                        readable = false
                         [macros]
                         ; add
                         [matchers]
@@ -102,7 +101,7 @@ namespace NTerm
                 Console.CancelKeyPress += (s, e) => { e.Cancel = true; ts.Cancel(); };
 
                 // Hook up progress reporting. Just show whatever arrived.
-                var recvHandler = new Progress<byte[]>(value => { Tell($"{Encoding.UTF8.GetString(value)}", match: true); });
+                var recvHandler = new Progress<byte[]>(value => { Tell(_config.Readable ? Common.MakeReadable(value) : $"{Encoding.UTF8.GetString(value)}", match: true); });
                 
                 // Hook up keyboard reading.
                 var consoleHandler = new Progress<string>(value => { if (ProcessConsole(value)) { ts.Cancel(); } });
@@ -219,8 +218,6 @@ namespace NTerm
                             if (_config.Macros.TryGetValue(rest, out var smacro))
                             {
                                 Tell(smacro, match: false);
-                                //var td = Encoding.UTF8.GetBytes(smacro);
-                                //_comm.Send([.. td]);
                                 _comm.Send(smacro);
                             }
                             else
@@ -232,8 +229,6 @@ namespace NTerm
                 }
                 else // just send verbatim
                 {
-                    //var td = Encoding.UTF8.GetBytes(sin);
-                    //_comm.Send([.. td]);
                     _comm.Send(sin);
                 }
             }
@@ -339,10 +334,6 @@ namespace NTerm
         /// </summary>
         void Dev()
         {
-            //var ttt = new AsyncTcpClient();
-            //var tsk = ttt.GoGo();
-
-
             // Usage(false);
 
 
