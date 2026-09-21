@@ -14,7 +14,7 @@ using Ephemera.NBagOfTricks;
 
 namespace NTerm.Test
 {
-    public class NTermTest // TODO maybe useful parts?
+    public class NTermTest // TODO maybe useful parts?- TODO1 clean up, put somewhere (NTerm?)
     {
         #region Fields
         /// <summary>User input</summary>
@@ -48,7 +48,7 @@ namespace NTerm.Test
                 //DoBasicTarget(ts);
                 //DoConfigTarget(ts);
                 //DoTcpTarget(ts);
-                DoUdpTarget(ts);
+                //DoUdpTarget(ts);
 
                 // Debugger flavors require starting NTerm with matching cmd line.
                 //DoTcpDebugger(ts);
@@ -87,63 +87,63 @@ namespace NTerm.Test
             var proc = RunTarget(_configFile);
         }
 
+        ///// <summary>
+        ///// Test tcp in command/response mode.
+        ///// </summary>
+        //void DoTcpTarget(CancellationTokenSource ts)
+        //{
+        //    Console.WriteLine($"DoTcpTarget()");
+        //    // Tweak config.
+        //    List<string> config = [
+        //        "[nterm]", "comm = tcp 127.0.0.1 59120", "delim = NUL", "prompt = >", "meta = -",
+        //        "info_color = darkcyan", "err_color = green",
+        //    "[macros]", "dox = \"do xxxxxxx\"", "s3 = \"hey, send 333333333\"", "tm = \"  xmagentax   -yellow-  \"",
+        //    "[matchers]", "\"mag\" = magenta", "\"yel\" = yellow"];
+        //    File.WriteAllLines(_configFile, config);
+        //    var proc = RunTarget(_configFile);
+        //    TcpServerStuff srv = new(59120, _delim);
+        //    var err = srv.Run(ts);
+        //}
+
+        ///// <summary>
+        ///// Test udp in continuous mode.
+        ///// </summary>
+        //void DoUdpTarget(CancellationTokenSource ts)
+        //{
+        //    Console.WriteLine($"DoUdpTarget()");
+        //    // Tweak config.
+        //    List<string> config = [
+        //        "[nterm]", "comm = udp 127.0.0.1 59140", "delim = NUL", "prompt = >", "meta = -",
+        //        "info_color = darkcyan", "err_color = green",
+        //    "[macros]", "dox = \"do xxxxxxx\"", "s3 = \"hey, send 333333333\"", "tm = \"  xmagentax   -yellow-  \"",
+        //    "[matchers]", "\"mag\" = magenta", "\"yel\" = yellow"];
+        //    File.WriteAllLines(_configFile, config);
+        //    var proc = RunTarget(_configFile);
+        //    UdpSenderStuff srv = new(59140, _delim);
+        //    srv.Run(ts);
+        //}
+
         /// <summary>
         /// Test tcp in command/response mode.
         /// </summary>
-        void DoTcpTarget(CancellationTokenSource ts)
-        {
-            Console.WriteLine($"DoTcpTarget()");
-            // Tweak config.
-            List<string> config = [
-                "[nterm]", "comm = tcp 127.0.0.1 59120", "delim = NUL", "prompt = >", "meta = -",
-                "info_color = darkcyan", "err_color = green",
-            "[macros]", "dox = \"do xxxxxxx\"", "s3 = \"hey, send 333333333\"", "tm = \"  xmagentax   -yellow-  \"",
-            "[matchers]", "\"mag\" = magenta", "\"yel\" = yellow"];
-            File.WriteAllLines(_configFile, config);
-            var proc = RunTarget(_configFile);
-            TcpServerStuff srv = new(59120, _delim);
-            var err = srv.Run(ts);
-        }
+        //void DoTcpDebugger(CancellationTokenSource ts)
+        //{
+        //    Console.WriteLine($"DoTcpDebugger()");
+        //    // Runs forever.
+        //    TcpServerStuff srv = new(59120, _delim);
+        //    srv.Run(ts);
+        //}
 
-        /// <summary>
-        /// Test udp in continuous mode.
-        /// </summary>
-        void DoUdpTarget(CancellationTokenSource ts)
-        {
-            Console.WriteLine($"DoUdpTarget()");
-            // Tweak config.
-            List<string> config = [
-                "[nterm]", "comm = udp 127.0.0.1 59140", "delim = NUL", "prompt = >", "meta = -",
-                "info_color = darkcyan", "err_color = green",
-            "[macros]", "dox = \"do xxxxxxx\"", "s3 = \"hey, send 333333333\"", "tm = \"  xmagentax   -yellow-  \"",
-            "[matchers]", "\"mag\" = magenta", "\"yel\" = yellow"];
-            File.WriteAllLines(_configFile, config);
-            var proc = RunTarget(_configFile);
-            UdpSenderStuff srv = new(59140, _delim);
-            srv.Run(ts);
-        }
-
-        /// <summary>
-        /// Test tcp in command/response mode.
-        /// </summary>
-        void DoTcpDebugger(CancellationTokenSource ts)
-        {
-            Console.WriteLine($"DoTcpDebugger()");
-            // Runs forever.
-            TcpServerStuff srv = new(59120, _delim);
-            srv.Run(ts);
-        }
-
-        /// <summary>
-        /// Test udp in continuous mode.
-        /// </summary>
-        void DoUdpDebugger(CancellationTokenSource ts)
-        {
-            Console.WriteLine($"DoUdpDebugger()");
-            // Always do once.
-            UdpSenderStuff srv = new(59140, _delim);
-            srv.Run(ts);
-        }
+        ///// <summary>
+        ///// Test udp in continuous mode.
+        ///// </summary>
+        //void DoUdpDebugger(CancellationTokenSource ts)
+        //{
+        //    Console.WriteLine($"DoUdpDebugger()");
+        //    // Always do once.
+        //    UdpSenderStuff srv = new(59140, _delim);
+        //    srv.Run(ts);
+        //}
 
         /// <summary>
         /// Run the exe with full user cli.
