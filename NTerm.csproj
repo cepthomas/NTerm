@@ -4,7 +4,7 @@
         <OutputType>Exe</OutputType>
         <UseWindowsForms>true</UseWindowsForms>
         <OutputPath>bin\</OutputPath>
-        <TargetFramework>net8.0-windows</TargetFramework>
+        <TargetFramework>net10.0-windows</TargetFramework>
         <!-- Need to do this to suppress all runtimes for IO.Ports: -->
         <RuntimeIdentifier>win-x64</RuntimeIdentifier>
 
